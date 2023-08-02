@@ -1,16 +1,25 @@
-# Prerequisites
-*.d
+#IDEs
+
+.vs
+.idea
+CMakeSettings.json
+
+# CMake
+build*/
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Makefile
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+Testing/
 
 # Object files
 *.o
 *.ko
 *.obj
 *.elf
-
-# Linker output
-*.ilk
-*.map
-*.exp
 
 # Precompiled Headers
 *.gch
@@ -39,14 +48,3 @@
 # Debug files
 *.dSYM/
 *.su
-*.idb
-*.pdb
-
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
