@@ -1,2 +1,2 @@
 # TinyMPC
-C implementation of TinyMPC
+C++ implementation of TinyMPC
