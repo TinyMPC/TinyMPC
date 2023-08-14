@@ -1,0 +1,3 @@
+add_executable(quadrotor_track_example quadrotor_track_traj.cpp)
+
+target_link_libraries(quadrotor_track_example LINK_PUBLIC tinympc)
