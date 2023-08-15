@@ -15,11 +15,43 @@ void solve_admm(struct tiny_problem *problem, struct tiny_params *params) {
     update_linear_cost(problem, params);
 
     for (int i=0; i<problem->max_iter; i++) {
+        // Solve linear system with Riccati and roll out to get new trajectory
         update_primal(problem, params);
+
+        // Project slack variables into feasible domain
         update_slack(problem, params);
+
+        // Compute next iteration of dual variables
         update_dual(problem, params);
+
+        // Update linear control cost terms using reference trajectory, duals, and slack variables
         update_linear_cost(problem, params);
 
+        problem->primal_residual_state = 0;
+        problem->primal_residual_input = 0;
+        problem->dual_residual_state = 0;
+        problem->dual_residual_input = 0;
+        tinytype resid = 0;
+        for (int j=0; j<NHORIZON; j++) {
+            resid = (problem->x[j] - problem->vnew[j]).cwiseAbs().maxCoeff();
+            if (resid > problem->primal_residual_state) {
+                problem->primal_residual_state = resid;
+            }
+            resid = (problem->v[j] - problem->vnew[j]).cwiseAbs().maxCoeff();
+            if (resid > problem->primal_residual_state) {
+                problem->dual_residual_state = resid;
+            }
+        }
+        for (int j=0; j<NHORIZON-1; j++) {
+            resid = (problem->u[j] - problem->znew[j]).cwiseAbs().maxCoeff();
+            if (resid > problem->primal_residual_input) {
+                problem->primal_residual_input = resid;
+            }
+            resid = (problem->z[j] - problem->znew[j]).cwiseAbs().maxCoeff();
+            if (resid > problem->primal_residual_input) {
+                problem->dual_residual_input = resid;
+            }
+        }
         // problem->primal_residual_state = # TODO: get maximum of abs.(problem->x - problem->vnew)
         // problem->primal_residual_input = # TODO: get maximum of abs.(problem->u - problem->znew)
         // problem->dual_residual_state = # TODO: get maximum of abs.(problem->v - problem->vnew)

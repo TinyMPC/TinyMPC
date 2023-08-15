@@ -66,10 +66,10 @@ int main() {
         problem.znew[i] = tiny_VectorNu::Constant(5);
         problem.y[i] = tiny_VectorNu::Zero();
     }
-    problem.primal_residual_state = 1;
-    problem.primal_residual_input = 1;
-    problem.dual_residual_state = 1;
-    problem.dual_residual_input = 1;
+    problem.primal_residual_state = 0;
+    problem.primal_residual_input = 0;
+    problem.dual_residual_state = 0;
+    problem.dual_residual_input = 0;
     problem.abs_tol = 0.001;
     problem.status = 0;
     problem.iter = 0;
@@ -77,7 +77,7 @@ int main() {
     problem.iters_check_rho_update = 10;
 
     // Copy reference trajectory into Eigen matrix
-    Matrix<tinytype, NTOTAL, NSTATES> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data);
+    Matrix<tinytype, NSTATES, NTOTAL, Eigen::ColMajor> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data).transpose();
 
     // for (int i=0; i<NHORIZON; i++) {
     //     std::cout << params.x_min[i] << "\n" << std::endl;

@@ -11,14 +11,14 @@ extern "C" {
 
 typedef float tinytype;
 
-typedef Matrix<tinytype, NSTATES, 1> tiny_VectorNx;
-typedef Matrix<tinytype, NINPUTS, 1> tiny_VectorNu;
-typedef Matrix<tinytype, NSTATE_CONSTRAINTS, 1> tiny_VectorNc;
-typedef Matrix<tinytype, NSTATES, NSTATES> tiny_MatrixNxNx;
-typedef Matrix<tinytype, NSTATES, NINPUTS> tiny_MatrixNxNu;
-typedef Matrix<tinytype, NINPUTS, NSTATES> tiny_MatrixNuNx;
-typedef Matrix<tinytype, NINPUTS, NINPUTS> tiny_MatrixNuNu;
-typedef Matrix<tinytype, NSTATE_CONSTRAINTS, NSTATES> tiny_MatrixNcNx;
+typedef Matrix<tinytype, NSTATES, 1, Eigen::ColMajor> tiny_VectorNx;
+typedef Matrix<tinytype, NINPUTS, 1, Eigen::ColMajor> tiny_VectorNu;
+typedef Matrix<tinytype, NSTATE_CONSTRAINTS, 1, Eigen::ColMajor> tiny_VectorNc;
+typedef Matrix<tinytype, NSTATES, NSTATES, Eigen::ColMajor> tiny_MatrixNxNx;
+typedef Matrix<tinytype, NSTATES, NINPUTS, Eigen::ColMajor> tiny_MatrixNxNu;
+typedef Matrix<tinytype, NINPUTS, NSTATES, Eigen::ColMajor> tiny_MatrixNuNx;
+typedef Matrix<tinytype, NINPUTS, NINPUTS, Eigen::ColMajor> tiny_MatrixNuNu;
+typedef Matrix<tinytype, NSTATE_CONSTRAINTS, NSTATES, Eigen::ColMajor> tiny_MatrixNcNx;
 
 /**
  * Matrices that must be recomputed with changes in time step, rho, or model parameters
