@@ -38,8 +38,8 @@ int main() {
     params.Q = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Q_data);
     params.Qf = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Qf_data);
     params.R = Eigen::Map<Matrix<tinytype, NINPUTS, NINPUTS, Eigen::RowMajor>>(R_data);
-    params.u_min = {-0.5, -0.5, -0.5, -0.5};
-    params.u_max = {0.5, 0.5, 0.5, 0.5};
+    params.u_min = tiny_MatrixNuNhm1::Constant(-0.5);
+    params.u_max = tiny_MatrixNuNhm1::Constant(0.5);
     for (int i=0; i<NHORIZON; i++) {
         params.x_min[i] = tiny_VectorNc::Constant(-99999); // Currently unused
         params.x_max[i] = tiny_VectorNc::Zero();
@@ -50,19 +50,19 @@ int main() {
     params.cache = cache;
 
     struct tiny_problem problem;
-    problem.x = tiny_MatrixNxNh::Zero();
-    problem.q = tiny_MatrixNxNh::Zero();
-    problem.p = tiny_MatrixNxNh::Zero();
-    problem.v = tiny_MatrixNxNh::Zero();
-    problem.vnew = tiny_MatrixNxNh::Zero();
-    problem.g = tiny_MatrixNxNh::Zero();
+    problem.x = tiny_MatrixNxNh::Ones();
+    problem.q = tiny_MatrixNxNh::Ones();
+    problem.p = tiny_MatrixNxNh::Ones();
+    problem.v = tiny_MatrixNxNh::Ones();
+    problem.vnew = tiny_MatrixNxNh::Ones();
+    problem.g = tiny_MatrixNxNh::Ones();
 
-    problem.u = tiny_MatrixNuNhm1::Zero();
-    problem.r = tiny_MatrixNuNhm1::Zero();
-    problem.d = tiny_MatrixNuNhm1::Zero();
-    problem.z = tiny_MatrixNuNhm1::Zero();
-    problem.znew = tiny_MatrixNuNhm1::Zero();
-    problem.y = tiny_MatrixNuNhm1::Zero();
+    problem.u = tiny_MatrixNuNhm1::Ones();
+    problem.r = tiny_MatrixNuNhm1::Ones();
+    problem.d = tiny_MatrixNuNhm1::Ones();
+    problem.z = tiny_MatrixNuNhm1::Ones();
+    problem.znew = tiny_MatrixNuNhm1::Ones();
+    problem.y = tiny_MatrixNuNhm1::Ones();
 
     problem.primal_residual_state = 0;
     problem.primal_residual_input = 0;
@@ -85,8 +85,22 @@ int main() {
     // std::cout << Xref_total << std::endl;
 
     // solve_admm(&problem, &params);
-    backward_pass_grad(&problem, &params);
 
+    params.Xref.col(NHORIZON-1) = Xref_total.col(NHORIZON-1);
+    problem.p.col(NHORIZON-1) = -params.Qf*params.Xref.col(NHORIZON-1);
+    // backward_pass_grad(&problem, &params);
+    // forward_pass(&problem, &params);
+
+    params.x_max[0] = tiny_VectorNc::Constant(1);
+    params.A_constraints[0] << 0.32444, 0.48666, 0.81111, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+
+    update_slack(&problem, &params);
+
+    // std::cout << params.cache.Quu_inv << "\n" << std::endl;
+    // std::cout << params.cache.Bdyn << "\n" << std::endl;
+    // std::cout << params.cache.AmBKt << "\n" << std::endl;
+    // std::cout << params.cache.Kinf << "\n" << std::endl;
+    // std::cout << params.cache.coeff_d2p << "\n" << std::endl;
 
     return 0;
 }

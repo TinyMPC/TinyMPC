@@ -67,8 +67,9 @@ void update_primal(struct tiny_problem *problem, struct tiny_params *params) {
  * Update linear terms from Riccati backward pass
 */
 void backward_pass_grad(struct tiny_problem *problem, struct tiny_params *params) {
-    for (int i=NHORIZON-1; i>0; i--) {
-        std::cout << i << std::endl;
+    for (int i=NHORIZON-2; i>=0; i--) {
+        problem->d.col(i) = params->cache.Quu_inv * (params->cache.Bdyn.transpose() * problem->p.col(i+1) + problem->r.col(i));
+        problem->p.col(i) = problem->q.col(i) + params->cache.AmBKt * problem->p.col(i+1) - params->cache.Kinf.transpose() * problem->r.col(i) + params->cache.coeff_d2p * problem->d.col(i);
     }
 }
 
@@ -76,7 +77,13 @@ void backward_pass_grad(struct tiny_problem *problem, struct tiny_params *params
  * Use LQR feedback policy to roll out trajectory
 */
 void forward_pass(struct tiny_problem *problem, struct tiny_params *params) {
-
+    std::cout << problem->x.col(0) << "\n" << std::endl;
+    for (int i=0; i<NHORIZON-1; i++) {
+        problem->u.col(i) = -params->cache.Kinf * problem->x.col(i) - problem->d.col(i);
+        std::cout << problem->u.col(i) << "\n" << std::endl;
+        problem->x.col(i+1) = params->cache.Adyn * problem->x.col(i) + params->cache.Bdyn * problem->u.col(i);
+        std::cout << problem->x.col(i+1) << "\n" << std::endl;
+    }
 }
 
 /**
@@ -86,7 +93,32 @@ void forward_pass(struct tiny_problem *problem, struct tiny_params *params) {
  * projection function
 */
 void update_slack(struct tiny_problem *problem, struct tiny_params *params) {
+    // Box constraints on input
+    problem->z = params->u_max.cwiseMin(params->u_min.cwiseMax(problem->u));
 
+    // Half space constraints on state
+    // TODO: support multiple half plane constraints per knot point
+    //      currently this only works for one constraint per knot point
+    // TODO: can potentially take advantage of the fact that A_constraints[3:end] is zero and just do
+    //      v.col(i) = x.col(i) - dist*A_constraints[i] since we have to copy x[3:end] into v anyway
+    //      downside is it's not clear this is happening externally and so values of A_constraints
+    //      not set to zero (other than the first three) can cause the algorithm to fail
+    // TODO: the only state values changing here are the first three (x, y, z) so it doesn't make sense
+    //      to do operations on the remaining 9 when projecting (or doing anything related to the dual
+    //      or auxiliary variables). v and g could be of size (3) and everything would work the same.
+    //      The only reason this doesn't break is because in the update_linear_cost function subtracts
+    //      g from v and so the last nine entries are always zero.
+    for (int i=0; i<NHORIZON; i++) {
+        tiny_VectorNx xg = problem->x.col(i) + problem->g.col(i);
+        tinytype dist = params->A_constraints[i].head(3) * xg.head(3) - params->x_max[i](0);
+        if (dist <= 0) {
+            problem->v.col(i) = xg;
+        }
+        else {
+            Matrix<tinytype, 3, 1> xyz_new = xg.head(3) - dist*params->A_constraints[i].head(3).transpose();
+            problem->v.col(i) << xyz_new, xg.tail(NSTATES-3);
+        }
+    }
 }
 
 /**
@@ -94,7 +126,8 @@ void update_slack(struct tiny_problem *problem, struct tiny_params *params) {
  * lagrangian multiplier update
 */
 void update_dual(struct tiny_problem *problem, struct tiny_params *params) {
-
+    problem->y = problem->y + problem->u - problem->z;
+    problem->g = problem->g + problem->x - problem->v;
 }
 
 /**
@@ -102,7 +135,11 @@ void update_dual(struct tiny_problem *problem, struct tiny_params *params) {
  * slack and dual variables from ADMM
 */
 void update_linear_cost(struct tiny_problem *problem, struct tiny_params *params) {
-
+    for (int i=0; i<NHORIZON; i++) {
+        problem->r.col(i) = -params->cache.rho * (problem->z.col(i) - problem->y.col(i)) - params->R * params->Uref.col(i);
+        problem->q.col(i) = -params->cache.rho * (problem->v.col(i) - problem->g.col(i)) - params->Q * params->Xref.col(i);
+    }
+    problem->p.col(NHORIZON-1) = -params->cache.rho * (problem->v.col(NHORIZON-1) - problem->g.col(NHORIZON-1)) - params->Qf * params->Xref.col(NHORIZON-1);
 }
 
-}
+} /* extern "C" */

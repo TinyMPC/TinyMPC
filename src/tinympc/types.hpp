@@ -46,8 +46,8 @@ struct tiny_params {
     tiny_MatrixNxNx Qf;
     tiny_MatrixNuNu R;
 
-    tiny_VectorNu u_min;
-    tiny_VectorNu u_max;
+    tiny_MatrixNuNhm1 u_min;
+    tiny_MatrixNuNhm1 u_max;
     tiny_VectorNc x_min[NHORIZON];
     tiny_VectorNc x_max[NHORIZON];
     tiny_MatrixNcNx A_constraints[NHORIZON];
