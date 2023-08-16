@@ -6,20 +6,6 @@
 
 using Eigen::Matrix;
 
-void populate_matrices(Matrix<tinytype,2,2> mat[], int size) {
-    for (int i=0; i<size; i++) {
-        mat[i](0,0) = i*4+3;
-        mat[i](0,1) = i*4+2;
-        mat[i](1,0) = i*4+1;
-        mat[i](1,1) = i*4;
-    }
-}
-
-void print_matrices(Matrix<tinytype,2,2> matrices[], int size) {
-    for (int i=0; i<size; i++) {
-        std::cout << matrices[i] << "\n" << std::endl;
-    }
-}
 
 int main() {
 
