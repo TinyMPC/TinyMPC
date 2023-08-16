@@ -2,23 +2,14 @@
 
 #include <tinympc/admm.hpp>
 #include "problem_data/quadrotor_20hz_simple.hpp"
-#include "trajectory_data/quadrotor_20hz_figure_eight.hpp"
+#include "trajectory_data/quadrotor_20hz_y_axis_line.hpp"
 
 using Eigen::Matrix;
 
-void populate_matrices(Matrix<tinytype,2,2> mat[], int size) {
-    for (int i=0; i<size; i++) {
-        mat[i](0,0) = i*4+3;
-        mat[i](0,1) = i*4+2;
-        mat[i](1,0) = i*4+1;
-        mat[i](1,1) = i*4;
-    }
-}
+extern "C" {
 
-void print_matrices(Matrix<tinytype,2,2> matrices[], int size) {
-    for (int i=0; i<size; i++) {
-        std::cout << matrices[i] << "\n" << std::endl;
-    }
+static inline tinytype norm(Matrix<tinytype, 3, 1> v) {
+    return sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 }
 
 int main() {
@@ -80,14 +71,33 @@ int main() {
     params.Xref = Xref_total.block<NSTATES, NHORIZON>(0,0);
     problem.x.col(0) = params.Xref.col(0);
 
-    solve_admm(&problem, &params);
-    std::cout << problem.iter << std::endl;
-    solve_admm(&problem, &params);
-    std::cout << problem.iter << std::endl;
+    Matrix<tinytype, 3, 1> obstacle_center = {0.0, 2.0, 0.5};
+    tinytype obstacle_velocity = 1 * DT;
 
+    tinytype r_obstacle = 0.75;
+    tinytype b;
+    Matrix<tinytype, 3, 1> xc;
+    Matrix<tinytype, 3, 1> a;
+    Matrix<tinytype, 3, 1> q_c;
+    for (int i=0; i<NHORIZON; i++) {
+        xc = obstacle_center - params.Xref.col(i).head(3);
+        a = xc/norm(xc);
+        params.A_constraints[i].head(3) = a.transpose();
+
+        q_c = obstacle_center - r_obstacle*a;
+        b = a.transpose() * q_c;
+        params.x_max[i](0) = b;
+        std::cout << params.A_constraints[i].head(3) << std::endl;
+        std::cout << params.x_max[i](0) << "\n" << std::endl;
+    }
+
+    // solve_admm(&problem, &params);
+    // std::cout << problem.iter << std::endl;
 
     // params.x_max[0] = tiny_VectorNc::Constant(1);
     // params.A_constraints[0] << 0.32444, 0.48666, 0.81111, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
     return 0;
 }
+
+} /* extern "C" */
