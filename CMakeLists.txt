@@ -5,7 +5,7 @@ project(TinyMPC VERSION 0.2.0 LANGUAGES CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-include_directories(include)
+include_directories(include/Eigen)
 
 add_subdirectory(src/tinympc)
 add_subdirectory(examples)
