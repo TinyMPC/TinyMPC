@@ -11,14 +11,18 @@ extern "C" {
 
 typedef float tinytype;
 
-typedef Matrix<tinytype, NSTATES, 1, Eigen::ColMajor> tiny_VectorNx;
-typedef Matrix<tinytype, NINPUTS, 1, Eigen::ColMajor> tiny_VectorNu;
-typedef Matrix<tinytype, NSTATE_CONSTRAINTS, 1, Eigen::ColMajor> tiny_VectorNc;
-typedef Matrix<tinytype, NSTATES, NSTATES, Eigen::ColMajor> tiny_MatrixNxNx;
-typedef Matrix<tinytype, NSTATES, NINPUTS, Eigen::ColMajor> tiny_MatrixNxNu;
-typedef Matrix<tinytype, NINPUTS, NSTATES, Eigen::ColMajor> tiny_MatrixNuNx;
-typedef Matrix<tinytype, NINPUTS, NINPUTS, Eigen::ColMajor> tiny_MatrixNuNu;
-typedef Matrix<tinytype, NSTATE_CONSTRAINTS, NSTATES, Eigen::ColMajor> tiny_MatrixNcNx;
+typedef Matrix<tinytype, NSTATES, 1> tiny_VectorNx;
+typedef Matrix<tinytype, NINPUTS, 1> tiny_VectorNu;
+typedef Matrix<tinytype, NSTATE_CONSTRAINTS, 1> tiny_VectorNc;
+typedef Matrix<tinytype, NSTATES, NSTATES> tiny_MatrixNxNx;
+typedef Matrix<tinytype, NSTATES, NINPUTS> tiny_MatrixNxNu;
+typedef Matrix<tinytype, NINPUTS, NSTATES> tiny_MatrixNuNx;
+typedef Matrix<tinytype, NINPUTS, NINPUTS> tiny_MatrixNuNu;
+typedef Matrix<tinytype, NSTATE_CONSTRAINTS, NSTATES> tiny_MatrixNcNx;
+
+// TODO: code review this since tiny_MatrixNuNhm1 naming is kind of gross
+typedef Matrix<tinytype, NSTATES, NHORIZON, Eigen::ColMajor> tiny_MatrixNxNh;       // Nu x Nh
+typedef Matrix<tinytype, NINPUTS, NHORIZON-1, Eigen::ColMajor> tiny_MatrixNuNhm1;   // Nu x Nh-1
 
 /**
  * Matrices that must be recomputed with changes in time step, rho, or model parameters
@@ -48,8 +52,8 @@ struct tiny_params {
     tiny_VectorNc x_max[NHORIZON];
     tiny_MatrixNcNx A_constraints[NHORIZON];
 
-    tiny_VectorNx Xref[NHORIZON];
-    tiny_VectorNu Uref[NHORIZON-1];
+    tiny_MatrixNxNh Xref;   // Nx x Nh
+    tiny_MatrixNuNhm1 Uref; // Nu x Nh-1
 
     struct tiny_cache cache;
 };
@@ -59,26 +63,26 @@ struct tiny_params {
 */
 struct tiny_problem {
     // State and input
-    tiny_VectorNx x[NHORIZON];
-    tiny_VectorNu u[NHORIZON-1];
+    tiny_MatrixNxNh x;
+    tiny_MatrixNuNhm1 u;
 
     // Linear control cost terms
-    tiny_VectorNx q[NHORIZON];
-    tiny_VectorNu r[NHORIZON-1];
+    tiny_MatrixNxNh q;
+    tiny_MatrixNuNhm1 r;
 
     // Linear Riccati backward pass terms
-    tiny_VectorNx p[NHORIZON];
-    tiny_VectorNu d[NHORIZON-1];
+    tiny_MatrixNxNh p;
+    tiny_MatrixNuNhm1 d;
 
     // Auxiliary variables
-    tiny_VectorNx v[NHORIZON];
-    tiny_VectorNx vnew[NHORIZON];
-    tiny_VectorNu z[NHORIZON-1];
-    tiny_VectorNu znew[NHORIZON-1];
+    tiny_MatrixNxNh v;
+    tiny_MatrixNxNh vnew;
+    tiny_MatrixNuNhm1 z;
+    tiny_MatrixNuNhm1 znew;
 
     // Dual variables
-    tiny_VectorNx g[NHORIZON];
-    tiny_VectorNu y[NHORIZON-1];
+    tiny_MatrixNxNh g;
+    tiny_MatrixNuNhm1 y;
 
     tinytype primal_residual_state;
     tinytype primal_residual_input;

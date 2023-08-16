@@ -44,28 +44,26 @@ int main() {
         params.x_min[i] = tiny_VectorNc::Constant(-99999); // Currently unused
         params.x_max[i] = tiny_VectorNc::Zero();
         params.A_constraints[i] = tiny_MatrixNcNx::Zero();
-        params.Xref[i] = tiny_VectorNx::Zero();
-        params.Uref[i] = tiny_VectorNu::Zero();
     }
+    params.Xref = tiny_MatrixNxNh::Zero();
+    params.Uref = tiny_MatrixNuNhm1::Zero();
     params.cache = cache;
 
     struct tiny_problem problem;
-    for (int i=0; i<NHORIZON; i++) {
-        problem.x[i] = tiny_VectorNx::Zero();
-        problem.q[i] = tiny_VectorNx::Zero();
-        problem.p[i] = tiny_VectorNx::Zero();
-        problem.v[i] = tiny_VectorNx::Zero();
-        problem.vnew[i] = tiny_VectorNx::Zero();
-        problem.g[i] = tiny_VectorNx::Zero();
-    }
-    for (int i=0; i<NHORIZON-1; i++) {
-        problem.u[i] = tiny_VectorNu::Zero();
-        problem.r[i] = tiny_VectorNu::Zero();
-        problem.d[i] = tiny_VectorNu::Zero();
-        problem.z[i] = tiny_VectorNu::Zero();
-        problem.znew[i] = tiny_VectorNu::Constant(5);
-        problem.y[i] = tiny_VectorNu::Zero();
-    }
+    problem.x = tiny_MatrixNxNh::Zero();
+    problem.q = tiny_MatrixNxNh::Zero();
+    problem.p = tiny_MatrixNxNh::Zero();
+    problem.v = tiny_MatrixNxNh::Zero();
+    problem.vnew = tiny_MatrixNxNh::Zero();
+    problem.g = tiny_MatrixNxNh::Zero();
+
+    problem.u = tiny_MatrixNuNhm1::Zero();
+    problem.r = tiny_MatrixNuNhm1::Zero();
+    problem.d = tiny_MatrixNuNhm1::Zero();
+    problem.z = tiny_MatrixNuNhm1::Zero();
+    problem.znew = tiny_MatrixNuNhm1::Zero();
+    problem.y = tiny_MatrixNuNhm1::Zero();
+
     problem.primal_residual_state = 0;
     problem.primal_residual_input = 0;
     problem.dual_residual_state = 0;
@@ -86,7 +84,8 @@ int main() {
     // }
     // std::cout << Xref_total << std::endl;
 
-    solve_admm(&problem, &params);
+    // solve_admm(&problem, &params);
+    backward_pass_grad(&problem, &params);
 
 
     return 0;
