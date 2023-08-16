@@ -8,6 +8,8 @@ extern "C" {
 
 void solve_admm(struct tiny_problem *problem, struct tiny_params *params) {
 
+    problem->status = 0;
+    problem->iter = 1;
 
     forward_pass(problem, params);
     update_slack(problem, params);
@@ -28,10 +30,9 @@ void solve_admm(struct tiny_problem *problem, struct tiny_params *params) {
         update_linear_cost(problem, params);
 
         problem->primal_residual_state = (problem->x - problem->vnew).cwiseAbs().maxCoeff();
-        problem->dual_residual_state = (problem->v - problem->vnew).cwiseAbs().maxCoeff();
+        problem->dual_residual_state = ((problem->v - problem->vnew).cwiseAbs().maxCoeff()) * params->cache.rho;
         problem->primal_residual_input = (problem->u - problem->znew).cwiseAbs().maxCoeff();
-        problem->dual_residual_input = (problem->z - problem->znew).cwiseAbs().maxCoeff();
-
+        problem->dual_residual_input = ((problem->z - problem->znew).cwiseAbs().maxCoeff()) * params->cache.rho;
 
         // TODO: convert arrays of Eigen vectors into one Eigen matrix
         // Save previous slack variables
@@ -52,6 +53,11 @@ void solve_admm(struct tiny_problem *problem, struct tiny_params *params) {
         // TODO: add rho scaling
 
         problem->iter += 1;
+
+        std::cout << problem->primal_residual_state << std::endl;
+        std::cout << problem->dual_residual_state << std::endl;
+        std::cout << problem->primal_residual_input << std::endl;
+        std::cout << problem->dual_residual_input << "\n" << std::endl;
     }
 }
 
@@ -77,12 +83,9 @@ void backward_pass_grad(struct tiny_problem *problem, struct tiny_params *params
  * Use LQR feedback policy to roll out trajectory
 */
 void forward_pass(struct tiny_problem *problem, struct tiny_params *params) {
-    std::cout << problem->x.col(0) << "\n" << std::endl;
     for (int i=0; i<NHORIZON-1; i++) {
         problem->u.col(i) = -params->cache.Kinf * problem->x.col(i) - problem->d.col(i);
-        std::cout << problem->u.col(i) << "\n" << std::endl;
         problem->x.col(i+1) = params->cache.Adyn * problem->x.col(i) + params->cache.Bdyn * problem->u.col(i);
-        std::cout << problem->x.col(i+1) << "\n" << std::endl;
     }
 }
 
@@ -94,7 +97,7 @@ void forward_pass(struct tiny_problem *problem, struct tiny_params *params) {
 */
 void update_slack(struct tiny_problem *problem, struct tiny_params *params) {
     // Box constraints on input
-    problem->z = params->u_max.cwiseMin(params->u_min.cwiseMax(problem->u));
+    problem->znew = params->u_max.cwiseMin(params->u_min.cwiseMax(problem->u));
 
     // Half space constraints on state
     // TODO: support multiple half plane constraints per knot point
@@ -112,11 +115,11 @@ void update_slack(struct tiny_problem *problem, struct tiny_params *params) {
         tiny_VectorNx xg = problem->x.col(i) + problem->g.col(i);
         tinytype dist = params->A_constraints[i].head(3) * xg.head(3) - params->x_max[i](0);
         if (dist <= 0) {
-            problem->v.col(i) = xg;
+            problem->vnew.col(i) = xg;
         }
         else {
             Matrix<tinytype, 3, 1> xyz_new = xg.head(3) - dist*params->A_constraints[i].head(3).transpose();
-            problem->v.col(i) << xyz_new, xg.tail(NSTATES-3);
+            problem->vnew.col(i) << xyz_new, xg.tail(NSTATES-3);
         }
     }
 }
@@ -126,8 +129,8 @@ void update_slack(struct tiny_problem *problem, struct tiny_params *params) {
  * lagrangian multiplier update
 */
 void update_dual(struct tiny_problem *problem, struct tiny_params *params) {
-    problem->y = problem->y + problem->u - problem->z;
-    problem->g = problem->g + problem->x - problem->v;
+    problem->y = problem->y + problem->u - problem->znew;
+    problem->g = problem->g + problem->x - problem->vnew;
 }
 
 /**
@@ -136,13 +139,10 @@ void update_dual(struct tiny_problem *problem, struct tiny_params *params) {
 */
 void update_linear_cost(struct tiny_problem *problem, struct tiny_params *params) {
     for (int i=0; i<NHORIZON-1; i++) {
-        problem->r.col(i) = -params->cache.rho * (problem->z.col(i) - problem->y.col(i)) - params->R * params->Uref.col(i);
-        std::cout << problem->r.col(i) << "\n" << std::endl;
-        problem->q.col(i) = -params->cache.rho * (problem->v.col(i) - problem->g.col(i)) - params->Q * params->Xref.col(i);
-        std::cout << problem->q.col(i) << "\n" << std::endl;
+        problem->r.col(i) = -params->cache.rho * (problem->znew.col(i) - problem->y.col(i)) - params->R * params->Uref.col(i);
+        problem->q.col(i) = -params->cache.rho * (problem->vnew.col(i) - problem->g.col(i)) - params->Q * params->Xref.col(i);
     }
-    problem->p.col(NHORIZON-1) = -params->cache.rho * (problem->v.col(NHORIZON-1) - problem->g.col(NHORIZON-1)) - params->Qf * params->Xref.col(NHORIZON-1);
-    std::cout << problem->p.col(NHORIZON-1) << std::endl;
+    problem->p.col(NHORIZON-1) = -params->cache.rho * (problem->vnew.col(NHORIZON-1) - problem->g.col(NHORIZON-1)) - params->Qf * params->Xref.col(NHORIZON-1);
 }
 
 } /* extern "C" */

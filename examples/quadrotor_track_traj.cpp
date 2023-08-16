@@ -50,19 +50,19 @@ int main() {
     params.cache = cache;
 
     struct tiny_problem problem;
-    problem.x = tiny_MatrixNxNh::Ones();
-    problem.q = tiny_MatrixNxNh::Ones();
-    problem.p = tiny_MatrixNxNh::Ones();
-    problem.v = tiny_MatrixNxNh::Ones();
-    problem.vnew = tiny_MatrixNxNh::Ones();
-    problem.g = tiny_MatrixNxNh::Ones();
+    problem.x = tiny_MatrixNxNh::Zero();
+    problem.q = tiny_MatrixNxNh::Zero();
+    problem.p = tiny_MatrixNxNh::Zero();
+    problem.v = tiny_MatrixNxNh::Zero();
+    problem.vnew = tiny_MatrixNxNh::Zero();
+    problem.g = tiny_MatrixNxNh::Zero();
 
-    problem.u = tiny_MatrixNuNhm1::Ones();
-    problem.r = tiny_MatrixNuNhm1::Ones();
-    problem.d = tiny_MatrixNuNhm1::Ones();
-    problem.z = tiny_MatrixNuNhm1::Ones();
-    problem.znew = tiny_MatrixNuNhm1::Ones();
-    problem.y = tiny_MatrixNuNhm1::Ones();
+    problem.u = tiny_MatrixNuNhm1::Zero();
+    problem.r = tiny_MatrixNuNhm1::Zero();
+    problem.d = tiny_MatrixNuNhm1::Zero();
+    problem.z = tiny_MatrixNuNhm1::Zero();
+    problem.znew = tiny_MatrixNuNhm1::Zero();
+    problem.y = tiny_MatrixNuNhm1::Zero();
 
     problem.primal_residual_state = 0;
     problem.primal_residual_input = 0;
@@ -77,32 +77,17 @@ int main() {
     // Copy reference trajectory into Eigen matrix
     Matrix<tinytype, NSTATES, NTOTAL, Eigen::ColMajor> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data).transpose();
 
-    // for (int i=0; i<NHORIZON; i++) {
-    //     std::cout << params.x_min[i] << "\n" << std::endl;
-    //     std::cout << params.x_max[i] << "\n" << std::endl;
-    //     std::cout << params.A_constraints[i] << "\n" << std::endl;
-    // }
-    // std::cout << Xref_total << std::endl;
-
-    // solve_admm(&problem, &params);
-
     params.Xref = Xref_total.block<NSTATES, NHORIZON>(0,0);
-    problem.p.col(NHORIZON-1) = -params.Qf*params.Xref.col(NHORIZON-1);
-    // backward_pass_grad(&problem, &params);
-    // forward_pass(&problem, &params);
+    problem.x.col(0) = params.Xref.col(0);
 
-    params.x_max[0] = tiny_VectorNc::Constant(1);
-    params.A_constraints[0] << 0.32444, 0.48666, 0.81111, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    solve_admm(&problem, &params);
+    std::cout << problem.iter << std::endl;
+    solve_admm(&problem, &params);
+    std::cout << problem.iter << std::endl;
 
-    update_slack(&problem, &params);
 
-    update_linear_cost(&problem, &params);
-
-    // std::cout << params.cache.Quu_inv << "\n" << std::endl;
-    // std::cout << params.cache.Bdyn << "\n" << std::endl;
-    // std::cout << params.cache.AmBKt << "\n" << std::endl;
-    // std::cout << params.cache.Kinf << "\n" << std::endl;
-    // std::cout << params.cache.coeff_d2p << "\n" << std::endl;
+    // params.x_max[0] = tiny_VectorNc::Constant(1);
+    // params.A_constraints[0] << 0.32444, 0.48666, 0.81111, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
     return 0;
 }
