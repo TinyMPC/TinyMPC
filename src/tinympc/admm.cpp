@@ -135,11 +135,14 @@ void update_dual(struct tiny_problem *problem, struct tiny_params *params) {
  * slack and dual variables from ADMM
 */
 void update_linear_cost(struct tiny_problem *problem, struct tiny_params *params) {
-    for (int i=0; i<NHORIZON; i++) {
+    for (int i=0; i<NHORIZON-1; i++) {
         problem->r.col(i) = -params->cache.rho * (problem->z.col(i) - problem->y.col(i)) - params->R * params->Uref.col(i);
+        std::cout << problem->r.col(i) << "\n" << std::endl;
         problem->q.col(i) = -params->cache.rho * (problem->v.col(i) - problem->g.col(i)) - params->Q * params->Xref.col(i);
+        std::cout << problem->q.col(i) << "\n" << std::endl;
     }
     problem->p.col(NHORIZON-1) = -params->cache.rho * (problem->v.col(NHORIZON-1) - problem->g.col(NHORIZON-1)) - params->Qf * params->Xref.col(NHORIZON-1);
+    std::cout << problem->p.col(NHORIZON-1) << std::endl;
 }
 
 } /* extern "C" */

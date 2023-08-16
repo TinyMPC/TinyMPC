@@ -86,7 +86,7 @@ int main() {
 
     // solve_admm(&problem, &params);
 
-    params.Xref.col(NHORIZON-1) = Xref_total.col(NHORIZON-1);
+    params.Xref = Xref_total.block<NSTATES, NHORIZON>(0,0);
     problem.p.col(NHORIZON-1) = -params.Qf*params.Xref.col(NHORIZON-1);
     // backward_pass_grad(&problem, &params);
     // forward_pass(&problem, &params);
@@ -95,6 +95,8 @@ int main() {
     params.A_constraints[0] << 0.32444, 0.48666, 0.81111, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
     update_slack(&problem, &params);
+
+    update_linear_cost(&problem, &params);
 
     // std::cout << params.cache.Quu_inv << "\n" << std::endl;
     // std::cout << params.cache.Bdyn << "\n" << std::endl;
