@@ -6,6 +6,7 @@
 
 using Eigen::Matrix;
 
+extern "C" {
 
 int main() {
 
@@ -77,3 +78,5 @@ int main() {
 
     return 0;
 }
+
+} /* extern "C" */
