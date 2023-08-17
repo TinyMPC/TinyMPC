@@ -42,9 +42,15 @@ struct tiny_cache {
  * Problem parameters
 */
 struct tiny_params {
-    tiny_MatrixNxNx Q;
-    tiny_MatrixNxNx Qf;
-    tiny_MatrixNuNu R;
+    // tiny_MatrixNxNx Q;
+    // tiny_MatrixNxNx Qf;
+    // tiny_MatrixNuNu R;
+    tiny_VectorNx Q;
+    tiny_VectorNx Qf;
+    tiny_VectorNu R;
+    // Eigen::Array<tinytype, NSTATES, 1> Q;
+    // Eigen::Array<tinytype, NSTATES, 1> Qf;
+    // Eigen::Array<tinytype, NINPUTS, 1> R;
 
     tiny_MatrixNuNhm1 u_min;
     tiny_MatrixNuNhm1 u_max;

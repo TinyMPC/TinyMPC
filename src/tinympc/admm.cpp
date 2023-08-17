@@ -7,10 +7,15 @@
 
 extern "C" {
 
-#include "debug.h"
+// #include "debug.h"
 
 static uint64_t startTimestamp;
 static uint64_t timeTaken;
+
+void solve_lqr(struct tiny_problem *problem, struct tiny_params *params) {
+    problem->u.col(0) = -params->cache.Kinf * (problem->x.col(0) - params->Xref.col(0));
+}
+
 
 void solve_admm(struct tiny_problem *problem, struct tiny_params *params) {
 
@@ -18,22 +23,19 @@ void solve_admm(struct tiny_problem *problem, struct tiny_params *params) {
     problem->status = 0;
     problem->iter = 1;
 
+    // // Get current time
+    // startTimestamp = usecTimestamp();
 
-    // Get current time
-    startTimestamp = usecTimestamp();
 
     // backward_pass_grad(problem, params);
     forward_pass(problem, params);
-
-    timeTaken = usecTimestamp() - startTimestamp;
-    DEBUG_PRINT("forward pass: %d\n", timeTaken);
-
     update_slack(problem, params);
     update_dual(problem, params);
     update_linear_cost(problem, params);
 
 
     for (int i=0; i<problem->max_iter; i++) {
+
         // Solve linear system with Riccati and roll out to get new trajectory
         update_primal(problem, params);
 
@@ -76,6 +78,9 @@ void solve_admm(struct tiny_problem *problem, struct tiny_params *params) {
         // std::cout << problem->primal_residual_input << std::endl;
         // std::cout << problem->dual_residual_input << "\n" << std::endl;
     }
+
+    // timeTaken = usecTimestamp() - startTimestamp;
+    // DEBUG_PRINT("full pass: %d\n", timeTaken);
 }
 
 /**
@@ -159,12 +164,13 @@ void update_dual(struct tiny_problem *problem, struct tiny_params *params) {
  * slack and dual variables from ADMM
 */
 void update_linear_cost(struct tiny_problem *problem, struct tiny_params *params) {
-    problem->r = -params->R.lazyProduct(params->Uref);
+    problem->r.noalias() = -(params->Uref.array().colwise() * params->R.array());
     problem->r -= params->cache.rho * (problem->znew - problem->y);
-    problem->q = -params->Q.lazyProduct(params->Xref);
+    problem->q.noalias() = -(params->Xref.array().colwise() * params->Q.array());
     problem->q -= params->cache.rho * (problem->vnew - problem->g);
-    problem->p.col(NHORIZON-1) = -params->Qf.lazyProduct(params->Xref.col(NHORIZON-1));
+    problem->p.col(NHORIZON-1).noalias() = -(params->Xref.col(NHORIZON-1).array().colwise() * params->Qf.array());
     problem->p.col(NHORIZON-1) -= params->cache.rho * (problem->vnew.col(NHORIZON-1) - problem->g.col(NHORIZON-1));
+
     // for (int i=0; i<NHORIZON-1; i++) {
     //     problem->r.col(i) = -params->cache.rho * (problem->znew.col(i) - problem->y.col(i)) - params->R * params->Uref.col(i);
     //     problem->q.col(i) = -params->cache.rho * (problem->vnew.col(i) - problem->g.col(i)) - params->Q * params->Xref.col(i);

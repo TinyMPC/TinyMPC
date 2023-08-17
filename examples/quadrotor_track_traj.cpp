@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <tinympc/admm.hpp>
-#include "problem_data/quadrotor_20hz_simple.hpp"
+#include "problem_data/quadrotor_50hz_params.hpp"
 #include "trajectory_data/quadrotor_20hz_y_axis_line.hpp"
 
 using Eigen::Matrix;
@@ -26,9 +26,12 @@ int main() {
     cache.coeff_d2p = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(coeff_d2p_data);
 
     struct tiny_params params;
-    params.Q = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Q_data);
-    params.Qf = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Qf_data);
-    params.R = Eigen::Map<Matrix<tinytype, NINPUTS, NINPUTS, Eigen::RowMajor>>(R_data);
+    // params.Q = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Q_data);
+    // params.Qf = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Qf_data);
+    // params.R = Eigen::Map<Matrix<tinytype, NINPUTS, NINPUTS, Eigen::RowMajor>>(R_data);
+    params.Q = Eigen::Map<tiny_VectorNx>(Q_data);
+    params.Qf = Eigen::Map<tiny_VectorNx>(Qf_data);
+    params.R = Eigen::Map<tiny_VectorNu>(R_data);
     params.u_min = tiny_MatrixNuNhm1::Constant(-0.5);
     params.u_max = tiny_MatrixNuNhm1::Constant(0.5);
     for (int i=0; i<NHORIZON; i++) {
@@ -87,9 +90,17 @@ int main() {
         q_c = obstacle_center - r_obstacle*a;
         b = a.transpose() * q_c;
         params.x_max[i](0) = b;
-        std::cout << params.A_constraints[i].head(3) << std::endl;
-        std::cout << params.x_max[i](0) << "\n" << std::endl;
+        // std::cout << params.A_constraints[i].head(3) << std::endl;
+        // std::cout << params.x_max[i](0) << "\n" << std::endl;
     }
+
+    // problem.r = params.Xref.colwise() * params.R;
+    std::cout << params.Xref << std::endl;
+    std::cout << params.Q << std::endl;
+
+    problem.q = params.Xref.array().colwise() * params.Q.array();
+
+    std::cout << problem.q << std::endl;
 
     // solve_admm(&problem, &params);
     // std::cout << problem.iter << std::endl;

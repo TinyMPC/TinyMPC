@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 void solve_admm(struct tiny_problem *problem, struct tiny_params *params);
+void solve_lqr(struct tiny_problem *problem, struct tiny_params *params);
 
 void update_primal(struct tiny_problem *problem, struct tiny_params *params);
 void backward_pass_grad(struct tiny_problem *problem, struct tiny_params *params);
