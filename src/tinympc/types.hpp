@@ -93,6 +93,11 @@ struct tiny_problem {
     int iter;
     int max_iter;
     int iters_check_rho_update;
+
+    // Temporaries for algorithm efficiency
+    tiny_MatrixNxNh xg;
+    tinytype dist;
+    Matrix<tinytype, 3, 1> xyz_new;
 };
 
 #ifdef __cplusplus

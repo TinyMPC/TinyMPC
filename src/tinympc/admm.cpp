@@ -2,19 +2,36 @@
 
 #include "admm.hpp"
 
+#define DEBUG_MODULE "TINYALG"
+
 
 extern "C" {
 
+#include "debug.h"
+
+static uint64_t startTimestamp;
+static uint64_t timeTaken;
 
 void solve_admm(struct tiny_problem *problem, struct tiny_params *params) {
+
 
     problem->status = 0;
     problem->iter = 1;
 
+
+    // Get current time
+    startTimestamp = usecTimestamp();
+
+    // backward_pass_grad(problem, params);
     forward_pass(problem, params);
+
+    timeTaken = usecTimestamp() - startTimestamp;
+    DEBUG_PRINT("forward pass: %d\n", timeTaken);
+
     update_slack(problem, params);
     update_dual(problem, params);
     update_linear_cost(problem, params);
+
 
     for (int i=0; i<problem->max_iter; i++) {
         // Solve linear system with Riccati and roll out to get new trajectory
@@ -29,26 +46,26 @@ void solve_admm(struct tiny_problem *problem, struct tiny_params *params) {
         // Update linear control cost terms using reference trajectory, duals, and slack variables
         update_linear_cost(problem, params);
 
-        problem->primal_residual_state = (problem->x - problem->vnew).cwiseAbs().maxCoeff();
-        problem->dual_residual_state = ((problem->v - problem->vnew).cwiseAbs().maxCoeff()) * params->cache.rho;
-        problem->primal_residual_input = (problem->u - problem->znew).cwiseAbs().maxCoeff();
-        problem->dual_residual_input = ((problem->z - problem->znew).cwiseAbs().maxCoeff()) * params->cache.rho;
+        // problem->primal_residual_state = (problem->x - problem->vnew).cwiseAbs().maxCoeff();
+        // problem->dual_residual_state = ((problem->v - problem->vnew).cwiseAbs().maxCoeff()) * params->cache.rho;
+        // problem->primal_residual_input = (problem->u - problem->znew).cwiseAbs().maxCoeff();
+        // problem->dual_residual_input = ((problem->z - problem->znew).cwiseAbs().maxCoeff()) * params->cache.rho;
 
         // TODO: convert arrays of Eigen vectors into one Eigen matrix
         // Save previous slack variables
         problem->v = problem->vnew;
         problem->z = problem->znew;
 
-        // TODO: remove convergence check and just return when allotted runtime is up
-        // Check for convergence
-        if (problem->primal_residual_state < problem->abs_tol &&
-            problem->primal_residual_input < problem->abs_tol &&
-            problem->dual_residual_state < problem->abs_tol &&
-            problem->dual_residual_input < problem->abs_tol)
-        {
-            problem->status = 1;
-            break;
-        }
+        // // TODO: remove convergence check and just return when allotted runtime is up
+        // // Check for convergence
+        // if (problem->primal_residual_state < problem->abs_tol &&
+        //     problem->primal_residual_input < problem->abs_tol &&
+        //     problem->dual_residual_state < problem->abs_tol &&
+        //     problem->dual_residual_input < problem->abs_tol)
+        // {
+        //     problem->status = 1;
+        //     break;
+        // }
 
         // TODO: add rho scaling
 
@@ -74,8 +91,8 @@ void update_primal(struct tiny_problem *problem, struct tiny_params *params) {
 */
 void backward_pass_grad(struct tiny_problem *problem, struct tiny_params *params) {
     for (int i=NHORIZON-2; i>=0; i--) {
-        problem->d.col(i) = params->cache.Quu_inv * (params->cache.Bdyn.transpose() * problem->p.col(i+1) + problem->r.col(i));
-        problem->p.col(i) = problem->q.col(i) + params->cache.AmBKt * problem->p.col(i+1) - params->cache.Kinf.transpose() * problem->r.col(i) + params->cache.coeff_d2p * problem->d.col(i);
+        (problem->d.col(i)).noalias() = params->cache.Quu_inv * (params->cache.Bdyn.transpose() * problem->p.col(i+1) + problem->r.col(i));
+        (problem->p.col(i)).noalias() = problem->q.col(i) + params->cache.AmBKt.lazyProduct(problem->p.col(i+1)) - (params->cache.Kinf.transpose()).lazyProduct(problem->r.col(i)); // + params->cache.coeff_d2p * problem->d.col(i); // coeff_d2p always appears to be zeros
     }
 }
 
@@ -84,8 +101,10 @@ void backward_pass_grad(struct tiny_problem *problem, struct tiny_params *params
 */
 void forward_pass(struct tiny_problem *problem, struct tiny_params *params) {
     for (int i=0; i<NHORIZON-1; i++) {
-        problem->u.col(i) = -params->cache.Kinf * problem->x.col(i) - problem->d.col(i);
-        problem->x.col(i+1) = params->cache.Adyn * problem->x.col(i) + params->cache.Bdyn * problem->u.col(i);
+        (problem->u.col(i)).noalias() = -params->cache.Kinf.lazyProduct(problem->x.col(i)) - problem->d.col(i);
+        // problem->u.col(i) << .001, .02, .3, 4;
+        // DEBUG_PRINT("u(0): %f\n", problem->u.col(0)(0));
+        (problem->x.col(i+1)).noalias() = params->cache.Adyn.lazyProduct(problem->x.col(i)) + params->cache.Bdyn.lazyProduct(problem->u.col(i));
     }
 }
 
@@ -111,15 +130,17 @@ void update_slack(struct tiny_problem *problem, struct tiny_params *params) {
     //      or auxiliary variables). v and g could be of size (3) and everything would work the same.
     //      The only reason this doesn't break is because in the update_linear_cost function subtracts
     //      g from v and so the last nine entries are always zero.
+    problem->xg = problem->x + problem->g;
     for (int i=0; i<NHORIZON; i++) {
-        tiny_VectorNx xg = problem->x.col(i) + problem->g.col(i);
-        tinytype dist = params->A_constraints[i].head(3) * xg.head(3) - params->x_max[i](0);
-        if (dist <= 0) {
-            problem->vnew.col(i) = xg;
+        problem->dist = (params->A_constraints[i].head(3)).lazyProduct(problem->xg.col(i).head(3)); // Distances can be computed in one step outside the for loop
+        problem->dist -= params->x_max[i](0);
+        // DEBUG_PRINT("dist: %f\n", dist);
+        if (problem->dist <= 0) {
+            problem->vnew.col(i) = problem->xg.col(i);
         }
         else {
-            Matrix<tinytype, 3, 1> xyz_new = xg.head(3) - dist*params->A_constraints[i].head(3).transpose();
-            problem->vnew.col(i) << xyz_new, xg.tail(NSTATES-3);
+            problem->xyz_new = problem->xg.col(i).head(3) - problem->dist*params->A_constraints[i].head(3).transpose();
+            problem->vnew.col(i) << problem->xyz_new, problem->xg.col(i).tail(NSTATES-3);
         }
     }
 }
@@ -138,11 +159,17 @@ void update_dual(struct tiny_problem *problem, struct tiny_params *params) {
  * slack and dual variables from ADMM
 */
 void update_linear_cost(struct tiny_problem *problem, struct tiny_params *params) {
-    for (int i=0; i<NHORIZON-1; i++) {
-        problem->r.col(i) = -params->cache.rho * (problem->znew.col(i) - problem->y.col(i)) - params->R * params->Uref.col(i);
-        problem->q.col(i) = -params->cache.rho * (problem->vnew.col(i) - problem->g.col(i)) - params->Q * params->Xref.col(i);
-    }
-    problem->p.col(NHORIZON-1) = -params->cache.rho * (problem->vnew.col(NHORIZON-1) - problem->g.col(NHORIZON-1)) - params->Qf * params->Xref.col(NHORIZON-1);
+    problem->r = -params->R.lazyProduct(params->Uref);
+    problem->r -= params->cache.rho * (problem->znew - problem->y);
+    problem->q = -params->Q.lazyProduct(params->Xref);
+    problem->q -= params->cache.rho * (problem->vnew - problem->g);
+    problem->p.col(NHORIZON-1) = -params->Qf.lazyProduct(params->Xref.col(NHORIZON-1));
+    problem->p.col(NHORIZON-1) -= params->cache.rho * (problem->vnew.col(NHORIZON-1) - problem->g.col(NHORIZON-1));
+    // for (int i=0; i<NHORIZON-1; i++) {
+    //     problem->r.col(i) = -params->cache.rho * (problem->znew.col(i) - problem->y.col(i)) - params->R * params->Uref.col(i);
+    //     problem->q.col(i) = -params->cache.rho * (problem->vnew.col(i) - problem->g.col(i)) - params->Q * params->Xref.col(i);
+    // }
+    // problem->p.col(NHORIZON-1) = -params->cache.rho * (problem->vnew.col(NHORIZON-1) - problem->g.col(NHORIZON-1)) - params->Qf * params->Xref.col(NHORIZON-1);
 }
 
 } /* extern "C" */

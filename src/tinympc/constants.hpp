@@ -6,5 +6,5 @@
 
 #define DT 1/20
 
-#define NHORIZON 20
+#define NHORIZON 10
 #define NTOTAL 1501
