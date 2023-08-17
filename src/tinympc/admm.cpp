@@ -164,11 +164,11 @@ void update_dual(struct tiny_problem *problem, struct tiny_params *params) {
  * slack and dual variables from ADMM
 */
 void update_linear_cost(struct tiny_problem *problem, struct tiny_params *params) {
-    problem->r.noalias() = -(params->Uref.array().colwise() * params->R.array());
+    problem->r = -(params->Uref.array().colwise() * params->R.array());
     problem->r -= params->cache.rho * (problem->znew - problem->y);
-    problem->q.noalias() = -(params->Xref.array().colwise() * params->Q.array());
+    problem->q = -(params->Xref.array().colwise() * params->Q.array());
     problem->q -= params->cache.rho * (problem->vnew - problem->g);
-    problem->p.col(NHORIZON-1).noalias() = -(params->Xref.col(NHORIZON-1).array().colwise() * params->Qf.array());
+    problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).array().colwise() * params->Qf.array());
     problem->p.col(NHORIZON-1) -= params->cache.rho * (problem->vnew.col(NHORIZON-1) - problem->g.col(NHORIZON-1));
 
     // for (int i=0; i<NHORIZON-1; i++) {
