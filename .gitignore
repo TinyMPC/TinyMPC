@@ -48,3 +48,6 @@ Testing/
 # Debug files
 *.dSYM/
 *.su
+
+# Crazyflie firmware build files
+*.o.cmd

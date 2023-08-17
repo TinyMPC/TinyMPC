@@ -54,10 +54,10 @@ void solve_admm(struct tiny_problem *problem, struct tiny_params *params) {
 
         problem->iter += 1;
 
-        std::cout << problem->primal_residual_state << std::endl;
-        std::cout << problem->dual_residual_state << std::endl;
-        std::cout << problem->primal_residual_input << std::endl;
-        std::cout << problem->dual_residual_input << "\n" << std::endl;
+        // std::cout << problem->primal_residual_state << std::endl;
+        // std::cout << problem->dual_residual_state << std::endl;
+        // std::cout << problem->primal_residual_input << std::endl;
+        // std::cout << problem->dual_residual_input << "\n" << std::endl;
     }
 }
 
