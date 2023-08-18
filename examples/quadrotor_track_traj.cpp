@@ -12,6 +12,11 @@ static inline tinytype norm(Matrix<tinytype, 3, 1> v) {
     return sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 }
 
+void matvecprod(tiny_VectorNu &Ax, tiny_MatrixNuNu &A, tiny_VectorNu &x) {
+    Ax(0) = A(0,0);
+    Ax(2) = 2;
+}
+
 int main() {
 
     // Copy data from problem_data/quadrotor*.hpp
@@ -26,18 +31,15 @@ int main() {
     cache.coeff_d2p = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(coeff_d2p_data);
 
     struct tiny_params params;
-    // params.Q = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Q_data);
-    // params.Qf = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Qf_data);
-    // params.R = Eigen::Map<Matrix<tinytype, NINPUTS, NINPUTS, Eigen::RowMajor>>(R_data);
     params.Q = Eigen::Map<tiny_VectorNx>(Q_data);
     params.Qf = Eigen::Map<tiny_VectorNx>(Qf_data);
     params.R = Eigen::Map<tiny_VectorNu>(R_data);
     params.u_min = tiny_MatrixNuNhm1::Constant(-0.5);
     params.u_max = tiny_MatrixNuNhm1::Constant(0.5);
     for (int i=0; i<NHORIZON; i++) {
-        params.x_min[i] = tiny_VectorNc::Constant(-99999); // Currently unused
-        params.x_max[i] = tiny_VectorNc::Zero();
-        params.A_constraints[i] = tiny_MatrixNcNx::Zero();
+        // params.x_min[i] = tiny_VectorNc::Constant(-99999); // Currently unused
+        // params.x_max[i] = tiny_VectorNc::Zero();
+        // params.A_constraints[i] = tiny_MatrixNcNx::Zero();
     }
     params.Xref = tiny_MatrixNxNh::Zero();
     params.Uref = tiny_MatrixNuNhm1::Zero();
@@ -82,31 +84,39 @@ int main() {
     Matrix<tinytype, 3, 1> xc;
     Matrix<tinytype, 3, 1> a;
     Matrix<tinytype, 3, 1> q_c;
-    for (int i=0; i<NHORIZON; i++) {
-        xc = obstacle_center - params.Xref.col(i).head(3);
-        a = xc/norm(xc);
-        params.A_constraints[i].head(3) = a.transpose();
+    // for (int i=0; i<NHORIZON; i++) {
+    //     xc = obstacle_center - params.Xref.col(i).head(3);
+    //     a = xc/norm(xc);
+    //     params.A_constraints[i].head(3) = a.transpose();
 
-        q_c = obstacle_center - r_obstacle*a;
-        b = a.transpose() * q_c;
-        params.x_max[i](0) = b;
-        // std::cout << params.A_constraints[i].head(3) << std::endl;
-        // std::cout << params.x_max[i](0) << "\n" << std::endl;
-    }
+    //     q_c = obstacle_center - r_obstacle*a;
+    //     b = a.transpose() * q_c;
+    //     params.x_max[i](0) = b;
+    //     // std::cout << params.A_constraints[i].head(3) << std::endl;
+    //     // std::cout << params.x_max[i](0) << "\n" << std::endl;
+    // }
 
-    // problem.r = params.Xref.colwise() * params.R;
-    std::cout << params.Xref << std::endl;
-    std::cout << params.Q << std::endl;
+    Matrix<float, 2, 4> A;
+    Matrix<float, 2, 4> B;
+    Matrix<float, 4, 1> C;
+    A << 1,2,3,4,5,6,7,8;
+    B << 1,2,3,4,5,6,7,8;
+    
+    std::cout << A << std::endl;
+    std::cout << B << std::endl;
 
-    problem.q = params.Xref.array().colwise() * params.Q.array();
+    C = (A.cwiseProduct(B)).colwise().sum();
 
-    std::cout << problem.q << std::endl;
+    std::cout << C << std::endl;
+
+    // std::cout << params.Xref << std::endl;
+    // std::cout << params.Q << std::endl;
+    // problem.q = params.Xref.array().colwise() * params.Q.array();
+    // std::cout << problem.q << std::endl;
+
 
     // solve_admm(&problem, &params);
     // std::cout << problem.iter << std::endl;
-
-    // params.x_max[0] = tiny_VectorNc::Constant(1);
-    // params.A_constraints[0] << 0.32444, 0.48666, 0.81111, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
     return 0;
 }

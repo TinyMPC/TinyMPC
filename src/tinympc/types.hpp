@@ -42,21 +42,26 @@ struct tiny_cache {
  * Problem parameters
 */
 struct tiny_params {
-    // tiny_MatrixNxNx Q;
-    // tiny_MatrixNxNx Qf;
-    // tiny_MatrixNuNu R;
     tiny_VectorNx Q;
     tiny_VectorNx Qf;
     tiny_VectorNu R;
-    // Eigen::Array<tinytype, NSTATES, 1> Q;
-    // Eigen::Array<tinytype, NSTATES, 1> Qf;
-    // Eigen::Array<tinytype, NINPUTS, 1> R;
 
     tiny_MatrixNuNhm1 u_min;
     tiny_MatrixNuNhm1 u_max;
     tiny_VectorNc x_min[NHORIZON];
     tiny_VectorNc x_max[NHORIZON];
     tiny_MatrixNcNx A_constraints[NHORIZON];
+
+    // Turns out converting everything to big matrices is
+    // slower than using for loops here - maybe this would
+    // be different with fixed point
+    // Only works with one constraint per knot point
+    // but can be extended to multiple by making it
+    // NHORIZON*NSTATE_CONSTRAINTS tall and keeping
+    // track of indexing in the projection function
+    // Matrix<tinytype, NHORIZON, NSTATE_CONSTRAINTS> x_min;
+    // Matrix<tinytype, NHORIZON, NSTATE_CONSTRAINTS> x_max;
+    // Matrix<tinytype, NHORIZON, NSTATES> A_constraints; 
 
     tiny_MatrixNxNh Xref;   // Nx x Nh
     tiny_MatrixNuNhm1 Uref; // Nu x Nh-1
@@ -103,7 +108,10 @@ struct tiny_problem {
     // Temporaries for algorithm efficiency
     tiny_MatrixNxNh xg;
     tinytype dist;
+    Matrix<tinytype, NHORIZON, NSTATE_CONSTRAINTS> dists;
     Matrix<tinytype, 3, 1> xyz_new;
+    tiny_VectorNu Qu;
+    tiny_VectorNx Ax; // Stores result of sparse Adyn*x vector product computation
 };
 
 #ifdef __cplusplus

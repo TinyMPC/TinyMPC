@@ -7,34 +7,44 @@
 
 extern "C" {
 
-// #include "debug.h"
+#include "debug.h"
 
 static uint64_t startTimestamp;
 static uint64_t timeTaken;
 
-void solve_lqr(struct tiny_problem *problem, struct tiny_params *params) {
+void multAdyn(tiny_VectorNx &Ax, const tiny_MatrixNxNx &A, const tiny_VectorNx &x) {
+    Ax(0) += (x(0) + A(0,4)*x(4) + A(0,6)*x(6) + A(0,10)*x(10));
+    Ax(1) += (x(1) + A(1,3)*x(3) + A(1,7)*x(7) + A(1,9)*x(9));
+    Ax(2) += x(2) + A(2,8)*x(8);
+    Ax(3) += x(3) + A(3,9)*x(9);
+    Ax(4) += x(4) + A(4,10)*x(10);
+    Ax(5) += x(5) + A(5,11)*x(11);
+    Ax(6) += (x(6) + A(6,4)*x(4) + A(6,10)*x(10));
+    Ax(7) += (x(7) + A(7,3)*x(3) + A(7,9)*x(9));
+    Ax(8) += x(8);
+    Ax(9) += x(9);
+    Ax(10) += x(10);
+    Ax(11) += x(11);
+}
+
+void solve_lqr(struct tiny_problem *problem, const struct tiny_params *params) {
     problem->u.col(0) = -params->cache.Kinf * (problem->x.col(0) - params->Xref.col(0));
 }
 
 
-void solve_admm(struct tiny_problem *problem, struct tiny_params *params) {
+void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) {
 
 
     problem->status = 0;
     problem->iter = 1;
-
-    // // Get current time
-    // startTimestamp = usecTimestamp();
-
 
     // backward_pass_grad(problem, params);
     forward_pass(problem, params);
     update_slack(problem, params);
     update_dual(problem, params);
     update_linear_cost(problem, params);
-
-
     for (int i=0; i<problem->max_iter; i++) {
+
 
         // Solve linear system with Riccati and roll out to get new trajectory
         update_primal(problem, params);
@@ -79,14 +89,12 @@ void solve_admm(struct tiny_problem *problem, struct tiny_params *params) {
         // std::cout << problem->dual_residual_input << "\n" << std::endl;
     }
 
-    // timeTaken = usecTimestamp() - startTimestamp;
-    // DEBUG_PRINT("full pass: %d\n", timeTaken);
 }
 
 /**
  * Do backward Riccati pass then forward roll out
 */
-void update_primal(struct tiny_problem *problem, struct tiny_params *params) {
+void update_primal(struct tiny_problem *problem, const struct tiny_params *params) {
     backward_pass_grad(problem, params);
     forward_pass(problem, params);
 }
@@ -94,8 +102,11 @@ void update_primal(struct tiny_problem *problem, struct tiny_params *params) {
 /**
  * Update linear terms from Riccati backward pass
 */
-void backward_pass_grad(struct tiny_problem *problem, struct tiny_params *params) {
+void backward_pass_grad(struct tiny_problem *problem, const struct tiny_params *params) {
     for (int i=NHORIZON-2; i>=0; i--) {
+        // problem->Qu.noalias() = params->cache.Bdyn.transpose().lazyProduct(problem->p.col(i+1));
+        // problem->Qu += problem->r.col(i);
+        // (problem->d.col(i)).noalias() = params->cache.Quu_inv.lazyProduct(problem->Qu);
         (problem->d.col(i)).noalias() = params->cache.Quu_inv * (params->cache.Bdyn.transpose() * problem->p.col(i+1) + problem->r.col(i));
         (problem->p.col(i)).noalias() = problem->q.col(i) + params->cache.AmBKt.lazyProduct(problem->p.col(i+1)) - (params->cache.Kinf.transpose()).lazyProduct(problem->r.col(i)); // + params->cache.coeff_d2p * problem->d.col(i); // coeff_d2p always appears to be zeros
     }
@@ -104,12 +115,14 @@ void backward_pass_grad(struct tiny_problem *problem, struct tiny_params *params
 /**
  * Use LQR feedback policy to roll out trajectory
 */
-void forward_pass(struct tiny_problem *problem, struct tiny_params *params) {
+void forward_pass(struct tiny_problem *problem, const struct tiny_params *params) {
     for (int i=0; i<NHORIZON-1; i++) {
         (problem->u.col(i)).noalias() = -params->cache.Kinf.lazyProduct(problem->x.col(i)) - problem->d.col(i);
         // problem->u.col(i) << .001, .02, .3, 4;
         // DEBUG_PRINT("u(0): %f\n", problem->u.col(0)(0));
-        (problem->x.col(i+1)).noalias() = params->cache.Adyn.lazyProduct(problem->x.col(i)) + params->cache.Bdyn.lazyProduct(problem->u.col(i));
+        // (problem->x.col(i+1)).noalias() = params->cache.Adyn.lazyProduct(problem->x.col(i)) + params->cache.Bdyn.lazyProduct(problem->u.col(i));
+        multAdyn(problem->Ax, params->cache.Adyn, problem->x.col(i));
+        (problem->x.col(i+1)).noalias() = problem->Ax + params->cache.Bdyn.lazyProduct(problem->u.col(i));
     }
 }
 
@@ -119,8 +132,10 @@ void forward_pass(struct tiny_problem *problem, struct tiny_params *params) {
  * TODO: pass in meta information with each constraint assigning it to a
  * projection function
 */
-void update_slack(struct tiny_problem *problem, struct tiny_params *params) {
+void update_slack(struct tiny_problem *problem, const struct tiny_params *params) {
     // Box constraints on input
+    // Get current time
+
     problem->znew = params->u_max.cwiseMin(params->u_min.cwiseMax(problem->u));
 
     // Half space constraints on state
@@ -135,7 +150,10 @@ void update_slack(struct tiny_problem *problem, struct tiny_params *params) {
     //      or auxiliary variables). v and g could be of size (3) and everything would work the same.
     //      The only reason this doesn't break is because in the update_linear_cost function subtracts
     //      g from v and so the last nine entries are always zero.
+    // startTimestamp = usecTimestamp();
     problem->xg = problem->x + problem->g;
+    // problem->dists = (params->A_constraints.transpose().cwiseProduct(problem->xg)).colwise().sum();
+    // problem->dists -= params->x_max;
     for (int i=0; i<NHORIZON; i++) {
         problem->dist = (params->A_constraints[i].head(3)).lazyProduct(problem->xg.col(i).head(3)); // Distances can be computed in one step outside the for loop
         problem->dist -= params->x_max[i](0);
@@ -148,13 +166,15 @@ void update_slack(struct tiny_problem *problem, struct tiny_params *params) {
             problem->vnew.col(i) << problem->xyz_new, problem->xg.col(i).tail(NSTATES-3);
         }
     }
+    // timeTaken = usecTimestamp() - startTimestamp;
+    // DEBUG_PRINT("slack: %d\n", timeTaken);
 }
 
 /**
  * Update next iteration of dual variables by performing the augmented
  * lagrangian multiplier update
 */
-void update_dual(struct tiny_problem *problem, struct tiny_params *params) {
+void update_dual(struct tiny_problem *problem, const struct tiny_params *params) {
     problem->y = problem->y + problem->u - problem->znew;
     problem->g = problem->g + problem->x - problem->vnew;
 }
@@ -163,9 +183,9 @@ void update_dual(struct tiny_problem *problem, struct tiny_params *params) {
  * Update linear control cost terms in the Riccati feedback using the changing
  * slack and dual variables from ADMM
 */
-void update_linear_cost(struct tiny_problem *problem, struct tiny_params *params) {
-    problem->r = -(params->Uref.array().colwise() * params->R.array());
-    problem->r -= params->cache.rho * (problem->znew - problem->y);
+void update_linear_cost(struct tiny_problem *problem, const struct tiny_params *params) {
+    // problem->r = -(params->Uref.array().colwise() * params->R.array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
+    problem->r = -params->cache.rho * (problem->znew - problem->y);
     problem->q = -(params->Xref.array().colwise() * params->Q.array());
     problem->q -= params->cache.rho * (problem->vnew - problem->g);
     problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).array().colwise() * params->Qf.array());

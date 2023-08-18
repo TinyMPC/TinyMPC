@@ -7,15 +7,17 @@
 extern "C" {
 #endif
 
-void solve_admm(struct tiny_problem *problem, struct tiny_params *params);
-void solve_lqr(struct tiny_problem *problem, struct tiny_params *params);
+void multAdyn(tiny_VectorNx &Ax, const tiny_MatrixNxNx &A, const tiny_VectorNx &x);
 
-void update_primal(struct tiny_problem *problem, struct tiny_params *params);
-void backward_pass_grad(struct tiny_problem *problem, struct tiny_params *params);
-void forward_pass(struct tiny_problem *problem, struct tiny_params *params);
-void update_slack(struct tiny_problem *problem, struct tiny_params *params);
-void update_dual(struct tiny_problem *problem, struct tiny_params *params);
-void update_linear_cost(struct tiny_problem *problem, struct tiny_params *params);
+void solve_lqr(struct tiny_problem *problem, const struct tiny_params *params);
+void solve_admm(struct tiny_problem *problem, const struct tiny_params *params);
+
+void update_primal(struct tiny_problem *problem, const struct tiny_params *params);
+void backward_pass_grad(struct tiny_problem *problem, const struct tiny_params *params);
+void forward_pass(struct tiny_problem *problem, const struct tiny_params *params);
+void update_slack(struct tiny_problem *problem, const struct tiny_params *params);
+void update_dual(struct tiny_problem *problem, const struct tiny_params *params);
+void update_linear_cost(struct tiny_problem *problem, const struct tiny_params *params);
 
 #ifdef __cplusplus
 }
