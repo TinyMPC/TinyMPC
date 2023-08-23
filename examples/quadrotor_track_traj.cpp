@@ -1,8 +1,8 @@
 #include <iostream>
 
 #include <tinympc/admm.hpp>
-#include "problem_data/quadrotor_50hz_params.hpp"
-#include "trajectory_data/quadrotor_20hz_y_axis_line.hpp"
+#include "problem_data/quadrotor_100hz_params.hpp"
+#include "trajectory_data/quadrotor_100hz_origin.hpp"
 
 using Eigen::Matrix;
 
@@ -25,7 +25,7 @@ int main() {
     cache.Bdyn = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(Bdyn_data);
     cache.rho = rho_value;
     cache.Kinf = Eigen::Map<Matrix<tinytype, NINPUTS, NSTATES, Eigen::RowMajor>>(Kinf_data);
-    cache.Pinf = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Kinf_data);
+    cache.Pinf = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Pinf_data);
     cache.Quu_inv = Eigen::Map<Matrix<tinytype, NINPUTS, NINPUTS, Eigen::RowMajor>>(Quu_inv_data);
     cache.AmBKt = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(AmBKt_data);
     cache.coeff_d2p = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(coeff_d2p_data);
@@ -37,9 +37,9 @@ int main() {
     params.u_min = tiny_MatrixNuNhm1::Constant(-0.5);
     params.u_max = tiny_MatrixNuNhm1::Constant(0.5);
     for (int i=0; i<NHORIZON; i++) {
-        // params.x_min[i] = tiny_VectorNc::Constant(-99999); // Currently unused
-        // params.x_max[i] = tiny_VectorNc::Zero();
-        // params.A_constraints[i] = tiny_MatrixNcNx::Zero();
+        params.x_min[i] = tiny_VectorNc::Constant(-99999); // Currently unused
+        params.x_max[i] = tiny_VectorNc::Zero();
+        params.A_constraints[i] = tiny_MatrixNcNx::Zero();
     }
     params.Xref = tiny_MatrixNxNh::Zero();
     params.Uref = tiny_MatrixNuNhm1::Zero();
@@ -96,27 +96,35 @@ int main() {
     //     // std::cout << params.x_max[i](0) << "\n" << std::endl;
     // }
 
-    Matrix<float, 2, 4> A;
-    Matrix<float, 2, 4> B;
-    Matrix<float, 4, 1> C;
-    A << 1,2,3,4,5,6,7,8;
-    B << 1,2,3,4,5,6,7,8;
-    
-    std::cout << A << std::endl;
-    std::cout << B << std::endl;
-
-    C = (A.cwiseProduct(B)).colwise().sum();
-
-    std::cout << C << std::endl;
 
     // std::cout << params.Xref << std::endl;
     // std::cout << params.Q << std::endl;
     // problem.q = params.Xref.array().colwise() * params.Q.array();
     // std::cout << problem.q << std::endl;
 
+    // std::cout << NHORIZON << std::endl;
+    // std::cout << params.u_min << std::endl;
+    // std::cout << params.u_max << std::endl;
+    // for (int i=0; i<NHORIZON; i++) {
+    //     std::cout << params.A_constraints[i] << std::endl;
+    //     std::cout << params.x_min[i] << std::endl;
+    //     std::cout << params.x_max[i] << std::endl;
+    // }
 
-    // solve_admm(&problem, &params);
-    // std::cout << problem.iter << std::endl;
+    // std::cout << params.Xref << std::endl;
+    // std::cout << params.Uref << std::endl;
+    // std::cout << params.cache.Adyn << std::endl;
+    // std::cout << params.cache.Bdyn << std::endl;
+    // std::cout << params.cache.rho << std::endl;
+    // std::cout << params.cache.Kinf << std::endl;
+    // std::cout << params.cache.Pinf << std::endl;
+    // std::cout << params.cache.Quu_inv << std::endl;
+    // std::cout << params.cache.AmBKt << std::endl;
+    // std::cout << params.cache.coeff_d2p << std::endl;
+    
+
+    solve_admm(&problem, &params);
+    std::cout << problem.iter << std::endl;
 
     return 0;
 }
