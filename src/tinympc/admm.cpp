@@ -4,13 +4,11 @@
 
 #define DEBUG_MODULE "TINYALG"
 
-
 extern "C" {
 
 // #include "debug.h"
 
 static uint64_t startTimestamp;
-static uint64_t timeTaken;
 
 void multAdyn(tiny_VectorNx &Ax, const tiny_MatrixNxNx &A, const tiny_VectorNx &x) {
     Ax(0) = (x(0) + A(0,4)*x(4) + A(0,6)*x(6) + A(0,10)*x(10));
@@ -37,10 +35,10 @@ void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) 
     problem->status = 0;
     problem->iter = 1;
 
-    // forward_pass(problem, params);
-    // update_slack(problem, params);
-    // update_dual(problem, params);
-    // update_linear_cost(problem, params);
+    forward_pass(problem, params);
+    update_slack(problem, params);
+    update_dual(problem, params);
+    update_linear_cost(problem, params);
     for (int i=0; i<problem->max_iter; i++) {
 
         // Solve linear system with Riccati and roll out to get new trajectory
@@ -161,8 +159,7 @@ void update_slack(struct tiny_problem *problem, const struct tiny_params *params
             problem->vnew.col(i) << problem->xyz_new, problem->xg.col(i).tail(NSTATES-3);
         }
     }
-    // timeTaken = usecTimestamp() - startTimestamp;
-    // DEBUG_PRINT("slack: %d\n", timeTaken);
+    // DEBUG_PRINT("slack: %d\n", usecTimestamp() - startTimestamp);
 }
 
 /**

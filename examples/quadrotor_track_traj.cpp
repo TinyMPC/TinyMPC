@@ -1,21 +1,14 @@
 #include <iostream>
 
 #include <tinympc/admm.hpp>
-#include "problem_data/quadrotor_100hz_params.hpp"
+#include "problem_data/quadrotor_20hz_params.hpp"
 #include "trajectory_data/quadrotor_100hz_origin.hpp"
 
 using Eigen::Matrix;
 
+#define DT 1/100
+
 extern "C" {
-
-static inline tinytype norm(Matrix<tinytype, 3, 1> v) {
-    return sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-}
-
-void matvecprod(tiny_VectorNu &Ax, tiny_MatrixNuNu &A, tiny_VectorNu &x) {
-    Ax(0) = A(0,0);
-    Ax(2) = 2;
-}
 
 int main() {
 
@@ -71,19 +64,28 @@ int main() {
     problem.iters_check_rho_update = 10;
 
     // Copy reference trajectory into Eigen matrix
-    Matrix<tinytype, NSTATES, NTOTAL, Eigen::ColMajor> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data).transpose();
+    // Matrix<tinytype, NSTATES, NTOTAL, Eigen::ColMajor> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data).transpose();
+    Matrix<tinytype, NSTATES, 1> Xref_origin;
+    Xref_origin << 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
-    params.Xref = Xref_total.block<NSTATES, NHORIZON>(0,0);
-    problem.x.col(0) = params.Xref.col(0);
+    // params.Xref = Xref_total.block<NSTATES, NHORIZON>(0,0);
+    params.Xref = Xref_origin.replicate<1,NHORIZON>();
+    // problem.x.col(0) = params.Xref.col(0);
+    problem.x.col(0) << 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
-    Matrix<tinytype, 3, 1> obstacle_center = {0.0, 2.0, 0.5};
-    tinytype obstacle_velocity = 1 * DT;
+    std::cout << params.Xref << std::endl;
 
-    tinytype r_obstacle = 0.75;
-    tinytype b;
-    Matrix<tinytype, 3, 1> xc;
-    Matrix<tinytype, 3, 1> a;
-    Matrix<tinytype, 3, 1> q_c;
+    solve_admm(&problem, &params);
+    std::cout << problem.iter << std::endl;
+
+    // Matrix<tinytype, 3, 1> obstacle_center = {0.0, 2.0, 0.5};
+    // tinytype obstacle_velocity = 1 * DT;
+
+    // tinytype r_obstacle = 0.75;
+    // tinytype b;
+    // Matrix<tinytype, 3, 1> xc;
+    // Matrix<tinytype, 3, 1> a;
+    // Matrix<tinytype, 3, 1> q_c;
     // for (int i=0; i<NHORIZON; i++) {
     //     xc = obstacle_center - params.Xref.col(i).head(3);
     //     a = xc/norm(xc);
@@ -121,10 +123,6 @@ int main() {
     // std::cout << params.cache.Quu_inv << std::endl;
     // std::cout << params.cache.AmBKt << std::endl;
     // std::cout << params.cache.coeff_d2p << std::endl;
-    
-
-    solve_admm(&problem, &params);
-    std::cout << problem.iter << std::endl;
 
     return 0;
 }
