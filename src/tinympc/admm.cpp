@@ -38,11 +38,10 @@ void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) 
     problem->status = 0;
     problem->iter = 1;
 
-    // backward_pass_grad(problem, params);
-    forward_pass(problem, params);
-    update_slack(problem, params);
-    update_dual(problem, params);
-    update_linear_cost(problem, params);
+    // forward_pass(problem, params);
+    // update_slack(problem, params);
+    // update_dual(problem, params);
+    // update_linear_cost(problem, params);
     for (int i=0; i<problem->max_iter; i++) {
 
 
