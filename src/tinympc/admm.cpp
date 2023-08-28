@@ -7,24 +7,24 @@
 
 extern "C" {
 
-#include "debug.h"
+// #include "debug.h"
 
 static uint64_t startTimestamp;
 static uint64_t timeTaken;
 
 void multAdyn(tiny_VectorNx &Ax, const tiny_MatrixNxNx &A, const tiny_VectorNx &x) {
-    Ax(0) += (x(0) + A(0,4)*x(4) + A(0,6)*x(6) + A(0,10)*x(10));
-    Ax(1) += (x(1) + A(1,3)*x(3) + A(1,7)*x(7) + A(1,9)*x(9));
-    Ax(2) += x(2) + A(2,8)*x(8);
-    Ax(3) += x(3) + A(3,9)*x(9);
-    Ax(4) += x(4) + A(4,10)*x(10);
-    Ax(5) += x(5) + A(5,11)*x(11);
-    Ax(6) += (x(6) + A(6,4)*x(4) + A(6,10)*x(10));
-    Ax(7) += (x(7) + A(7,3)*x(3) + A(7,9)*x(9));
-    Ax(8) += x(8);
-    Ax(9) += x(9);
-    Ax(10) += x(10);
-    Ax(11) += x(11);
+    Ax(0) = (x(0) + A(0,4)*x(4) + A(0,6)*x(6) + A(0,10)*x(10));
+    Ax(1) = (x(1) + A(1,3)*x(3) + A(1,7)*x(7) + A(1,9)*x(9));
+    Ax(2) = x(2) + A(2,8)*x(8);
+    Ax(3) = x(3) + A(3,9)*x(9);
+    Ax(4) = x(4) + A(4,10)*x(10);
+    Ax(5) = x(5) + A(5,11)*x(11);
+    Ax(6) = (x(6) + A(6,4)*x(4) + A(6,10)*x(10));
+    Ax(7) = (x(7) + A(7,3)*x(3) + A(7,9)*x(9));
+    Ax(8) = x(8);
+    Ax(9) = x(9);
+    Ax(10) = x(10);
+    Ax(11) = x(11);
 }
 
 void solve_lqr(struct tiny_problem *problem, const struct tiny_params *params) {
@@ -34,7 +34,6 @@ void solve_lqr(struct tiny_problem *problem, const struct tiny_params *params) {
 
 void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) {
 
-
     problem->status = 0;
     problem->iter = 1;
 
@@ -43,7 +42,6 @@ void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) 
     // update_dual(problem, params);
     // update_linear_cost(problem, params);
     for (int i=0; i<problem->max_iter; i++) {
-
 
         // Solve linear system with Riccati and roll out to get new trajectory
         update_primal(problem, params);
@@ -57,26 +55,26 @@ void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) 
         // Update linear control cost terms using reference trajectory, duals, and slack variables
         update_linear_cost(problem, params);
 
-        // problem->primal_residual_state = (problem->x - problem->vnew).cwiseAbs().maxCoeff();
-        // problem->dual_residual_state = ((problem->v - problem->vnew).cwiseAbs().maxCoeff()) * params->cache.rho;
-        // problem->primal_residual_input = (problem->u - problem->znew).cwiseAbs().maxCoeff();
-        // problem->dual_residual_input = ((problem->z - problem->znew).cwiseAbs().maxCoeff()) * params->cache.rho;
+        problem->primal_residual_state = (problem->x - problem->vnew).cwiseAbs().maxCoeff();
+        problem->dual_residual_state = ((problem->v - problem->vnew).cwiseAbs().maxCoeff()) * params->cache.rho;
+        problem->primal_residual_input = (problem->u - problem->znew).cwiseAbs().maxCoeff();
+        problem->dual_residual_input = ((problem->z - problem->znew).cwiseAbs().maxCoeff()) * params->cache.rho;
 
         // TODO: convert arrays of Eigen vectors into one Eigen matrix
         // Save previous slack variables
         problem->v = problem->vnew;
         problem->z = problem->znew;
 
-        // // TODO: remove convergence check and just return when allotted runtime is up
-        // // Check for convergence
-        // if (problem->primal_residual_state < problem->abs_tol &&
-        //     problem->primal_residual_input < problem->abs_tol &&
-        //     problem->dual_residual_state < problem->abs_tol &&
-        //     problem->dual_residual_input < problem->abs_tol)
-        // {
-        //     problem->status = 1;
-        //     break;
-        // }
+        // TODO: remove convergence check and just return when allotted runtime is up
+        // Check for convergence
+        if (problem->primal_residual_state < problem->abs_tol &&
+            problem->primal_residual_input < problem->abs_tol &&
+            problem->dual_residual_state < problem->abs_tol &&
+            problem->dual_residual_input < problem->abs_tol)
+        {
+            problem->status = 1;
+            break;
+        }
 
         // TODO: add rho scaling
 
@@ -87,7 +85,6 @@ void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) 
         // std::cout << problem->primal_residual_input << std::endl;
         // std::cout << problem->dual_residual_input << "\n" << std::endl;
     }
-
 }
 
 /**
@@ -119,7 +116,6 @@ void forward_pass(struct tiny_problem *problem, const struct tiny_params *params
         (problem->u.col(i)).noalias() = -params->cache.Kinf.lazyProduct(problem->x.col(i)) - problem->d.col(i);
         // problem->u.col(i) << .001, .02, .3, 4;
         // DEBUG_PRINT("u(0): %f\n", problem->u.col(0)(0));
-        // (problem->x.col(i+1)).noalias() = params->cache.Adyn.lazyProduct(problem->x.col(i)) + params->cache.Bdyn.lazyProduct(problem->u.col(i));
         multAdyn(problem->Ax, params->cache.Adyn, problem->x.col(i));
         (problem->x.col(i+1)).noalias() = problem->Ax + params->cache.Bdyn.lazyProduct(problem->u.col(i));
     }
