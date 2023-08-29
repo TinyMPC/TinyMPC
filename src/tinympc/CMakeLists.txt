@@ -1,4 +1,4 @@
-add_library (tinympc
+add_library (tinympc SHARED
     admm.cpp
     )
 
