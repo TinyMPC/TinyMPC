@@ -7,6 +7,7 @@
 extern "C" {
 
 // #include "debug.h"
+#include "usec_time.h"
 
 static uint64_t startTimestamp;
 
@@ -30,7 +31,7 @@ void solve_lqr(struct tiny_problem *problem, const struct tiny_params *params) {
 }
 
 
-void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) {
+void solve_admm(struct tiny_problem *problem, const struct tiny_params *params, const uint64_t maxTime) {
 
     problem->status = 0;
     problem->iter = 1;
@@ -39,7 +40,8 @@ void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) 
     update_slack(problem, params);
     update_dual(problem, params);
     update_linear_cost(problem, params);
-    for (int i=0; i<problem->max_iter; i++) {
+    // for (int i=0; i<problem->max_iter; i++) {
+    while (usecTimestamp() + 300 < maxTime) {
 
         // Solve linear system with Riccati and roll out to get new trajectory
         update_primal(problem, params);
