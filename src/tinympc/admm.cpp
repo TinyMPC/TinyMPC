@@ -55,30 +55,31 @@ void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) 
         // Update linear control cost terms using reference trajectory, duals, and slack variables
         update_linear_cost(problem, params);
 
-        // problem->primal_residual_state = (problem->x - problem->vnew).cwiseAbs().maxCoeff();
-        // problem->dual_residual_state = ((problem->v - problem->vnew).cwiseAbs().maxCoeff()) * params->cache.rho;
-        // problem->primal_residual_input = (problem->u - problem->znew).cwiseAbs().maxCoeff();
-        // problem->dual_residual_input = ((problem->z - problem->znew).cwiseAbs().maxCoeff()) * params->cache.rho;
+        problem->primal_residual_state = (problem->x - problem->vnew).cwiseAbs().maxCoeff();
+        problem->dual_residual_state = ((problem->v - problem->vnew).cwiseAbs().maxCoeff()) * params->cache.rho;
+        problem->primal_residual_input = (problem->u - problem->znew).cwiseAbs().maxCoeff();
+        problem->dual_residual_input = ((problem->z - problem->znew).cwiseAbs().maxCoeff()) * params->cache.rho;
 
         // TODO: convert arrays of Eigen vectors into one Eigen matrix
         // Save previous slack variables
         problem->v = problem->vnew;
         problem->z = problem->znew;
 
+        problem->iter += 1;
+
         // TODO: remove convergence check and just return when allotted runtime is up
         // Check for convergence
-        // if (problem->primal_residual_state < problem->abs_tol &&
-        //     problem->primal_residual_input < problem->abs_tol &&
-        //     problem->dual_residual_state < problem->abs_tol &&
-        //     problem->dual_residual_input < problem->abs_tol)
-        // {
-        //     problem->status = 1;
-        //     break;
-        // }
+        if (problem->primal_residual_state < problem->abs_tol &&
+            problem->primal_residual_input < problem->abs_tol &&
+            problem->dual_residual_state < problem->abs_tol &&
+            problem->dual_residual_input < problem->abs_tol)
+        {
+            problem->status = 1;
+            break;
+        }
 
         // TODO: add rho scaling
 
-        problem->iter += 1;
 
         // std::cout << problem->primal_residual_state << std::endl;
         // std::cout << problem->dual_residual_state << std::endl;
@@ -118,6 +119,7 @@ void forward_pass(struct tiny_problem *problem, const struct tiny_params *params
         // DEBUG_PRINT("u(0): %f\n", problem->u.col(0)(0));
         multAdyn(problem->Ax, params->cache.Adyn, problem->x.col(i));
         (problem->x.col(i+1)).noalias() = problem->Ax + params->cache.Bdyn.lazyProduct(problem->u.col(i));
+        // (problem->x.col(i+1)).noalias() = params->cache.Adyn.lazyProduct(problem->x.col(i)) + params->cache.Bdyn.lazyProduct(problem->u.col(i));
     }
 }
 
