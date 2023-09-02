@@ -185,7 +185,7 @@ void update_linear_cost(struct tiny_problem *problem, const struct tiny_params *
     problem->q = -(params->Xref.array().colwise() * params->Q.array());
     problem->q -= params->cache.rho * (problem->vnew - problem->g);
     // problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).array().colwise() * params->Qf.array());
-    problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).array().colwise() * params->cache.Pinf.array());
+    problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).transpose().lazyProduct(params->cache.Pinf));
     problem->p.col(NHORIZON-1) -= params->cache.rho * (problem->vnew.col(NHORIZON-1) - problem->g.col(NHORIZON-1));
 
     // for (int i=0; i<NHORIZON-1; i++) {
