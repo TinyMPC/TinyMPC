@@ -105,7 +105,7 @@ void backward_pass_grad(struct tiny_problem *problem, const struct tiny_params *
         // problem->Qu += problem->r.col(i);
         // (problem->d.col(i)).noalias() = params->cache.Quu_inv.lazyProduct(problem->Qu);
         (problem->d.col(i)).noalias() = params->cache.Quu_inv * (params->cache.Bdyn.transpose() * problem->p.col(i+1) + problem->r.col(i));
-        (problem->p.col(i)).noalias() = problem->q.col(i) + params->cache.AmBKt.lazyProduct(problem->p.col(i+1)) - (params->cache.Kinf.transpose()).lazyProduct(problem->r.col(i)) + params->cache.coeff_d2p * problem->d.col(i); // coeff_d2p always appears to be zeros
+        (problem->p.col(i)).noalias() = problem->q.col(i) + params->cache.AmBKt.lazyProduct(problem->p.col(i+1)) - (params->cache.Kinf.transpose()).lazyProduct(problem->r.col(i)) + params->cache.coeff_d2p * problem->d.col(i);
     }
 }
 
@@ -184,7 +184,8 @@ void update_linear_cost(struct tiny_problem *problem, const struct tiny_params *
     problem->r = -params->cache.rho * (problem->znew - problem->y);
     problem->q = -(params->Xref.array().colwise() * params->Q.array());
     problem->q -= params->cache.rho * (problem->vnew - problem->g);
-    problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).array().colwise() * params->Qf.array());
+    // problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).array().colwise() * params->Qf.array());
+    problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).array().colwise() * params->cache.Pinf.array());
     problem->p.col(NHORIZON-1) -= params->cache.rho * (problem->vnew.col(NHORIZON-1) - problem->g.col(NHORIZON-1));
 
     // for (int i=0; i<NHORIZON-1; i++) {
