@@ -31,17 +31,17 @@ void solve_lqr(struct tiny_problem *problem, const struct tiny_params *params) {
 }
 
 
-void solve_admm(struct tiny_problem *problem, const struct tiny_params *params, const uint64_t maxTime) {
+void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) {
 
     problem->status = 0;
-    problem->iter = 1;
+    problem->iter = 0;
 
     forward_pass(problem, params);
     update_slack(problem, params);
     update_dual(problem, params);
     update_linear_cost(problem, params);
-    // for (int i=0; i<problem->max_iter; i++) {
-    while (usecTimestamp() + 300 < maxTime) {
+    for (int i=0; i<problem->max_iter; i++) {
+    // while (usecTimestamp() + 300 < maxTime) {
 
         // Solve linear system with Riccati and roll out to get new trajectory
         update_primal(problem, params);
@@ -104,7 +104,7 @@ void backward_pass_grad(struct tiny_problem *problem, const struct tiny_params *
         // problem->Qu += problem->r.col(i);
         // (problem->d.col(i)).noalias() = params->cache.Quu_inv.lazyProduct(problem->Qu);
         (problem->d.col(i)).noalias() = params->cache.Quu_inv * (params->cache.Bdyn.transpose() * problem->p.col(i+1) + problem->r.col(i));
-        (problem->p.col(i)).noalias() = problem->q.col(i) + params->cache.AmBKt.lazyProduct(problem->p.col(i+1)) - (params->cache.Kinf.transpose()).lazyProduct(problem->r.col(i)); // + params->cache.coeff_d2p * problem->d.col(i); // coeff_d2p always appears to be zeros
+        (problem->p.col(i)).noalias() = problem->q.col(i) + params->cache.AmBKt.lazyProduct(problem->p.col(i+1)) - (params->cache.Kinf.transpose()).lazyProduct(problem->r.col(i)) + params->cache.coeff_d2p * problem->d.col(i); // coeff_d2p always appears to be zeros
     }
 }
 
