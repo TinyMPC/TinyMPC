@@ -1,5 +1,5 @@
 #IDEs
-
+.vscode/
 .vs
 .idea
 CMakeSettings.json
