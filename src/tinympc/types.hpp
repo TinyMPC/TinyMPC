@@ -112,6 +112,9 @@ struct tiny_problem {
     Matrix<tinytype, 3, 1> xyz_new;
     tiny_VectorNu Qu;
     tiny_VectorNx Ax; // Stores result of sparse Adyn*x vector product computation
+
+    // Helper variables
+    int intersect;
 };
 
 #ifdef __cplusplus

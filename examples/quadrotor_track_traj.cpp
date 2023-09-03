@@ -60,7 +60,7 @@ int main() {
     problem.abs_tol = 0.001;
     problem.status = 0;
     problem.iter = 0;
-    problem.max_iter = 100;
+    problem.max_iter = 20;
     problem.iters_check_rho_update = 10;
 
     // Copy reference trajectory into Eigen matrix
@@ -71,11 +71,14 @@ int main() {
     // params.Xref = Xref_total.block<NSTATES, NHORIZON>(0,0);
     params.Xref = Xref_origin.replicate<1,NHORIZON>();
     // problem.x.col(0) = params.Xref.col(0);
-    problem.x.col(0) << 0.1, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    problem.x.col(0) << 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
     // std::cout << params.Xref << std::endl;
 
     solve_admm(&problem, &params);
+    // std::cout << problem.x.block<NSTATES, 5>(0,0) << std::endl;
+    std::cout << problem.x.block<NSTATES, 5>(0,NHORIZON-5) << std::endl;
+
     // std::cout << problem.iter << std::endl;
     // std::cout << problem.u.col(0)(0) << std::endl;
     // std::cout << problem.u.col(0)(1) << std::endl;
