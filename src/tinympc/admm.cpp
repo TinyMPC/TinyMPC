@@ -7,7 +7,7 @@
 extern "C" {
 
 // #include "debug.h"
-#include "usec_time.h"
+// #include "usec_time.h"
 
 static uint64_t startTimestamp;
 
@@ -40,11 +40,21 @@ void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) 
     update_slack(problem, params);
     update_dual(problem, params);
     update_linear_cost(problem, params);
+    // std::cout << problem->r << std::endl;
+    // std::cout << problem->q << std::endl;
+    // std::cout << problem->p << std::endl;
     for (int i=0; i<problem->max_iter; i++) {
+    // for (int i=0; i<1; i++) {
     // while (usecTimestamp() + 300 < maxTime) {
 
         // Solve linear system with Riccati and roll out to get new trajectory
         update_primal(problem, params);
+        // backward_pass_grad(problem, params);
+        // std::cout << problem->d << std::endl;
+        // std::cout << problem->p << std::endl;
+        // forward_pass(problem, params);
+        // std::cout << problem->u << std::endl;
+        // std::cout << problem->x << std::endl;
 
         // Project slack variables into feasible domain
         update_slack(problem, params);

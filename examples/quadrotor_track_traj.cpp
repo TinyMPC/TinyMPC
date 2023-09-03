@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <tinympc/admm.hpp>
-#include "problem_data/quadrotor_20hz_params.hpp"
+#include "problem_data/quadrotor_50hz_params.hpp"
 #include "trajectory_data/quadrotor_100hz_ref_hover.hpp"
 
 using Eigen::Matrix;
@@ -31,7 +31,7 @@ int main() {
     params.u_max = tiny_MatrixNuNhm1::Constant(0.5);
     for (int i=0; i<NHORIZON; i++) {
         params.x_min[i] = tiny_VectorNc::Constant(-99999); // Currently unused
-        params.x_max[i] = tiny_VectorNc::Zero();
+        params.x_max[i] = tiny_VectorNc::Constant(99999);
         params.A_constraints[i] = tiny_MatrixNcNx::Zero();
     }
     params.Xref = tiny_MatrixNxNh::Zero();
@@ -71,16 +71,16 @@ int main() {
     // params.Xref = Xref_total.block<NSTATES, NHORIZON>(0,0);
     params.Xref = Xref_origin.replicate<1,NHORIZON>();
     // problem.x.col(0) = params.Xref.col(0);
-    problem.x.col(0) << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    problem.x.col(0) << 0.1, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
-    std::cout << params.Xref << std::endl;
+    // std::cout << params.Xref << std::endl;
 
     solve_admm(&problem, &params);
-    std::cout << problem.iter << std::endl;
-    std::cout << problem.u.col(0)(0) << std::endl;
-    std::cout << problem.u.col(0)(1) << std::endl;
-    std::cout << problem.u.col(0)(2) << std::endl;
-    std::cout << problem.u.col(0)(3) << std::endl;
+    // std::cout << problem.iter << std::endl;
+    // std::cout << problem.u.col(0)(0) << std::endl;
+    // std::cout << problem.u.col(0)(1) << std::endl;
+    // std::cout << problem.u.col(0)(2) << std::endl;
+    // std::cout << problem.u.col(0)(3) << std::endl;
 
     // Matrix<tinytype, 3, 1> obstacle_center = {0.0, 2.0, 0.5};
     // tinytype obstacle_velocity = 1 * DT;
