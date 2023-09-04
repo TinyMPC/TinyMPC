@@ -27,7 +27,7 @@ void multAdyn(tiny_VectorNx &Ax, const tiny_MatrixNxNx &A, const tiny_VectorNx &
 }
 
 void solve_lqr(struct tiny_problem *problem, const struct tiny_params *params) {
-    problem->u.col(0) = -params->cache.Kinf * (problem->x.col(0) - params->Xref.col(0));
+    problem->u.col(0) = -params->cache.Kinf[problem->cache_level] * (problem->x.col(0) - params->Xref.col(0));
 }
 
 
@@ -66,9 +66,9 @@ void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) 
         update_linear_cost(problem, params);
 
         problem->primal_residual_state = (problem->x - problem->vnew).cwiseAbs().maxCoeff();
-        problem->dual_residual_state = ((problem->v - problem->vnew).cwiseAbs().maxCoeff()) * params->cache.rho;
+        problem->dual_residual_state = ((problem->v - problem->vnew).cwiseAbs().maxCoeff()) * params->cache.rho[problem->cache_level];
         problem->primal_residual_input = (problem->u - problem->znew).cwiseAbs().maxCoeff();
-        problem->dual_residual_input = ((problem->z - problem->znew).cwiseAbs().maxCoeff()) * params->cache.rho;
+        problem->dual_residual_input = ((problem->z - problem->znew).cwiseAbs().maxCoeff()) * params->cache.rho[problem->cache_level];
 
         // TODO: convert arrays of Eigen vectors into one Eigen matrix
         // Save previous slack variables
@@ -114,8 +114,8 @@ void backward_pass_grad(struct tiny_problem *problem, const struct tiny_params *
         // problem->Qu.noalias() = params->cache.Bdyn.transpose().lazyProduct(problem->p.col(i+1));
         // problem->Qu += problem->r.col(i);
         // (problem->d.col(i)).noalias() = params->cache.Quu_inv.lazyProduct(problem->Qu);
-        (problem->d.col(i)).noalias() = params->cache.Quu_inv * (params->cache.Bdyn.transpose() * problem->p.col(i+1) + problem->r.col(i));
-        (problem->p.col(i)).noalias() = problem->q.col(i) + params->cache.AmBKt.lazyProduct(problem->p.col(i+1)) - (params->cache.Kinf.transpose()).lazyProduct(problem->r.col(i)) + params->cache.coeff_d2p * problem->d.col(i);
+        (problem->d.col(i)).noalias() = params->cache.Quu_inv[problem->cache_level] * (params->cache.Bdyn[problem->cache_level].transpose() * problem->p.col(i+1) + problem->r.col(i));
+        (problem->p.col(i)).noalias() = problem->q.col(i) + params->cache.AmBKt[problem->cache_level].lazyProduct(problem->p.col(i+1)) - (params->cache.Kinf[problem->cache_level].transpose()).lazyProduct(problem->r.col(i)) + params->cache.coeff_d2p[problem->cache_level] * problem->d.col(i);
     }
 }
 
@@ -124,11 +124,11 @@ void backward_pass_grad(struct tiny_problem *problem, const struct tiny_params *
 */
 void forward_pass(struct tiny_problem *problem, const struct tiny_params *params) {
     for (int i=0; i<NHORIZON-1; i++) {
-        (problem->u.col(i)).noalias() = -params->cache.Kinf.lazyProduct(problem->x.col(i)) - problem->d.col(i);
+        (problem->u.col(i)).noalias() = -params->cache.Kinf[problem->cache_level].lazyProduct(problem->x.col(i)) - problem->d.col(i);
         // problem->u.col(i) << .001, .02, .3, 4;
         // DEBUG_PRINT("u(0): %f\n", problem->u.col(0)(0));
-        multAdyn(problem->Ax, params->cache.Adyn, problem->x.col(i));
-        (problem->x.col(i+1)).noalias() = problem->Ax + params->cache.Bdyn.lazyProduct(problem->u.col(i));
+        multAdyn(problem->Ax, params->cache.Adyn[problem->cache_level], problem->x.col(i));
+        (problem->x.col(i+1)).noalias() = problem->Ax + params->cache.Bdyn[problem->cache_level].lazyProduct(problem->u.col(i));
         // (problem->x.col(i+1)).noalias() = params->cache.Adyn.lazyProduct(problem->x.col(i)) + params->cache.Bdyn.lazyProduct(problem->u.col(i));
     }
 }
@@ -194,12 +194,12 @@ void update_dual(struct tiny_problem *problem, const struct tiny_params *params)
 */
 void update_linear_cost(struct tiny_problem *problem, const struct tiny_params *params) {
     // problem->r = -(params->Uref.array().colwise() * params->R.array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
-    problem->r = -params->cache.rho * (problem->znew - problem->y);
+    problem->r = -params->cache.rho[problem->cache_level] * (problem->znew - problem->y);
     problem->q = -(params->Xref.array().colwise() * params->Q.array());
-    problem->q -= params->cache.rho * (problem->vnew - problem->g);
+    problem->q -= params->cache.rho[problem->cache_level] * (problem->vnew - problem->g);
     // problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).array().colwise() * params->Qf.array());
-    problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).transpose().lazyProduct(params->cache.Pinf));
-    problem->p.col(NHORIZON-1) -= params->cache.rho * (problem->vnew.col(NHORIZON-1) - problem->g.col(NHORIZON-1));
+    problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).transpose().lazyProduct(params->cache.Pinf[problem->cache_level]));
+    problem->p.col(NHORIZON-1) -= params->cache.rho[problem->cache_level] * (problem->vnew.col(NHORIZON-1) - problem->g.col(NHORIZON-1));
 
     // for (int i=0; i<NHORIZON-1; i++) {
     //     problem->r.col(i) = -params->cache.rho * (problem->znew.col(i) - problem->y.col(i)) - params->R * params->Uref.col(i);
