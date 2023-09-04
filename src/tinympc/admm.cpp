@@ -6,7 +6,7 @@
 
 extern "C" {
 
-// #include "debug.h"
+#include "debug.h"
 // #include "usec_time.h"
 
 static uint64_t startTimestamp;
@@ -157,11 +157,11 @@ void update_slack(struct tiny_problem *problem, const struct tiny_params *params
     //      or auxiliary variables). v and g could be of size (3) and everything would work the same.
     //      The only reason this doesn't break is because in the update_linear_cost function subtracts
     //      g from v and so the last nine entries are always zero.
-    // startTimestamp = usecTimestamp();
     problem->xg = problem->x + problem->g;
     // problem->dists = (params->A_constraints.transpose().cwiseProduct(problem->xg)).colwise().sum();
     // problem->dists -= params->x_max;
     problem->intersect = 0;
+    // startTimestamp = usecTimestamp();
     for (int i=0; i<NHORIZON; i++) {
         problem->dist = (params->A_constraints[i].head(3)).lazyProduct(problem->xg.col(i).head(3)); // Distances can be computed in one step outside the for loop
         problem->dist -= params->x_max[i](0);
@@ -175,7 +175,8 @@ void update_slack(struct tiny_problem *problem, const struct tiny_params *params
             problem->vnew.col(i) << problem->xyz_new, problem->xg.col(i).tail(NSTATES-3);
         }
     }
-    // DEBUG_PRINT("slack: %d\n", usecTimestamp() - startTimestamp);
+    // problem->vnew = problem->xg;
+    // DEBUG_PRINT("s: %d\n", usecTimestamp() - startTimestamp);
 }
 
 /**

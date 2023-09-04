@@ -77,7 +77,7 @@ int main() {
 
     solve_admm(&problem, &params);
     // std::cout << problem.x.block<NSTATES, 5>(0,0) << std::endl;
-    std::cout << problem.x.block<NSTATES, 5>(0,NHORIZON-5) << std::endl;
+    // std::cout << problem.x.block<NSTATES, 5>(0,NHORIZON-5) << std::endl;
 
     // std::cout << problem.iter << std::endl;
     // std::cout << problem.u.col(0)(0) << std::endl;
