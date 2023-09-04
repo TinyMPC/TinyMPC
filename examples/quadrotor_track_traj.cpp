@@ -24,9 +24,9 @@ int main() {
     cache.coeff_d2p[0] = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(coeff_d2p_data);
 
     struct tiny_params params;
-    params.Q = Eigen::Map<tiny_VectorNx>(Q_data);
-    params.Qf = Eigen::Map<tiny_VectorNx>(Qf_data);
-    params.R = Eigen::Map<tiny_VectorNu>(R_data);
+    params.Q[0] = Eigen::Map<tiny_VectorNx>(Q_data);
+    params.Qf[0] = Eigen::Map<tiny_VectorNx>(Qf_data);
+    params.R[0] = Eigen::Map<tiny_VectorNu>(R_data);
     params.u_min = tiny_MatrixNuNhm1::Constant(-0.5);
     params.u_max = tiny_MatrixNuNhm1::Constant(0.5);
     for (int i=0; i<NHORIZON; i++) {
