@@ -26,16 +26,18 @@ typedef Matrix<tinytype, NINPUTS, NHORIZON-1, Eigen::ColMajor> tiny_MatrixNuNhm1
 
 /**
  * Matrices that must be recomputed with changes in time step, rho, or model parameters
+ * The first index for each matrix corresponds to the rho used without constraints.
+ * The second index corresponds to the rho used with constraints.
 */ 
 struct tiny_cache {
-    tiny_MatrixNxNx Adyn;
-    tiny_MatrixNxNu Bdyn;
-    tinytype rho;
-    tiny_MatrixNuNx Kinf;
-    tiny_MatrixNxNx Pinf;
-    tiny_MatrixNuNu Quu_inv;
-    tiny_MatrixNxNx AmBKt;
-    tiny_MatrixNxNu coeff_d2p;
+    tiny_MatrixNxNx Adyn[2];
+    tiny_MatrixNxNu Bdyn[2];
+    tinytype rho[2];
+    tiny_MatrixNuNx Kinf[2];
+    tiny_MatrixNxNx Pinf[2];
+    tiny_MatrixNuNu Quu_inv[2];
+    tiny_MatrixNxNx AmBKt[2];
+    tiny_MatrixNxNu coeff_d2p[2];
 };
 
 /**
@@ -115,6 +117,7 @@ struct tiny_problem {
 
     // Helper variables
     int intersect;
+    int cache_level;
 };
 
 #ifdef __cplusplus
