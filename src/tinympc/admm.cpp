@@ -193,9 +193,9 @@ void update_dual(struct tiny_problem *problem, const struct tiny_params *params)
  * slack and dual variables from ADMM
 */
 void update_linear_cost(struct tiny_problem *problem, const struct tiny_params *params) {
-    // problem->r = -(params->Uref.array().colwise() * params->R.array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
+    // problem->r = -(params->Uref.array().colwise() * params->R[problem->cache_level].array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
     problem->r = -params->cache.rho[problem->cache_level] * (problem->znew - problem->y);
-    problem->q = -(params->Xref.array().colwise() * params->Q.array());
+    problem->q = -(params->Xref.array().colwise() * params->Q[problem->cache_level].array());
     problem->q -= params->cache.rho[problem->cache_level] * (problem->vnew - problem->g);
     // problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).array().colwise() * params->Qf.array());
     problem->p.col(NHORIZON-1) = -(params->Xref.col(NHORIZON-1).transpose().lazyProduct(params->cache.Pinf[problem->cache_level]));

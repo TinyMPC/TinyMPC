@@ -44,9 +44,9 @@ struct tiny_cache {
  * Problem parameters
 */
 struct tiny_params {
-    tiny_VectorNx Q;
-    tiny_VectorNx Qf;
-    tiny_VectorNu R;
+    tiny_VectorNx Q[2];
+    tiny_VectorNx Qf[2];
+    tiny_VectorNu R[2];
 
     tiny_MatrixNuNhm1 u_min;
     tiny_MatrixNuNhm1 u_max;
