@@ -34,27 +34,15 @@ void solve_lqr(struct tiny_problem *problem, const struct tiny_params *params) {
 void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) {
 
     problem->status = 0;
-    problem->iter = 0;
 
     forward_pass(problem, params);
     update_slack(problem, params);
     update_dual(problem, params);
     update_linear_cost(problem, params);
-    // std::cout << problem->r << std::endl;
-    // std::cout << problem->q << std::endl;
-    // std::cout << problem->p << std::endl;
     for (int i=0; i<problem->max_iter; i++) {
-    // for (int i=0; i<1; i++) {
-    // while (usecTimestamp() + 300 < maxTime) {
 
         // Solve linear system with Riccati and roll out to get new trajectory
         update_primal(problem, params);
-        // backward_pass_grad(problem, params);
-        // std::cout << problem->d << std::endl;
-        // std::cout << problem->p << std::endl;
-        // forward_pass(problem, params);
-        // std::cout << problem->u << std::endl;
-        // std::cout << problem->x << std::endl;
 
         // Project slack variables into feasible domain
         update_slack(problem, params);
@@ -70,14 +58,12 @@ void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) 
         problem->primal_residual_input = (problem->u - problem->znew).cwiseAbs().maxCoeff();
         problem->dual_residual_input = ((problem->z - problem->znew).cwiseAbs().maxCoeff()) * params->cache.rho[problem->cache_level];
 
-        // TODO: convert arrays of Eigen vectors into one Eigen matrix
         // Save previous slack variables
         problem->v = problem->vnew;
         problem->z = problem->znew;
 
         problem->iter += 1;
 
-        // TODO: remove convergence check and just return when allotted runtime is up
         // Check for convergence
         if (problem->primal_residual_state < problem->abs_tol &&
             problem->primal_residual_input < problem->abs_tol &&
@@ -87,9 +73,6 @@ void solve_admm(struct tiny_problem *problem, const struct tiny_params *params) 
             problem->status = 1;
             break;
         }
-
-        // TODO: add rho scaling
-
 
         // std::cout << problem->primal_residual_state << std::endl;
         // std::cout << problem->dual_residual_state << std::endl;
