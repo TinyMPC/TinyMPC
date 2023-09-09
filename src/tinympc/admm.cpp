@@ -124,8 +124,6 @@ void forward_pass(struct tiny_problem *problem, const struct tiny_params *params
 */
 void update_slack(struct tiny_problem *problem, const struct tiny_params *params) {
     // Box constraints on input
-    // Get current time
-
     problem->znew = params->u_max.cwiseMin(params->u_min.cwiseMax(problem->u));
 
     // Half space constraints on state
@@ -140,28 +138,22 @@ void update_slack(struct tiny_problem *problem, const struct tiny_params *params
     //      or auxiliary variables). v and g could be of size (3) and everything would work the same.
     //      The only reason this doesn't break is because in the update_linear_cost function subtracts
     //      g from v and so the last nine entries are always zero.
-    problem->xg = problem->x + problem->g;
-    // problem->dists = (params->A_constraints.transpose().cwiseProduct(problem->xg)).colwise().sum();
-    // problem->dists -= params->x_max;
-    problem->intersect = 0;
-    // startTimestamp = usecTimestamp();
     problem->cache_level = 0;
+    problem->xg = problem->x + problem->g;
     for (int i=0; i<NHORIZON; i++) {
         problem->dist = (params->A_constraints[i].block<1,3>(0,0)).lazyProduct(problem->xg.col(i).head(3)); // Distances can be computed in one step outside the for loop
         problem->dist -= params->x_max[i](0);
-        // DEBUG_PRINT("dist: %f\n", dist);
         if (problem->dist <= 0) {
             problem->vnew.col(i) = problem->xg.col(i);
         }
         else {
             problem->cache_level = 1;
-            problem->intersect++;
             problem->xyz_new = problem->xg.col(i).head(3) - problem->dist*params->A_constraints[i].block<1,3>(0,0).transpose();
             problem->vnew.col(i) << problem->xyz_new, problem->xg.col(i).tail(NSTATES-3);
         }
+        problem->vnew.col(i)(0) = 0; // Project onto yz-plane. This should be incorporated into the sphere projection for maximum efficiency
     }
-    // problem->vnew = problem->xg;
-    // DEBUG_PRINT("s: %d\n", usecTimestamp() - startTimestamp);
+
 }
 
 /**
