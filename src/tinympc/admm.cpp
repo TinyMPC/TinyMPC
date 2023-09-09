@@ -147,7 +147,7 @@ void update_slack(struct tiny_problem *problem, const struct tiny_params *params
     // startTimestamp = usecTimestamp();
     problem->cache_level = 0;
     for (int i=0; i<NHORIZON; i++) {
-        problem->dist = (params->A_constraints[i].head(3)).lazyProduct(problem->xg.col(i).head(3)); // Distances can be computed in one step outside the for loop
+        problem->dist = (params->A_constraints[i].block<1,3>(0,0)).lazyProduct(problem->xg.col(i).head(3)); // Distances can be computed in one step outside the for loop
         problem->dist -= params->x_max[i](0);
         // DEBUG_PRINT("dist: %f\n", dist);
         if (problem->dist <= 0) {
@@ -156,7 +156,7 @@ void update_slack(struct tiny_problem *problem, const struct tiny_params *params
         else {
             problem->cache_level = 1;
             problem->intersect++;
-            problem->xyz_new = problem->xg.col(i).head(3) - problem->dist*params->A_constraints[i].head(3).transpose();
+            problem->xyz_new = problem->xg.col(i).head(3) - problem->dist*params->A_constraints[i].block<1,3>(0,0).transpose();
             problem->vnew.col(i) << problem->xyz_new, problem->xg.col(i).tail(NSTATES-3);
         }
     }
