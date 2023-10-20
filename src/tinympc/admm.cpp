@@ -83,7 +83,7 @@ extern "C"
         for (int i = NHORIZON - 2; i >= 0; i--)
         {
             (problem->work->d.col(i)).noalias() = problem->cache->Quu_inv * (problem->work->Bdyn.transpose() * problem->work->p.col(i + 1) + problem->work->r.col(i));
-            (problem->work->p.col(i)).noalias() = problem->work->q.col(i) + problem->cache->AmBKt.lazyProduct(problem->work->p.col(i + 1)) - (problem->cache->Kinf.transpose()).lazyProduct(problem->work->r.col(i)); // + problem->cache->coeff_d2p * problem->work->d.col(i); // coeff_d2p always appears to be zeros
+            (problem->work->p.col(i)).noalias() = problem->work->q.col(i) + problem->cache->AmBKt.lazyProduct(problem->work->p.col(i + 1)) - (problem->cache->Kinf.transpose()).lazyProduct(problem->work->r.col(i)) + problem->cache->coeff_d2p * problem->work->d.col(i); // coeff_d2p always appears to be zeros
         }
     }
 

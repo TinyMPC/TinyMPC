@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <tinympc/admm.hpp>
-#include "work_data/quadrotor_20hz_work.hpp"
+#include "problem_data/quadrotor_20hz_params.hpp"
 #include "trajectory_data/quadrotor_100hz_ref_hover.hpp"
 
 using Eigen::Matrix;
@@ -23,7 +23,7 @@ int main() {
 
     TinyWorkspace work;
     work.Adyn = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Adyn_data);
-    cache.Bdyn = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(Bdyn_data);
+    work.Bdyn = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(Bdyn_data);
     work.Q = Eigen::Map<tiny_VectorNx>(Q_data);
     work.Qf = Eigen::Map<tiny_VectorNx>(Qf_data);
     work.R = Eigen::Map<tiny_VectorNu>(R_data);
@@ -53,14 +53,21 @@ int main() {
     work.primal_residual_input = 0;
     work.dual_residual_state = 0;
     work.dual_residual_input = 0;
+    work.status = 0;
+    work.iter = 0;
 
     TinySettings settings;
     settings.abs_pri_tol = 0.001;
     settings.abs_dua_tol = 0.001;
-    settings.status = 0;
-    settings.iter = 0;
     settings.max_iter = 100;
     settings.check_termination = 10;
+    settings.en_input_bound = 1;
+    settings.en_state_bound = 1;
+
+    TinySolver problem;
+    problem.cache = &cache;
+    problem.work = &work;
+    problem.settings = &settings;
 
     // Copy reference trajectory into Eigen matrix
     // Matrix<tinytype, NSTATES, NTOTAL, Eigen::ColMajor> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data).transpose();
@@ -74,7 +81,7 @@ int main() {
 
     std::cout << work.Xref << std::endl;
 
-    solve_admm(&work, &work);
+    solve_admm(&problem);
     std::cout << work.iter << std::endl;
     std::cout << work.u.col(0)(0) << std::endl;
     std::cout << work.u.col(0)(1) << std::endl;
