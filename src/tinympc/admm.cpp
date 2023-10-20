@@ -6,9 +6,6 @@
 
 extern "C"
 {
-
-    // #include "debug.h"
-
     static uint64_t startTimestamp;
 
     void solve_admm(TinySolver *problem)
