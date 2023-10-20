@@ -11,11 +11,6 @@ extern "C"
 
     static uint64_t startTimestamp;
 
-    void solve_lqr(TinySolver *problem)
-    {
-        problem->work->u.col(0) = -problem->cache->Kinf * (problem->work->x.col(0) - problem->Xref.col(0));
-    }
-
     void solve_admm(TinySolver *problem)
     {
         // Initialize variables
@@ -115,11 +110,20 @@ extern "C"
      */
     void update_slack(TinySolver *problem)
     {
-        // Box constraints on input
-        // Get current time
+        problem->work->znew = problem->work->u + problem->work->y;
+        problem->work->vnew = problem->work->x + problem->work->g;
 
-        problem->work->znew = problem->work->u_max.cwiseMin(problem->work->u_min.cwiseMax(problem->work->u + problem->work->y));
-        problem->work->vnew = problem->work->x_max.cwiseMin(problem->work->x_min.cwiseMax(problem->work->x + problem->work->g));
+        // Box constraints on input
+        if (problem->settings->en_input_bound)
+        {
+            problem->work->znew = problem->work->u_max.cwiseMin(problem->work->u_min.cwiseMax(problem->work->znew));
+        }
+
+        // Box constraints on state
+        if (problem->settings->en_input_bound)
+        {
+            problem->work->vnew = problem->work->x_max.cwiseMin(problem->work->x_min.cwiseMax(problem->work->vnew));
+        }
     }
 
     /**
@@ -140,16 +144,10 @@ extern "C"
     {
         // problem->work->r = -(problem->Uref.array().colwise() * problem->work->r.array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
         problem->work->r = -problem->cache->rho * (problem->work->znew - problem->work->y);
-        problem->work->q = -(problem->work->Xref.array().colwise() * problem->work->q.array());
+        problem->work->q = -(problem->work->Xref.array().colwise() * problem->work->Q.array());
         problem->work->q -= problem->cache->rho * (problem->work->vnew - problem->work->g);
-        problem->work->p.col(NHORIZON - 1) = -(problem->work->Xref.col(NHORIZON - 1).array().colwise() * problem->work->qf.array());
+        problem->work->p.col(NHORIZON - 1) = -(problem->work->Xref.col(NHORIZON - 1).array().colwise() * problem->work->Qf.array());
         problem->work->p.col(NHORIZON - 1) -= problem->cache->rho * (problem->work->vnew.col(NHORIZON - 1) - problem->work->g.col(NHORIZON - 1));
-
-        // for (int i=0; i<NHORIZON-1; i++) {
-        //     problem->work->r.col(i) = -problem->cache->rho * (problem->work->znew.col(i) - problem->work->y.col(i)) - problem->work->r * problem->Uref.col(i);
-        //     problem->work->q.col(i) = -problem->cache->rho * (problem->work->vnew.col(i) - problem->work->g.col(i)) - problem->work->q * problem->Xref.col(i);
-        // }
-        // problem->work->p.col(NHORIZON-1) = -problem->cache->rho * (problem->work->vnew.col(NHORIZON-1) - problem->work->g.col(NHORIZON-1)) - problem->work->qf * problem->Xref.col(NHORIZON-1);
     }
 
 } /* extern "C" */

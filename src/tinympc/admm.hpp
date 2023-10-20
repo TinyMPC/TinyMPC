@@ -7,7 +7,6 @@
 extern "C" {
 #endif
 
-void solve_lqr(TinySolver *problem);
 void solve_admm(TinySolver *problem);
 
 void update_primal(TinySolver *problem);
