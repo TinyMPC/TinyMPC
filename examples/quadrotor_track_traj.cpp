@@ -65,7 +65,7 @@ int main() {
 
     // Copy reference trajectory into Eigen matrix
     // Matrix<tinytype, NSTATES, NTOTAL, Eigen::ColMajor> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data).transpose();
-    Matrix<tinytype, NSTATES, 1> Xref_origin;
+    tiny_VectorNx Xref_origin;
     Xref_origin << 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
     // params.Xref = Xref_total.block<NSTATES, NHORIZON>(0,0);

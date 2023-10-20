@@ -7,17 +7,15 @@
 extern "C" {
 #endif
 
-void multAdyn(tiny_VectorNx &Ax, const tiny_MatrixNxNx &A, const tiny_VectorNx &x);
+void solve_lqr(TinySolver *problem);
+void solve_admm(TinySolver *problem);
 
-void solve_lqr(struct tiny_problem *problem, const struct tiny_params *params);
-void solve_admm(struct tiny_problem *problem, const struct tiny_params *params);
-
-void update_primal(struct tiny_problem *problem, const struct tiny_params *params);
-void backward_pass_grad(struct tiny_problem *problem, const struct tiny_params *params);
-void forward_pass(struct tiny_problem *problem, const struct tiny_params *params);
-void update_slack(struct tiny_problem *problem, const struct tiny_params *params);
-void update_dual(struct tiny_problem *problem, const struct tiny_params *params);
-void update_linear_cost(struct tiny_problem *problem, const struct tiny_params *params);
+void update_primal(TinySolver *problem);
+void backward_pass_grad(TinySolver *problem);
+void forward_pass(TinySolver *problem);
+void update_slack(TinySolver *problem);
+void update_dual(TinySolver *problem);
+void update_linear_cost(TinySolver *problem);
 
 #ifdef __cplusplus
 }
