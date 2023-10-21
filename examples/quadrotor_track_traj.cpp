@@ -14,11 +14,11 @@ extern "C"
     TinyCache cache;
     TinyWorkspace work;
     TinySettings settings;
-    TinySolver problem{&settings, &cache, &work};
+    TinySolver solver{&settings, &cache, &work};
 
     int main()
     {
-        // Map data from problem_data/quadrotor*.hpp
+        // Map data from solver_data/quadrotor*.hpp
         cache.rho = rho_value;
         cache.Kinf = Eigen::Map<Matrix<tinytype, NINPUTS, NSTATES, Eigen::RowMajor>>(Kinf_data);
         cache.Pinf = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Pinf_data);
@@ -93,7 +93,7 @@ extern "C"
             work.g = tiny_MatrixNxNh::Zero();
 
             // Solve MPC problem
-            solve_admm(&problem);
+            tiny_solve(&solver);
 
             std::cout << work.iter << std::endl;
             std::cout << work.u.col(0).transpose().format(CleanFmt) << std::endl;

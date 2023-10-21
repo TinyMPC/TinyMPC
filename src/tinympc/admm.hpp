@@ -2,19 +2,19 @@
 
 #include "types.hpp"
 
-
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void solve_admm(TinySolver *problem);
+  void tiny_solve(TinySolver *solver);
 
-void update_primal(TinySolver *problem);
-void backward_pass_grad(TinySolver *problem);
-void forward_pass(TinySolver *problem);
-void update_slack(TinySolver *problem);
-void update_dual(TinySolver *problem);
-void update_linear_cost(TinySolver *problem);
+  void update_primal(TinySolver *solver);
+  void backward_pass_grad(TinySolver *solver);
+  void forward_pass(TinySolver *solver);
+  void update_slack(TinySolver *solver);
+  void update_dual(TinySolver *solver);
+  void update_linear_cost(TinySolver *solver);
 
 #ifdef __cplusplus
 }

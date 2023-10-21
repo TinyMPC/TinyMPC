@@ -8,94 +8,94 @@ extern "C"
 {
     static uint64_t startTimestamp;
 
-    void solve_admm(TinySolver *problem)
+    void tiny_solve(TinySolver *solver)
     {
         // Initialize variables
-        problem->work->status = 0;
-        problem->work->iter = 1;
+        solver->work->status = 0;
+        solver->work->iter = 1;
 
-        forward_pass(problem);
-        update_slack(problem);
-        update_dual(problem);
-        update_linear_cost(problem);
-        for (int i = 0; i < problem->settings->max_iter; i++)
+        forward_pass(solver);
+        update_slack(solver);
+        update_dual(solver);
+        update_linear_cost(solver);
+        for (int i = 0; i < solver->settings->max_iter; i++)
         {
 
             // Solve linear system with Riccati and roll out to get new trajectory
-            update_primal(problem);
+            update_primal(solver);
 
             // Project slack variables into feasible domain
-            update_slack(problem);
+            update_slack(solver);
 
             // Compute next iteration of dual variables
-            update_dual(problem);
+            update_dual(solver);
 
             // Update linear control cost terms using reference trajectory, duals, and slack variables
-            update_linear_cost(problem);
+            update_linear_cost(solver);
 
-            if (problem->work->iter % problem->settings->check_termination == 0)
+            if (solver->work->iter % solver->settings->check_termination == 0)
             {
-                problem->work->primal_residual_state = (problem->work->x - problem->work->vnew).cwiseAbs().maxCoeff();
-                problem->work->dual_residual_state = ((problem->work->v - problem->work->vnew).cwiseAbs().maxCoeff()) * problem->cache->rho;
-                problem->work->primal_residual_input = (problem->work->u - problem->work->znew).cwiseAbs().maxCoeff();
-                problem->work->dual_residual_input = ((problem->work->z - problem->work->znew).cwiseAbs().maxCoeff()) * problem->cache->rho;
+                solver->work->primal_residual_state = (solver->work->x - solver->work->vnew).cwiseAbs().maxCoeff();
+                solver->work->dual_residual_state = ((solver->work->v - solver->work->vnew).cwiseAbs().maxCoeff()) * solver->cache->rho;
+                solver->work->primal_residual_input = (solver->work->u - solver->work->znew).cwiseAbs().maxCoeff();
+                solver->work->dual_residual_input = ((solver->work->z - solver->work->znew).cwiseAbs().maxCoeff()) * solver->cache->rho;
 
-                if (problem->work->primal_residual_state < problem->settings->abs_pri_tol &&
-                    problem->work->primal_residual_input < problem->settings->abs_pri_tol &&
-                    problem->work->dual_residual_state < problem->settings->abs_dua_tol &&
-                    problem->work->dual_residual_input < problem->settings->abs_dua_tol)
+                if (solver->work->primal_residual_state < solver->settings->abs_pri_tol &&
+                    solver->work->primal_residual_input < solver->settings->abs_pri_tol &&
+                    solver->work->dual_residual_state < solver->settings->abs_dua_tol &&
+                    solver->work->dual_residual_input < solver->settings->abs_dua_tol)
                 {
-                    problem->work->status = 1;
+                    solver->work->status = 1;
                     break;
                 }
             }
 
             // Save previous slack variables
-            problem->work->v = problem->work->vnew;
-            problem->work->z = problem->work->znew;
+            solver->work->v = solver->work->vnew;
+            solver->work->z = solver->work->znew;
 
-            problem->work->iter += 1;
+            solver->work->iter += 1;
 
-            // std::cout << problem->work->primal_residual_state << std::endl;
-            // std::cout << problem->work->dual_residual_state << std::endl;
-            // std::cout << problem->work->primal_residual_input << std::endl;
-            // std::cout << problem->work->dual_residual_input << "\n" << std::endl;
+            // std::cout << solver->work->primal_residual_state << std::endl;
+            // std::cout << solver->work->dual_residual_state << std::endl;
+            // std::cout << solver->work->primal_residual_input << std::endl;
+            // std::cout << solver->work->dual_residual_input << "\n" << std::endl;
         }
     }
 
     /**
      * Do backward Riccati pass then forward roll out
      */
-    void update_primal(TinySolver *problem)
+    void update_primal(TinySolver *solver)
     {
-        backward_pass_grad(problem);
-        forward_pass(problem);
+        backward_pass_grad(solver);
+        forward_pass(solver);
     }
 
     /**
      * Update linear terms from Riccati backward pass
      */
-    void backward_pass_grad(TinySolver *problem)
+    void backward_pass_grad(TinySolver *solver)
     {
         for (int i = NHORIZON - 2; i >= 0; i--)
         {
-            (problem->work->d.col(i)).noalias() = problem->cache->Quu_inv * (problem->work->Bdyn.transpose() * problem->work->p.col(i + 1) + problem->work->r.col(i));
-            (problem->work->p.col(i)).noalias() = problem->work->q.col(i) + problem->cache->AmBKt.lazyProduct(problem->work->p.col(i + 1)) - (problem->cache->Kinf.transpose()).lazyProduct(problem->work->r.col(i)) + problem->cache->coeff_d2p * problem->work->d.col(i); // coeff_d2p always appears to be zeros
+            (solver->work->d.col(i)).noalias() = solver->cache->Quu_inv * (solver->work->Bdyn.transpose() * solver->work->p.col(i + 1) + solver->work->r.col(i));
+            (solver->work->p.col(i)).noalias() = solver->work->q.col(i) + solver->cache->AmBKt.lazyProduct(solver->work->p.col(i + 1)) - (solver->cache->Kinf.transpose()).lazyProduct(solver->work->r.col(i)) + solver->cache->coeff_d2p * solver->work->d.col(i); // coeff_d2p always appears to be zeros
         }
     }
 
     /**
      * Use LQR feedback policy to roll out trajectory
      */
-    void forward_pass(TinySolver *problem)
+    void forward_pass(TinySolver *solver)
     {
         for (int i = 0; i < NHORIZON - 1; i++)
         {
-            (problem->work->u.col(i)).noalias() = -problem->cache->Kinf.lazyProduct(problem->work->x.col(i)) - problem->work->d.col(i);
-            // problem->work->u.col(i) << .001, .02, .3, 4;
-            // DEBUG_PRINT("u(0): %f\n", problem->work->u.col(0)(0));
-            // multAdyn(problem->Ax->cache.Adyn, problem->work->x.col(i));
-            (problem->work->x.col(i + 1)).noalias() = problem->work->Adyn.lazyProduct(problem->work->x.col(i)) + problem->work->Bdyn.lazyProduct(problem->work->u.col(i));
+            (solver->work->u.col(i)).noalias() = -solver->cache->Kinf.lazyProduct(solver->work->x.col(i)) - solver->work->d.col(i);
+            // solver->work->u.col(i) << .001, .02, .3, 4;
+            // DEBUG_PRINT("u(0): %f\n", solver->work->u.col(0)(0));
+            // multAdyn(solver->Ax->cache.Adyn, solver->work->x.col(i));
+            (solver->work->x.col(i + 1)).noalias() = solver->work->Adyn.lazyProduct(solver->work->x.col(i)) + solver->work->Bdyn.lazyProduct(solver->work->u.col(i));
         }
     }
 
@@ -105,21 +105,21 @@ extern "C"
      * TODO: pass in meta information with each constraint assigning it to a
      * projection function
      */
-    void update_slack(TinySolver *problem)
+    void update_slack(TinySolver *solver)
     {
-        problem->work->znew = problem->work->u + problem->work->y;
-        problem->work->vnew = problem->work->x + problem->work->g;
+        solver->work->znew = solver->work->u + solver->work->y;
+        solver->work->vnew = solver->work->x + solver->work->g;
 
         // Box constraints on input
-        if (problem->settings->en_input_bound)
+        if (solver->settings->en_input_bound)
         {
-            problem->work->znew = problem->work->u_max.cwiseMin(problem->work->u_min.cwiseMax(problem->work->znew));
+            solver->work->znew = solver->work->u_max.cwiseMin(solver->work->u_min.cwiseMax(solver->work->znew));
         }
 
         // Box constraints on state
-        if (problem->settings->en_input_bound)
+        if (solver->settings->en_input_bound)
         {
-            problem->work->vnew = problem->work->x_max.cwiseMin(problem->work->x_min.cwiseMax(problem->work->vnew));
+            solver->work->vnew = solver->work->x_max.cwiseMin(solver->work->x_min.cwiseMax(solver->work->vnew));
         }
     }
 
@@ -127,24 +127,24 @@ extern "C"
      * Update next iteration of dual variables by performing the augmented
      * lagrangian multiplier update
      */
-    void update_dual(TinySolver *problem)
+    void update_dual(TinySolver *solver)
     {
-        problem->work->y = problem->work->y + problem->work->u - problem->work->znew;
-        problem->work->g = problem->work->g + problem->work->x - problem->work->vnew;
+        solver->work->y = solver->work->y + solver->work->u - solver->work->znew;
+        solver->work->g = solver->work->g + solver->work->x - solver->work->vnew;
     }
 
     /**
      * Update linear control cost terms in the Riccati feedback using the changing
      * slack and dual variables from ADMM
      */
-    void update_linear_cost(TinySolver *problem)
+    void update_linear_cost(TinySolver *solver)
     {
-        // problem->work->r = -(problem->Uref.array().colwise() * problem->work->r.array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
-        problem->work->r = -problem->cache->rho * (problem->work->znew - problem->work->y);
-        problem->work->q = -(problem->work->Xref.array().colwise() * problem->work->Q.array());
-        problem->work->q -= problem->cache->rho * (problem->work->vnew - problem->work->g);
-        problem->work->p.col(NHORIZON - 1) = -(problem->work->Xref.col(NHORIZON - 1).array().colwise() * problem->work->Qf.array());
-        problem->work->p.col(NHORIZON - 1) -= problem->cache->rho * (problem->work->vnew.col(NHORIZON - 1) - problem->work->g.col(NHORIZON - 1));
+        // solver->work->r = -(solver->Uref.array().colwise() * solver->work->r.array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
+        solver->work->r = -solver->cache->rho * (solver->work->znew - solver->work->y);
+        solver->work->q = -(solver->work->Xref.array().colwise() * solver->work->Q.array());
+        solver->work->q -= solver->cache->rho * (solver->work->vnew - solver->work->g);
+        solver->work->p.col(NHORIZON - 1) = -(solver->work->Xref.col(NHORIZON - 1).array().colwise() * solver->work->Qf.array());
+        solver->work->p.col(NHORIZON - 1) -= solver->cache->rho * (solver->work->vnew.col(NHORIZON - 1) - solver->work->g.col(NHORIZON - 1));
     }
 
 } /* extern "C" */

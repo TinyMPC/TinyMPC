@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Eigen.h>
-#include "constants.hpp"
+#include "glob_opts.hpp"
 
 using Eigen::Matrix;
 
@@ -9,9 +9,6 @@ using Eigen::Matrix;
 extern "C"
 {
 #endif
-
-    typedef float tinytype;
-
     typedef Matrix<tinytype, NSTATES, 1> tiny_VectorNx;
     typedef Matrix<tinytype, NINPUTS, 1> tiny_VectorNu;
     typedef Matrix<tinytype, NSTATES, NSTATES> tiny_MatrixNxNx;
@@ -19,7 +16,7 @@ extern "C"
     typedef Matrix<tinytype, NINPUTS, NSTATES> tiny_MatrixNuNx;
     typedef Matrix<tinytype, NINPUTS, NINPUTS> tiny_MatrixNuNu;
 
-    typedef Matrix<tinytype, NSTATES, NHORIZON, Eigen::ColMajor> tiny_MatrixNxNh;   // Nu x Nh
+    typedef Matrix<tinytype, NSTATES, NHORIZON, Eigen::ColMajor> tiny_MatrixNxNh;       // Nu x Nh
     typedef Matrix<tinytype, NINPUTS, NHORIZON - 1, Eigen::ColMajor> tiny_MatrixNuNhm1; // Nu x Nh-1
 
     /**
