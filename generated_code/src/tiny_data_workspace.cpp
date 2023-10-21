@@ -24,8 +24,9 @@ extern "C"
     };
 
     // Do the same thing with workspace structure. But I am not sure if this is allocated on the stack or heap, at compile time or run time.
-    
+
     /* Define the workspace structure */
+    TinyWorkspace work;
     // TinyWorkspace work = {
     //     Eigen::Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>::Zero(),      // Adyn
     //     Eigen::Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>::Zero(),      // Bdyn

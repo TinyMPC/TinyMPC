@@ -25,16 +25,16 @@ extern "C"
     {
         // Python will call this function with the above data
         tiny_codegen(NSTATES, NINPUTS, NHORIZON, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data, x_min_data, x_max_data, u_min_data, u_max_data, rho_value, 1e-3, 1e-3, 100, 1);
-        // This function copies source code to `abc` directory, create workspace data, a main.cpp file
+        // This function copies source code to `generated_code` directory, create workspace data, a main.cpp file
 
-        // abc/tinympc/glob_opts.hpp
-        // abc/tinympc/types.hpp (fixed)
-        // abc/tinympc/admm.hpp (fixed)
-        // abc/tinympc/admm.cpp (fixed)
-        // abc/tinympc/tiny_data_workspace.hpp (fixed)
+        // generated_code/tinympc/glob_opts.hpp
+        // generated_code/tinympc/types.hpp (fixed)
+        // generated_code/tinympc/admm.hpp (fixed)
+        // generated_code/tinympc/admm.cpp (fixed)
+        // generated_code/tinympc/tiny_data_workspace.hpp (fixed)
 
-        // abc/src/tiny_data_workspace.cpp (save all cache, settings, workspace data)
-        // abc/src/tiny_main.cpp (example main that setup and solve the problem)
+        // generated_code/src/tiny_data_workspace.cpp (save all cache, settings, workspace data)
+        // generated_code/src/tiny_main.cpp (example main that setup and solve the problem)
         // Maybe some CMakelists.txt files if needed
 
         return 0;
