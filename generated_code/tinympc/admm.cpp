@@ -118,7 +118,7 @@ extern "C"
         }
 
         // Box constraints on state
-        if (solver->settings->en_input_bound)
+        if (solver->settings->en_state_bound)
         {
             solver->work->vnew = solver->work->x_max.cwiseMin(solver->work->x_min.cwiseMax(solver->work->vnew));
         }
