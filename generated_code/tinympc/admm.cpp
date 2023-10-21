@@ -46,7 +46,7 @@ extern "C"
                     solver->work->dual_residual_input < solver->settings->abs_dua_tol)
                 {
                     solver->work->status = 1;
-                    return 0;  // 0 means solved
+                    return 0; // 0 means solved
                 }
             }
 
@@ -81,7 +81,7 @@ extern "C"
         for (int i = NHORIZON - 2; i >= 0; i--)
         {
             (solver->work->d.col(i)).noalias() = solver->cache->Quu_inv * (solver->work->Bdyn.transpose() * solver->work->p.col(i + 1) + solver->work->r.col(i));
-            (solver->work->p.col(i)).noalias() = solver->work->q.col(i) + solver->cache->AmBKt.lazyProduct(solver->work->p.col(i + 1)) - (solver->cache->Kinf.transpose()).lazyProduct(solver->work->r.col(i)) + solver->cache->coeff_d2p * solver->work->d.col(i); // coeff_d2p always appears to be zeros
+            (solver->work->p.col(i)).noalias() = solver->work->q.col(i) + solver->cache->AmBKt.lazyProduct(solver->work->p.col(i + 1)) - (solver->cache->Kinf.transpose()).lazyProduct(solver->work->r.col(i)); // + solver->cache->coeff_d2p * solver->work->d.col(i); // coeff_d2p always appears to be zeros (faster to comment out)
         }
     }
 
@@ -143,8 +143,8 @@ extern "C"
         // solver->work->r = -(solver->Uref.array().colwise() * solver->work->r.array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
         solver->work->r = -solver->cache->rho * (solver->work->znew - solver->work->y);
         solver->work->q = -(solver->work->Xref.array().colwise() * solver->work->Q.array());
-        solver->work->q -= solver->cache->rho * (solver->work->vnew - solver->work->g);
-        solver->work->p.col(NHORIZON - 1) = -(solver->work->Xref.col(NHORIZON - 1).array().colwise() * solver->work->Qf.array());
+        (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vnew - solver->work->g);
+        solver->work->p.col(NHORIZON - 1) = -(solver->work->Xref.col(NHORIZON - 1).transpose().lazyProduct(solver->cache->Pinf));
         solver->work->p.col(NHORIZON - 1) -= solver->cache->rho * (solver->work->vnew.col(NHORIZON - 1) - solver->work->g.col(NHORIZON - 1));
     }
 

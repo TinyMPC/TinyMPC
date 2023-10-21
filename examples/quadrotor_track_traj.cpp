@@ -4,7 +4,7 @@
 #include "problem_data/quadrotor_20hz_params.hpp"
 #include "trajectory_data/quadrotor_20hz_y_axis_line.hpp"
 
-using Eigen::Matrix;
+Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
 
 #define DT 1 / 100
 
@@ -33,8 +33,8 @@ extern "C"
         work.R = Eigen::Map<tiny_VectorNu>(R_data);
         work.u_min = tiny_MatrixNuNhm1::Constant(-0.5);
         work.u_max = tiny_MatrixNuNhm1::Constant(0.5);
-        work.x_min = tiny_MatrixNxNh::Constant(-100);
-        work.x_max = tiny_MatrixNxNh::Constant(100);
+        work.x_min = tiny_MatrixNxNh::Constant(-5);
+        work.x_max = tiny_MatrixNxNh::Constant(5);
 
         work.Xref = tiny_MatrixNxNh::Zero();
         work.Uref = tiny_MatrixNuNhm1::Zero();
@@ -81,9 +81,7 @@ extern "C"
 
         std::cout << work.Xref << std::endl;
 
-        Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-
-        for (int k = 0; k < 100 - NHORIZON - 1; ++k)
+        for (int k = 0; k < NTOTAL - NHORIZON - 1; ++k)
         {
             std::cout << (x0 - work.Xref.col(1)).norm() << std::endl;
             // Update measurement
