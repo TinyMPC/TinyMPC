@@ -8,7 +8,7 @@ extern "C"
 {
     static uint64_t startTimestamp;
 
-    void tiny_solve(TinySolver *solver)
+    int tiny_solve(TinySolver *solver)
     {
         // Initialize variables
         solver->work->status = 0;
@@ -46,7 +46,7 @@ extern "C"
                     solver->work->dual_residual_input < solver->settings->abs_dua_tol)
                 {
                     solver->work->status = 1;
-                    break;
+                    return 1;
                 }
             }
 
@@ -61,6 +61,7 @@ extern "C"
             // std::cout << solver->work->primal_residual_input << std::endl;
             // std::cout << solver->work->dual_residual_input << "\n" << std::endl;
         }
+        return 0;
     }
 
     /**
