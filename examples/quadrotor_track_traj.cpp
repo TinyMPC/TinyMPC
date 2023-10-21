@@ -2,7 +2,7 @@
 
 #include <tinympc/admm.hpp>
 #include "problem_data/quadrotor_20hz_params.hpp"
-#include "trajectory_data/quadrotor_100hz_ref_hover.hpp"
+#include "trajectory_data/quadrotor_20hz_y_axis_line.hpp"
 
 using Eigen::Matrix;
 
@@ -33,8 +33,8 @@ extern "C"
         work.R = Eigen::Map<tiny_VectorNu>(R_data);
         work.u_min = tiny_MatrixNuNhm1::Constant(-0.5);
         work.u_max = tiny_MatrixNuNhm1::Constant(0.5);
-        work.x_min = tiny_MatrixNxNh::Constant(-10);
-        work.x_max = tiny_MatrixNxNh::Constant(10);
+        work.x_min = tiny_MatrixNxNh::Constant(-100);
+        work.x_max = tiny_MatrixNxNh::Constant(100);
 
         work.Xref = tiny_MatrixNxNh::Zero();
         work.Uref = tiny_MatrixNuNhm1::Zero();
@@ -70,14 +70,14 @@ extern "C"
         tiny_VectorNx x0, x1; // current and next simulation states
 
         // Copy reference trajectory into Eigen matrix
-        // Matrix<tinytype, NSTATES, NTOTAL, Eigen::ColMajor> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data).transpose();
+        Matrix<tinytype, NSTATES, NTOTAL, Eigen::ColMajor> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data).transpose();
         tiny_VectorNx Xref_origin;
         Xref_origin << 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
-        // work.Xref = Xref_total.block<NSTATES, NHORIZON>(0,0);
-        work.Xref = Xref_origin.replicate<1, NHORIZON>();
-        // x0 = work.Xref.col(0);
-        x0 << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+        work.Xref = Xref_total.block<NSTATES, NHORIZON>(0, 0);
+        // work.Xref = Xref_origin.replicate<1, NHORIZON>();
+        x0 = work.Xref.col(0);
+        // x0 << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
         std::cout << work.Xref << std::endl;
 
@@ -85,8 +85,12 @@ extern "C"
 
         for (int k = 0; k < 100 - NHORIZON - 1; ++k)
         {
+            std::cout << (x0 - work.Xref.col(1)).norm() << std::endl;
             // Update measurement
             work.x.col(0) = x0;
+
+            // Update reference
+            work.Xref = Xref_total.block<NSTATES, NHORIZON>(0, k);
 
             // Reset dual variables
             work.y = tiny_MatrixNuNhm1::Zero();
@@ -95,8 +99,8 @@ extern "C"
             // Solve MPC problem
             tiny_solve(&solver);
 
-            std::cout << work.iter << std::endl;
-            std::cout << work.u.col(0).transpose().format(CleanFmt) << std::endl;
+            // std::cout << work.iter << std::endl;
+            // std::cout << work.u.col(0).transpose().format(CleanFmt) << std::endl;
 
             // Simulate forward
             x1 = work.Adyn * x0 + work.Bdyn * work.u.col(0);
@@ -104,7 +108,7 @@ extern "C"
 
             std::cout << x0.transpose().format(CleanFmt) << std::endl;
         }
-    
+
         return 0;
     }
 
