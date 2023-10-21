@@ -95,7 +95,7 @@ int tiny_codegen(int nx, int nu, int N,
   std::cout << "AmBKt = " << cache.AmBKt.format(CleanFmt) << std::endl;
   std::cout << "coeff_d2p = " << cache.coeff_d2p.format(CleanFmt) << std::endl;
 
-  // Write to files
+  // TODO(sschoedel): Write to files (check OSQP for references https://github.com/osqp/osqp/blob/master/src/codegen.c)
   // Write caches
   // Write settings
   // Write workspace

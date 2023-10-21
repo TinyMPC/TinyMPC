@@ -14,7 +14,7 @@ extern "C"
 {
 #endif
 
-  extern TinySolver tiny_data_solver;
+    extern TinySolver tiny_data_solver;
 
 #ifdef __cplusplus
 }
