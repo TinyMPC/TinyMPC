@@ -46,7 +46,7 @@ extern "C"
                     solver->work->dual_residual_input < solver->settings->abs_dua_tol)
                 {
                     solver->work->status = 1;
-                    return 1;
+                    return 0;  // 0 means solved
                 }
             }
 
@@ -61,7 +61,7 @@ extern "C"
             // std::cout << solver->work->primal_residual_input << std::endl;
             // std::cout << solver->work->dual_residual_input << "\n" << std::endl;
         }
-        return 0;
+        return 1;
     }
 
     /**
