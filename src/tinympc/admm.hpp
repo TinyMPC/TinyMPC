@@ -2,22 +2,19 @@
 
 #include "types.hpp"
 
-
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void multAdyn(tiny_VectorNx &Ax, const tiny_MatrixNxNx &A, const tiny_VectorNx &x);
+  int tiny_solve(TinySolver *solver);
 
-void solve_lqr(struct tiny_problem *problem, const struct tiny_params *params);
-void solve_admm(struct tiny_problem *problem, const struct tiny_params *params);
-
-void update_primal(struct tiny_problem *problem, const struct tiny_params *params);
-void backward_pass_grad(struct tiny_problem *problem, const struct tiny_params *params);
-void forward_pass(struct tiny_problem *problem, const struct tiny_params *params);
-void update_slack(struct tiny_problem *problem, const struct tiny_params *params);
-void update_dual(struct tiny_problem *problem, const struct tiny_params *params);
-void update_linear_cost(struct tiny_problem *problem, const struct tiny_params *params);
+  void update_primal(TinySolver *solver);
+  void backward_pass_grad(TinySolver *solver);
+  void forward_pass(TinySolver *solver);
+  void update_slack(TinySolver *solver);
+  void update_dual(TinySolver *solver);
+  void update_linear_cost(TinySolver *solver);
 
 #ifdef __cplusplus
 }
