@@ -3,8 +3,6 @@
 #include <tinympc/admm.hpp>
 #include <tinympc/codegen.hpp>
 
-#define DT 1 / 100
-
 // For codegen, double type should be used, otherwise, Riccati won't converge.
 
 extern "C"
