@@ -6,8 +6,7 @@
 using Eigen::Matrix;
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
     typedef Matrix<tinytype, NSTATES, 1> tiny_VectorNx;
     typedef Matrix<tinytype, NINPUTS, 1> tiny_VectorNu;
@@ -101,9 +100,9 @@ extern "C"
      */
     typedef struct
     {
-        TinySettings *settings; ///< Problem settings
-        TinyCache *cache;       ///< Problem cache
-        TinyWorkspace *work;    ///< Solver workspace
+        TinySettings *settings; // Problem settings
+        TinyCache *cache;       // Problem cache
+        TinyWorkspace *work;    // Solver workspace
     } TinySolver;
 
 #ifdef __cplusplus
