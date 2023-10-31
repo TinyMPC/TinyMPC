@@ -21,6 +21,8 @@ extern "C" {
 /* Define the maximum allowed length of the filename (no extension)*/
 #define FILE_LENGTH 100
 
+#define BUF_SIZE 65536
+
 using namespace Eigen;
 IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
 
@@ -44,7 +46,7 @@ int tiny_codegen(int nx, int nu, int N,
                  tinytype *Adyn, tinytype *Bdyn, tinytype *Q, tinytype *Qf, tinytype *R,
                  tinytype *x_min, tinytype *x_max, tinytype *u_min, tinytype *u_max,
                  tinytype rho, tinytype abs_pri_tol, tinytype abs_dua_tol, int max_iters, int check_termination,
-                 const char* output_dir, const char* file_prefix)
+                 const char* tinympc_dir, const char* output_dir, const char* file_prefix)
 {
     TinyCache cache;
     TinySettings settings;
@@ -142,16 +144,14 @@ int tiny_codegen(int nx, int nu, int N,
     FILE *data_f;
     time_t start_time;
 
-    sprintf(workspace_fname, "%s%sworkspace", output_dir, file_prefix);
+    sprintf(workspace_fname, "%s%sworkspace", tinympc_dir, output_dir);
     sprintf(workspace_cfname, "%s.h", workspace_fname);
 
     // Open source file
     data_f = fopen(workspace_cfname, "w+");
-    // data_f = fopen("/tmp/test.c", "w+");
     if (data_f == NULL)
         printf("ERROR OPENING FILE\n");
         // return tiny_error(TINY_FOPEN_ERROR);
-
 
     time(&start_time);
     fprintf(data_f, "/*\n");
@@ -227,7 +227,36 @@ int tiny_codegen(int nx, int nu, int N,
     fclose(data_f);
     printf("workspace generated in %s\n", workspace_cfname);
 
-    // Write to 
+    // Copy solver header into codegen output directory
+    char solver_src_cfname[PATH_LENGTH];
+    char solver_dst_cfname[PATH_LENGTH];
+    FILE *src_f, *dst_f;
+    size_t in, out;
+    char buf[BUF_SIZE];
+
+    sprintf(solver_src_cfname, "%ssrc/tinympc/admm.hpp", tinympc_dir);
+    sprintf(solver_dst_cfname, "%s%sadmm.hpp", tinympc_dir, output_dir);
+
+    src_f = fopen(solver_src_cfname, "r");
+    if (src_f == NULL)
+        printf("ERROR OPENING SOLVER SOURCE FILE\n");
+        // return tiny_error(TINY_FOPEN_ERROR);
+    dst_f = fopen(solver_dst_cfname, "w+");
+    if (dst_f == NULL)
+        printf("ERROR OPENING SOLVER DESTINATION FILE\n");
+        // return tiny_error(TINY_FOPEN_ERROR);
+
+
+    // Copy contents of solver to destination codegen file
+    while (1) {
+        in = fread(buf, 1, BUF_SIZE, src_f);
+        if (in == 0) break;
+        out = fread(buf, 1, in, dst_f);
+        if (out == 0); break;
+    }
+
+    fclose(src_f);
+    fclose(dst_f);
 
     // TODO: add error codes
     return 1;
