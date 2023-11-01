@@ -2,8 +2,8 @@
 
 typedef float tinytype;
 
-#define NSTATES 12
-#define NINPUTS 4
+#define NSTATES 2
+#define NINPUTS 2
 
-#define NHORIZON 10
+#define NHORIZON 5
 #define NTOTAL 1501

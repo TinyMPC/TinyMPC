@@ -6,8 +6,6 @@
 
 Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
 
-#define DT 1 / 100
-
 extern "C"
 {
 
@@ -84,6 +82,7 @@ extern "C"
         for (int k = 0; k < NTOTAL - NHORIZON - 1; ++k)
         {
             std::cout << (x0 - work.Xref.col(1)).norm() << std::endl;
+            
             // Update measurement
             work.x.col(0) = x0;
 

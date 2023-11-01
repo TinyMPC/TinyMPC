@@ -3,8 +3,6 @@
 #include <tinympc/admm.hpp>
 #include <tinympc/codegen.hpp>
 
-#define DT 1 / 100
-
 // For codegen, double type should be used, otherwise, Riccati won't converge.
 
 extern "C"
@@ -21,10 +19,13 @@ extern "C"
     tinytype u_min_data[NINPUTS * (NHORIZON - 1)] = {-0.5};
     tinytype u_max_data[NINPUTS * (NHORIZON - 1)] = {0.5};
 
+    char tinympc_dir[255] = "/home/sam/Git/tinympc/TinyMPC/";
+    char output_dir[255] = "generated_code/src";
+
     int main()
     {
         // Python will call this function with the above data
-        tiny_codegen(NSTATES, NINPUTS, NHORIZON, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data, x_min_data, x_max_data, u_min_data, u_max_data, rho_value, 1e-3, 1e-3, 100, 1);
+        tiny_codegen(NSTATES, NINPUTS, NHORIZON, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data, x_min_data, x_max_data, u_min_data, u_max_data, rho_value, 1e-3, 1e-3, 100, 1, tinympc_dir, output_dir);
         // This function copies source code to `generated_code` directory, create workspace data, a main.cpp file
 
         // generated_code/tinympc/glob_opts.hpp
