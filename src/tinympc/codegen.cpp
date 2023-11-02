@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include <iostream>
 #include <Eigen/Dense>
@@ -37,133 +40,127 @@ static void print_matrix(FILE *f, MatrixXf mat, int num_elements) {
     // }
 }
 
-static void print_vector(FILE *f, VectorXf mat, int num_elements) {
-    for (int i=0; i<num_elements; i++) {
-        fprintf(f, "(tinytype)%.16f", mat.reshaped()[i]);
-        if (i < num_elements-1)
-            fprintf(f, ",");
-    }
-    // for (tinytype x : mat.reshaped()) {
-    //     fprintf(f, "\t\t(tinytype)%.20f,\n", x);
-    // }
-}
-
-int tiny_codegen(int nx, int nu, int N,
-                 tinytype *Adyn, tinytype *Bdyn, tinytype *Q, tinytype *Qf, tinytype *R,
-                 tinytype *x_min, tinytype *x_max, tinytype *u_min, tinytype *u_max,
+int tiny_codegen(const int nx, const int nu, const int N,
+                 tinytype *Adyn_data, tinytype *Bdyn_data, tinytype *Q_data, tinytype *Qf_data, tinytype *R_data,
+                 tinytype *x_min_data, tinytype *x_max_data, tinytype *u_min_data, tinytype *u_max_data,
                  tinytype rho, tinytype abs_pri_tol, tinytype abs_dua_tol, int max_iters, int check_termination,
                  const char* tinympc_dir, const char* output_dir)
 {
-    TinyCache cache;
-    TinySettings settings;
-    TinyWorkspace work;
-    TinySolver solver{&settings, &cache, &work};
+    int en_state_bound = 0;
+    int en_input_bound = 0;
 
-    settings.abs_dua_tol = abs_dua_tol;
-    settings.abs_pri_tol = abs_pri_tol;
-    settings.check_termination = check_termination;
-    settings.max_iter = max_iters;
+    if (x_min_data != nullptr && x_max_data != nullptr) {
+        en_state_bound = 1;
+    }
+    else {
+        en_state_bound = 0;
+    }
 
-    if (x_min != nullptr && x_max != nullptr)
-    {
-        settings.en_state_bound = 1;
+    if (u_min_data != nullptr && u_max_data != nullptr) {
+        en_input_bound = 1;
     }
-    else
-    {
-        settings.en_state_bound = 0;
-    }
-    if (u_min != nullptr && u_max != nullptr)
-    {
-        settings.en_input_bound = 1;
-    }
-    else
-    {
-        settings.en_input_bound = 0;
+    else {
+        en_input_bound = 0;
     }
 
 
-    cache.rho = rho;
-    work.Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn);
-    work.Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS, RowMajor>>(Bdyn);
-    work.Q = Map<tiny_VectorNx>(Q);
-    work.Qf = Map<tiny_VectorNx>(Qf);
-    work.R = Map<tiny_VectorNu>(R);
-    work.x_min = Map<tiny_MatrixNxNh>(x_min); // x_min is col-major
-    work.x_max = Map<tiny_MatrixNxNh>(x_max);
-    work.u_min = Map<tiny_MatrixNuNhm1>(u_min); // u_min is col-major
-    work.u_max = Map<tiny_MatrixNuNhm1>(u_max);
+    MatrixXf Adyn = MatrixXf::Map(Adyn_data, nx, nx);
+    MatrixXf Bdyn = MatrixXf::Map(Bdyn_data, nx, nu);
+    MatrixXf Q = MatrixXf::Map(Q_data, nx, 1);
+    MatrixXf Qf = MatrixXf::Map(Qf_data, nx, 1);
+    MatrixXf R = MatrixXf::Map(R_data, nx, 1);
+    MatrixXf x_min = MatrixXf::Map(x_min_data, N, nx).transpose(); // x_min is col-major
+    MatrixXf x_max = MatrixXf::Map(x_max_data, N, nx).transpose();
+    MatrixXf u_min = MatrixXf::Map(u_min_data, N-1, nu).transpose(); // u_min is col-major
+    MatrixXf u_max = MatrixXf::Map(u_max_data, N-1, nu).transpose();
 
     // Update by adding rho * identity matrix to Q, Qf, R
-    work.Q = work.Q + rho * tiny_VectorNx::Ones();
-    work.Qf = work.Qf + rho * tiny_VectorNx::Ones();
-    work.R = work.R + rho * tiny_VectorNu::Ones();
-    tiny_MatrixNxNx Q1 = work.Q.array().matrix().asDiagonal();
-    tiny_MatrixNxNx Qf1 = work.Qf.array().matrix().asDiagonal();
-    tiny_MatrixNuNu R1 = work.R.array().matrix().asDiagonal();
+    Q = Q + rho * MatrixXf::Ones(nx, 1);
+    Qf = Qf + rho * MatrixXf::Ones(nx, 1);
+    R = R + rho * MatrixXf::Ones(nx, 1);
+    MatrixXf Q1 = Q.array().matrix().asDiagonal();
+    MatrixXf Qf1 = Qf.array().matrix().asDiagonal();
+    MatrixXf R1 = R.array().matrix().asDiagonal();
 
     // Printing
-    std::cout << "A = " << work.Adyn.format(CleanFmt) << std::endl;
-    std::cout << "B = " << work.Bdyn.format(CleanFmt) << std::endl;
+    std::cout << "A = " << Adyn.format(CleanFmt) << std::endl;
+    std::cout << "B = " << Bdyn.format(CleanFmt) << std::endl;
     std::cout << "Q = " << Q1.format(CleanFmt) << std::endl;
     std::cout << "Qf = " << Qf1.format(CleanFmt) << std::endl;
     std::cout << "R = " << R1.format(CleanFmt) << std::endl;
-    std::cout << "rho = " << cache.rho << std::endl;
+    std::cout << "rho = " << rho << std::endl;
 
     // Riccati recursion to get Kinf, Pinf 
-    tiny_MatrixNuNx Ktp1;
-    tiny_MatrixNxNx Ptp1 = Qf1;
-    Ktp1 = tiny_MatrixNuNx::Zero();
+    MatrixXf Ktp1 = MatrixXf::Zero(nu, nx);
+    MatrixXf Ptp1 = Qf1;
+    MatrixXf Kinf = MatrixXf::Zero(nu, nx);
+    MatrixXf Pinf = MatrixXf::Zero(nx, nx);
 
     for (int i = 0; i < 100; i++)
     {
-        cache.Kinf = (R1 + work.Bdyn.transpose() * Ptp1 * work.Bdyn).inverse() * work.Bdyn.transpose() * Ptp1 * work.Adyn;
-        cache.Pinf = Q1 + work.Adyn.transpose() * Ptp1 * (work.Adyn - work.Bdyn * cache.Kinf);
+        Kinf = (R1 + Bdyn.transpose() * Ptp1 * Bdyn).inverse() * Bdyn.transpose() * Ptp1 * Adyn;
+        Pinf = Q1 + Adyn.transpose() * Ptp1 * (Adyn - Bdyn * Kinf);
         // if Kinf converges, break
-        if ((cache.Kinf - Ktp1).cwiseAbs().maxCoeff() < 1e-6)
+        if ((Kinf - Ktp1).cwiseAbs().maxCoeff() < 1e-6)
         {
             std::cout << "Kinf converged after " << i+1 << " iterations" << std::endl;
             break;
         }
-        Ktp1 = cache.Kinf;
-        Ptp1 = cache.Pinf;
+        Ktp1 = Kinf;
+        Ptp1 = Pinf;
     }
 
     // Compute cached matrices
-    cache.Quu_inv = (R1 + work.Bdyn.transpose() * cache.Pinf * work.Bdyn).inverse();
-    cache.AmBKt = (work.Adyn - work.Bdyn * cache.Kinf).transpose();
-    cache.coeff_d2p = cache.Kinf.transpose() * R1 - cache.AmBKt * cache.Pinf * work.Bdyn;
+    MatrixXf Quu_inv = (R1 + Bdyn.transpose() * Pinf * Bdyn).inverse();
+    MatrixXf AmBKt = (Adyn - Bdyn * Kinf).transpose();
+    MatrixXf coeff_d2p = Kinf.transpose() * R1 - AmBKt * Pinf * Bdyn;
 
-    std::cout << "Kinf = " << cache.Kinf.format(CleanFmt) << std::endl;
-    std::cout << "Pinf = " << cache.Pinf.format(CleanFmt) << std::endl;
-    std::cout << "Quu_inv = " << cache.Quu_inv.format(CleanFmt) << std::endl;
-    std::cout << "AmBKt = " << cache.AmBKt.format(CleanFmt) << std::endl;
-    std::cout << "coeff_d2p = " << cache.coeff_d2p.format(CleanFmt) << std::endl;
+    std::cout << "Kinf = " << Kinf.format(CleanFmt) << std::endl;
+    std::cout << "Pinf = " << Pinf.format(CleanFmt) << std::endl;
+    std::cout << "Quu_inv = " << Quu_inv.format(CleanFmt) << std::endl;
+    std::cout << "AmBKt = " << AmBKt.format(CleanFmt) << std::endl;
+    std::cout << "coeff_d2p = " << coeff_d2p.format(CleanFmt) << std::endl;
 
-    // TODO(sschoedel): Write to files (check OSQP for references https://github.com/osqp/osqp/blob/master/src/codegen.c)
-    // Write caches
-    // Write settings
-    // Write workspace
-    // Write solver
+
+    // Make code gen output directory structure
+    char workspace_dname[PATH_LENGTH];
+    char workspace_src_dname[PATH_LENGTH];
+    char workspace_tinympc_dname[PATH_LENGTH];
+    char workspace_include_dname[PATH_LENGTH];
+
+    sprintf(workspace_dname, "%s%s", tinympc_dir, output_dir);
+    sprintf(workspace_src_dname, "%s/src", workspace_dname);
+    sprintf(workspace_tinympc_dname, "%s/tinympc", workspace_dname);
+    sprintf(workspace_include_dname, "%s/include", workspace_dname);
+
+    struct stat st = {0};
+
+    if (stat(workspace_dname, &st) == -1) {
+        printf("Creating generated code directory at %s\n", workspace_dname);
+        mkdir(workspace_dname, 0700);           // workspace/
+        mkdir(workspace_src_dname, 0700);       // workspace/src
+        mkdir(workspace_tinympc_dname, 0700);   // workspace/tinympc
+        mkdir(workspace_include_dname, 0700);   // workspace/include
+    }
 
     // Codegen workspace file
-    char workspace_fname[PATH_LENGTH], workspace_cfname[PATH_LENGTH];
-    FILE *data_f;
+    char data_workspace_fname[PATH_LENGTH], glob_opts_fname[PATH_LENGTH];
+    FILE *data_f, *glob_opts_f;
     time_t start_time;
 
-    sprintf(workspace_fname, "%s%stiny_data_workspace", tinympc_dir, output_dir);
-    sprintf(workspace_cfname, "%s.cpp", workspace_fname);
+    sprintf(data_workspace_fname, "%s/tiny_data_workspace.cpp", workspace_src_dname);
+    sprintf(glob_opts_fname, "%s/glob_opts.hpp", workspace_tinympc_dname);
 
     // Open source file
-    data_f = fopen(workspace_cfname, "w+");
+    data_f = fopen(data_workspace_fname, "w+");
     if (data_f == NULL)
-        printf("ERROR OPENING FILE\n");
+        printf("ERROR OPENING DATA WORKSPACE FILE\n");
         // return tiny_error(TINY_FOPEN_ERROR);
 
+    // Preamble
     time(&start_time);
     fprintf(data_f, "/*\n");
     fprintf(data_f, " * This file was autogenerated by TinyMPC on %s", ctime(&start_time));
-    fprintf(data_f, " * \n");
-    fprintf(data_f, " * This file contains a sample solver to run the embedded code.\n");
     fprintf(data_f, " */\n\n");
 
     // Open extern C
@@ -175,67 +172,67 @@ int tiny_codegen(int nx, int nu, int N,
     // Write settings to workspace file
     fprintf(data_f, "/* User settings */\n");
     fprintf(data_f, "TinySettings settings = {\n");
-    fprintf(data_f, "\t(tinytype)%.16f,\t// primal tolerance\n", settings.abs_pri_tol);
-    fprintf(data_f, "\t(tinytype)%.16f,\t// dual tolerance\n", settings.abs_dua_tol);
-    fprintf(data_f, "\t%d,\t\t// max iterations\n", settings.max_iter);
-    fprintf(data_f, "\t%d,\t\t// iterations per termination check\n", settings.check_termination);
-    fprintf(data_f, "\t%d,\t\t// enable state constraints\n", settings.en_state_bound);
-    fprintf(data_f, "\t%d\t\t// enable input constraints\n", settings.en_input_bound);
+    fprintf(data_f, "\t(tinytype)%.16f,\t// primal tolerance\n", abs_pri_tol);
+    fprintf(data_f, "\t(tinytype)%.16f,\t// dual tolerance\n", abs_dua_tol);
+    fprintf(data_f, "\t%d,\t\t// max iterations\n", max_iters);
+    fprintf(data_f, "\t%d,\t\t// iterations per termination check\n", check_termination);
+    fprintf(data_f, "\t%d,\t\t// enable state constraints\n", en_state_bound);
+    fprintf(data_f, "\t%d\t\t// enable input constraints\n", en_input_bound);
     fprintf(data_f, "};\n\n");
     
     // Write cache to workspace file
     fprintf(data_f, "/* Matrices that must be recomputed with changes in time step, rho */\n");
     fprintf(data_f, "TinyCache cache = {\n");
-    fprintf(data_f, "\t(tinytype)%.16f,\t// rho (step size/penalty)\n", cache.rho);
-    fprintf(data_f, "\t(tiny_MatrixNuNx() << "); print_matrix(data_f, cache.Kinf, NINPUTS*NSTATES); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_MatrixNxNx() << "); print_matrix(data_f, cache.Pinf, NSTATES*NSTATES); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_MatrixNuNu() << "); print_matrix(data_f, cache.Quu_inv, NINPUTS*NINPUTS); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_MatrixNxNu() << "); print_matrix(data_f, cache.AmBKt, NSTATES*NINPUTS); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_MatrixNxNu() << "); print_matrix(data_f, cache.coeff_d2p, NSTATES*NINPUTS); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tinytype)%.16f,\t// rho (step size/penalty)\n", rho);
+    fprintf(data_f, "\t(tiny_MatrixNuNx() << "); print_matrix(data_f, Kinf, nu*nx); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_MatrixNxNx() << "); print_matrix(data_f, Pinf, nx*nx); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_MatrixNuNu() << "); print_matrix(data_f, Quu_inv, nu*nu); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_MatrixNxNu() << "); print_matrix(data_f, AmBKt, nx*nu); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_MatrixNxNu() << "); print_matrix(data_f, coeff_d2p, nx*nu); fprintf(data_f, ").finished(),\n");
     fprintf(data_f, "};\n\n");
 
     // Write workspace (problem variables) to workspace file
     fprintf(data_f, "/* Problem variables */\n");
     fprintf(data_f, "TinyWorkspace work = {\n");
 
-    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, tiny_MatrixNxNh::Zero(), NSTATES*NHORIZON); fprintf(data_f, ").finished(),\n"); // x
-    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, tiny_MatrixNuNhm1::Zero(), NINPUTS*(NHORIZON-1)); fprintf(data_f, ").finished(),\n"); // u
+    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, MatrixXf::Zero(nx, N), nx*N); fprintf(data_f, ").finished(),\n"); // x
+    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, MatrixXf::Zero(nu, N-1), nu*(N-1)); fprintf(data_f, ").finished(),\n"); // u
 
-    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, tiny_MatrixNxNh::Zero(), NSTATES*NHORIZON); fprintf(data_f, ").finished(),\n"); // q
-    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, tiny_MatrixNuNhm1::Zero(), NINPUTS*(NHORIZON-1)); fprintf(data_f, ").finished(),\n"); // r
+    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, MatrixXf::Zero(nx, N), nx*N); fprintf(data_f, ").finished(),\n"); // q
+    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, MatrixXf::Zero(nu, N-1), nu*(N-1)); fprintf(data_f, ").finished(),\n"); // r
 
-    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, tiny_MatrixNxNh::Zero(), NSTATES*NHORIZON); fprintf(data_f, ").finished(),\n"); // p
-    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, tiny_MatrixNuNhm1::Zero(), NINPUTS*(NHORIZON-1)); fprintf(data_f, ").finished(),\n"); // d
+    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, MatrixXf::Zero(nx, N), nx*N); fprintf(data_f, ").finished(),\n"); // p
+    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, MatrixXf::Zero(nu, N-1), nu*(N-1)); fprintf(data_f, ").finished(),\n"); // d
 
-    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, tiny_MatrixNxNh::Zero(), NSTATES*NHORIZON); fprintf(data_f, ").finished(),\n"); // v
-    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, tiny_MatrixNxNh::Zero(), NSTATES*NHORIZON); fprintf(data_f, ").finished(),\n"); // vnew
-    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, tiny_MatrixNuNhm1::Zero(), NINPUTS*(NHORIZON-1)); fprintf(data_f, ").finished(),\n"); // z
-    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, tiny_MatrixNuNhm1::Zero(), NINPUTS*(NHORIZON-1)); fprintf(data_f, ").finished(),\n"); // znew
+    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, MatrixXf::Zero(nx, N), nx*N); fprintf(data_f, ").finished(),\n"); // v
+    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, MatrixXf::Zero(nx, N), nx*N); fprintf(data_f, ").finished(),\n"); // vnew
+    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, MatrixXf::Zero(nu, N-1), nu*(N-1)); fprintf(data_f, ").finished(),\n"); // z
+    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, MatrixXf::Zero(nu, N-1), nu*(N-1)); fprintf(data_f, ").finished(),\n"); // znew
 
-    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, tiny_MatrixNxNh::Zero(), NSTATES*NHORIZON); fprintf(data_f, ").finished(),\n"); // g
-    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, tiny_MatrixNuNhm1::Zero(), NINPUTS*(NHORIZON-1)); fprintf(data_f, ").finished(),\n"); // y
+    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, MatrixXf::Zero(nx, N), nx*N); fprintf(data_f, ").finished(),\n"); // g
+    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, MatrixXf::Zero(nu, N-1), nu*(N-1)); fprintf(data_f, ").finished(),\n"); // u
 
-    fprintf(data_f, "\t(tinytype)%.16f,\t// state primal residual\n", work.primal_residual_state);
-    fprintf(data_f, "\t(tinytype)%.16f,\t// input primal residual\n", work.primal_residual_input);
-    fprintf(data_f, "\t(tinytype)%.16f,\t// state dual residual\n", work.dual_residual_state);
-    fprintf(data_f, "\t(tinytype)%.16f,\t// input dual residual\n", work.dual_residual_input);
-    fprintf(data_f, "\t%d,\t// solve status\n", work.status);
-    fprintf(data_f, "\t%d,\t// solve iteration\n", work.iter);
+    fprintf(data_f, "\t(tinytype)%.16f,\t// state primal residual\n", 0.0);
+    fprintf(data_f, "\t(tinytype)%.16f,\t// input primal residual\n", 0.0);
+    fprintf(data_f, "\t(tinytype)%.16f,\t// state dual residual\n", 0.0);
+    fprintf(data_f, "\t(tinytype)%.16f,\t// input dual residual\n", 0.0);
+    fprintf(data_f, "\t%d,\t// solve status\n", 0);
+    fprintf(data_f, "\t%d,\t// solve iteration\n", 0);
 
-    fprintf(data_f, "\t(tiny_VectorNx() << "); print_vector(data_f, work.Q, NSTATES); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_VectorNx() << "); print_vector(data_f, work.Qf, NSTATES); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_VectorNu() << "); print_vector(data_f, work.R, NINPUTS); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_MatrixNxNx() << "); print_matrix(data_f, work.Adyn, NSTATES*NSTATES); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_MatrixNxNu() << "); print_matrix(data_f, work.Bdyn, NSTATES*NINPUTS); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_VectorNx() << "); print_matrix(data_f, Q, nx); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_VectorNx() << "); print_matrix(data_f, Qf, nx); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_VectorNu() << "); print_matrix(data_f, R, nu); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_MatrixNxNx() << "); print_matrix(data_f, Adyn, nx*nx); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_MatrixNxNu() << "); print_matrix(data_f, Bdyn, nx*nu); fprintf(data_f, ").finished(),\n");
 
-    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, work.u_min, NINPUTS*(NHORIZON-1)); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, work.u_max, NINPUTS*(NHORIZON-1)); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, work.x_min, NSTATES*NHORIZON); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, work.x_max, NSTATES*NHORIZON); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, work.Xref, NSTATES*NHORIZON); fprintf(data_f, ").finished(),\n");
-    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, work.Uref, NINPUTS*(NHORIZON-1)); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, u_min, nu*(N-1)); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, u_max, nu*(N-1)); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, x_min, nx*N); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, x_max, nx*N); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_MatrixNxNh() << "); print_matrix(data_f, MatrixXf::Zero(nx, N), nx*N); fprintf(data_f, ").finished(),\n");
+    fprintf(data_f, "\t(tiny_MatrixNuNhm1() << "); print_matrix(data_f, MatrixXf::Zero(nu, N-1), nu*(N-1)); fprintf(data_f, ").finished(),\n");
 
-    fprintf(data_f, "\t(tiny_VectorNu() << "); print_vector(data_f, work.Qu, NINPUTS); fprintf(data_f, ").finished()\n");
+    fprintf(data_f, "\t(tiny_VectorNu() << "); print_matrix(data_f, MatrixXf::Zero(nu, 1), nu); fprintf(data_f, ").finished()\n");
     fprintf(data_f, "};\n\n");
 
     // Write solver struct definition to workspace file
@@ -248,38 +245,63 @@ int tiny_codegen(int nx, int nu, int N,
 
     // Close codegen data file
     fclose(data_f);
-    printf("workspace generated in %s\n", workspace_cfname);
+    printf("Data generated in %s\n", data_workspace_fname);
 
-    // Copy solver header into codegen output directory
-    char solver_src_cfname[PATH_LENGTH];
-    char solver_dst_cfname[PATH_LENGTH];
-    FILE *src_f, *dst_f;
-    size_t in, out;
-    char buf[BUF_SIZE];
-
-    sprintf(solver_src_cfname, "%ssrc/tinympc/admm.hpp", tinympc_dir);
-    sprintf(solver_dst_cfname, "%s%sadmm.hpp", tinympc_dir, output_dir);
-
-    src_f = fopen(solver_src_cfname, "r");
-    if (src_f == NULL)
-        printf("ERROR OPENING SOLVER SOURCE FILE\n");
-        // return tiny_error(TINY_FOPEN_ERROR);
-    dst_f = fopen(solver_dst_cfname, "w+");
-    if (dst_f == NULL)
-        printf("ERROR OPENING SOLVER DESTINATION FILE\n");
+    // Open global options file
+    glob_opts_f = fopen(glob_opts_fname, "w+");
+    if (glob_opts_f == NULL)
+        printf("ERROR OPENING GLOBAL OPTIONS FILE\n");
         // return tiny_error(TINY_FOPEN_ERROR);
 
+    // Preamble
+    time(&start_time);
+    fprintf(data_f, "/*\n");
+    fprintf(data_f, " * This file was autogenerated by TinyMPC on %s", ctime(&start_time));
+    fprintf(data_f, " */\n\n");
+    
+    // Write global options
+    fprintf(glob_opts_f, "#pragma once\n\n");
+    fprintf(glob_opts_f, "typedef float tinytype;\n\n");
+    fprintf(glob_opts_f, "#define NSTATES %d\n", nx);
+    fprintf(glob_opts_f, "#define NINPUTS %d\n", nu);
+    fprintf(glob_opts_f, "#define NHORIZON %d", N);
+    
+    // Close codegen global options file
+    fclose(glob_opts_f);
+    printf("Global options generated in %s\n", glob_opts_fname);
 
-    // Copy contents of solver to code generated solver file
-    while (1) {
-        in = fread(buf, 1, BUF_SIZE, src_f);
-        if (in == 0) break;
-        out = fread(buf, 1, in, dst_f);
-        if (out == 0); break;
-    }
 
-    fclose(src_f);
-    fclose(dst_f);
+
+    // // Copy solver header into codegen output directory
+    // char solver_src_cfname[PATH_LENGTH];
+    // char solver_dst_cfname[PATH_LENGTH];
+    // FILE *src_f, *dst_f;
+    // size_t in, out;
+    // char buf[BUF_SIZE];
+
+    // sprintf(solver_src_cfname, "%ssrc/tinympc/admm.hpp", tinympc_dir);
+    // sprintf(solver_dst_cfname, "%s%sadmm.hpp", tinympc_dir, output_dir);
+
+    // src_f = fopen(solver_src_cfname, "r");
+    // if (src_f == NULL)
+    //     printf("ERROR OPENING SOLVER SOURCE FILE\n");
+    //     // return tiny_error(TINY_FOPEN_ERROR);
+    // dst_f = fopen(solver_dst_cfname, "w+");
+    // if (dst_f == NULL)
+    //     printf("ERROR OPENING SOLVER DESTINATION FILE\n");
+    //     // return tiny_error(TINY_FOPEN_ERROR);
+
+
+    // // Copy contents of solver to code generated solver file
+    // while (1) {
+    //     in = fread(buf, 1, BUF_SIZE, src_f);
+    //     if (in == 0) break;
+    //     out = fread(buf, 1, in, dst_f);
+    //     if (out == 0); break;
+    // }
+
+    // fclose(src_f);
+    // fclose(dst_f);
 
     // TODO: add error codes
     return 1;
