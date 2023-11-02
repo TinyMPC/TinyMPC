@@ -51,3 +51,6 @@ Testing/
 
 # Crazyflie firmware build files
 *.o.cmd
+
+
+generated_code/
