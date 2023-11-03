@@ -42,6 +42,8 @@ make
 ./examples/example_codegen
 ```
 
-## Notes
+## Running on MCUs
 
-* You should customize your own Eigen compile flags based on your applications.
+To be documented
+
+## Notes
