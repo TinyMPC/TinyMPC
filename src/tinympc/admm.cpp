@@ -96,7 +96,7 @@ extern "C"
     int tiny_solve(TinySolver *solver)
     {
         // Initialize variables
-        solver->work->status = 0;
+        solver->work->status = 11;  // TINY_UNSOLVED
         solver->work->iter = 1;
 
         forward_pass(solver);
@@ -130,8 +130,8 @@ extern "C"
                     solver->work->dual_residual_state < solver->settings->abs_dua_tol &&
                     solver->work->dual_residual_input < solver->settings->abs_dua_tol)
                 {
-                    solver->work->status = 1;
-                    return 0; // 0 means solved
+                    solver->work->status = 1;  // TINY_SOLVED
+                    return 0; // 0 means solved with no error
                 }
             }
 

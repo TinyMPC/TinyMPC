@@ -36,7 +36,7 @@ make
 ./examples/example_quadrotor_hovering
 ```
 
-* Run the codegen example
+* Run the codegen example then follow the same building steps inside that directory
 
 ```bash
 ./examples/example_codegen
