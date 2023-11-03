@@ -1,2 +1,0 @@
-add_executable(tiny_main tiny_main.cpp tiny_data_workspace.cpp)
-target_link_libraries(tiny_main LINK_PUBLIC tinympc)

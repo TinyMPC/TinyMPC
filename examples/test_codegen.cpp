@@ -19,8 +19,8 @@ extern "C"
     tinytype u_min_data[NINPUTS * (NHORIZON - 1)] = {-0.5};
     tinytype u_max_data[NINPUTS * (NHORIZON - 1)] = {0.5};
 
-    char tinympc_dir[255] = "/home/sam/Git/tinympc/TinyMPC/";
-    char output_dir[255] = "generated_code/src";
+    char tinympc_dir[255] = "/home/sam/Git/tinympc/TinyMPC";
+    char output_dir[255] = "/generated_code";
 
     int main()
     {

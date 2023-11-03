@@ -1,3 +1,5 @@
+generated_code/
+
 #IDEs
 .vscode/
 .vs
@@ -51,3 +53,4 @@ Testing/
 
 # Crazyflie firmware build files
 *.o.cmd
+
