@@ -30,16 +30,16 @@ make
 
 ## Examples
 
-* Run the quadrotor example
+* Run the quadrotor hovering example
 
 ```bash
-./examples/quadrotor_track_traj
+./examples/example_quadrotor_hovering
 ```
 
 * Run the codegen example
 
 ```bash
-./examples/test_codegen
+./examples/example_codegen
 ```
 
 ## Notes

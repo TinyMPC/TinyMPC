@@ -2,7 +2,6 @@
 
 #include <tinympc/admm.hpp>
 #include "problem_data/quadrotor_20hz_params.hpp"
-#include "trajectory_data/quadrotor_20hz_y_axis_line.hpp"
 
 Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
 
@@ -16,7 +15,7 @@ extern "C"
 
     int main()
     {
-        // Map data from solver_data/quadrotor*.hpp
+        // Map data from problem_data
         cache.rho = rho_value;
         cache.Kinf = Eigen::Map<Matrix<tinytype, NINPUTS, NSTATES, Eigen::RowMajor>>(Kinf_data);
         cache.Pinf = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Pinf_data);
@@ -67,43 +66,38 @@ extern "C"
 
         tiny_VectorNx x0, x1; // current and next simulation states
 
-        // Copy reference trajectory into Eigen matrix
-        Matrix<tinytype, NSTATES, NTOTAL, Eigen::ColMajor> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data).transpose();
+        // Hovering setpoint
         tiny_VectorNx Xref_origin;
         Xref_origin << 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+        work.Xref = Xref_origin.replicate<1, NHORIZON>(); 
 
-        work.Xref = Xref_total.block<NSTATES, NHORIZON>(0, 0);
-        // work.Xref = Xref_origin.replicate<1, NHORIZON>();
-        x0 = work.Xref.col(0);
-        // x0 << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+        // Initial state    
+        x0 << 0, 1, 0, 0.2, 0, 0, 0.1, 0, 0, 0, 0, 0;
 
-        std::cout << work.Xref << std::endl;
-
-        for (int k = 0; k < NTOTAL - NHORIZON - 1; ++k)
+        for (int k = 0; k < 70; ++k)
         {
-            std::cout << (x0 - work.Xref.col(1)).norm() << std::endl;
+            printf("tracking error at step %2d: %.4f\n", k, (x0 - work.Xref.col(1)).norm());
             
-            // Update measurement
+            // 1. Update measurement
             work.x.col(0) = x0;
 
-            // Update reference
-            work.Xref = Xref_total.block<NSTATES, NHORIZON>(0, k);
+            // 2. Update reference (if needed)
 
-            // Reset dual variables
+            // 3. Reset dual variables (if needed)
             work.y = tiny_MatrixNuNhm1::Zero();
             work.g = tiny_MatrixNxNh::Zero();
 
-            // Solve MPC problem
+            // 4. Solve MPC problem
             tiny_solve(&solver);
 
             // std::cout << work.iter << std::endl;
             // std::cout << work.u.col(0).transpose().format(CleanFmt) << std::endl;
 
-            // Simulate forward
+            // 5. Simulate forward
             x1 = work.Adyn * x0 + work.Bdyn * work.u.col(0);
             x0 = x1;
 
-            std::cout << x0.transpose().format(CleanFmt) << std::endl;
+            // std::cout << x0.transpose().format(CleanFmt) << std::endl;
         }
 
         return 0;
