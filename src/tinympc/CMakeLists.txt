@@ -1,4 +1,4 @@
-add_library (tinympc STATIC
+add_library (tinympc SHARED
     admm.cpp
     codegen.cpp
     )

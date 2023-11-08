@@ -1,9 +1,8 @@
 #pragma once
 
-typedef float tinytype;
+typedef double tinytype;
 
-#define NSTATES 2
-#define NINPUTS 2
+#define NSTATES 12
+#define NINPUTS 4
 
-#define NHORIZON 5
-#define NTOTAL 1501
+#define NHORIZON 3
