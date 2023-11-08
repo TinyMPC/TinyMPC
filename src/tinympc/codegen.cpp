@@ -226,7 +226,7 @@ int tiny_codegen(const int nx, const int nu, const int N,
     MatrixXf Bdyn = MatrixXf::Map(Bdyn_data, nx, nu);
     MatrixXf Q = MatrixXf::Map(Q_data, nx, 1);
     MatrixXf Qf = MatrixXf::Map(Qf_data, nx, 1);
-    MatrixXf R = MatrixXf::Map(R_data, nx, 1);
+    MatrixXf R = MatrixXf::Map(R_data, nu, 1);
     MatrixXf x_min = MatrixXf::Map(x_min_data, N, nx).transpose(); // x_min is col-major
     MatrixXf x_max = MatrixXf::Map(x_max_data, N, nx).transpose();
     MatrixXf u_min = MatrixXf::Map(u_min_data, N-1, nu).transpose(); // u_min is col-major
@@ -235,7 +235,7 @@ int tiny_codegen(const int nx, const int nu, const int N,
     // Update by adding rho * identity matrix to Q, Qf, R
     Q = Q + rho * MatrixXf::Ones(nx, 1);
     Qf = Qf + rho * MatrixXf::Ones(nx, 1);
-    R = R + rho * MatrixXf::Ones(nx, 1);
+    R = R + rho * MatrixXf::Ones(nu, 1);
     MatrixXf Q1 = Q.array().matrix().asDiagonal();
     MatrixXf Qf1 = Qf.array().matrix().asDiagonal();
     MatrixXf R1 = R.array().matrix().asDiagonal();
