@@ -56,7 +56,7 @@ extern "C"
 
     // char tinympc_dir[255] = "your absolute path to tinympc";
     char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC";
-    char output_dir[255] = "/generated_code/cartpole";
+    char output_dir[255] = "/generated_code";
 
     int main()
     {
@@ -67,3 +67,80 @@ extern "C"
     }
 
 } /* extern "C" */
+
+
+/*
+
+#include <iostream>
+
+#include <tinympc/admm.hpp>
+#include <tinympc/tiny_data_workspace.hpp>
+
+using namespace Eigen;
+IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+	int main()
+	{
+		int exitflag = 1;
+		std::cout << tiny_data_solver.settings->max_iter << std::endl;
+		std::cout << tiny_data_solver.cache->AmBKt.format(CleanFmt) << std::endl;
+		std::cout << tiny_data_solver.work->Adyn.format(CleanFmt) << std::endl;
+
+		exitflag = tiny_solve(&tiny_data_solver);
+
+		if (exitflag == 0)
+			printf("HOORAY! Solved with no error!\n");
+		else
+			printf("OOPS! Something went wrong!\n");
+
+		TinyWorkspace work = *(tiny_data_solver.work); // for convenience
+		tiny_VectorNx x0, x1; // current and next simulation states
+
+		// Upright set point
+		tiny_VectorNx Xref_origin;
+		Xref_origin << 0, 0, M_PI, 0;
+		
+		work.Xref = Xref_origin.replicate<1, NHORIZON>();
+
+		// Initial state
+		x0 << 0, 0.1, M_PI - 0.1, 0.1;
+
+		for (int k = 0; k < 70; ++k)
+		{
+			printf("tracking error at step %2d: %.4f\n", k, (x0 - work.Xref.col(1)).norm());
+
+			// 1. Update measurement
+			work.x.col(0) = x0;
+
+			// 2. Update reference (if needed)
+
+			// 3. Reset dual variables (if needed)
+			work.y = tiny_MatrixNuNhm1::Zero();
+			work.g = tiny_MatrixNxNh::Zero();
+
+			// 4. Solve MPC problem
+			tiny_solve(&tiny_data_solver);
+
+			// std::cout << work.iter << std::endl;
+			// std::cout << work.u.col(0).transpose().format(CleanFmt) << std::endl;
+
+			// 5. Simulate forward
+			x1 = work.Adyn * x0 + work.Bdyn * work.u.col(0);
+			x0 = x1;
+
+			// std::cout << x0.transpose().format(CleanFmt) << std::endl;
+		}
+
+		return 0;
+	}
+
+#ifdef __cplusplus
+} 
+#endif
+
+*/
