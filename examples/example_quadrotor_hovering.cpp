@@ -15,7 +15,7 @@ extern "C"
 
     int main()
     {
-        // Map data from problem_data
+        // Map data from problem_data (array in row-major order)
         cache.rho = rho_value;
         cache.Kinf = Eigen::Map<Matrix<tinytype, NINPUTS, NSTATES, Eigen::RowMajor>>(Kinf_data);
         cache.Pinf = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Pinf_data);
