@@ -2,8 +2,8 @@
 
 typedef double tinytype;
 
-#define NSTATES 12
-#define NINPUTS 4
+#define NSTATES 4
+#define NINPUTS 1
 
 #define NHORIZON 10
 #define NTOTAL 301
