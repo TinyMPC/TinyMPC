@@ -7,6 +7,7 @@
 
 extern "C"
 {
+    // Random data
     const int n = 2;  // state dimension
     const int m = 2;  // input dimension
     const int N = 10;  // horizon

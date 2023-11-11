@@ -16,7 +16,7 @@ extern "C"
 
     int main()
     {
-        // Map data from problem_data
+        // Map data from problem_data (array in row-major order)
         cache.rho = rho_value;
         cache.Kinf = Eigen::Map<Matrix<tinytype, NINPUTS, NSTATES, Eigen::RowMajor>>(Kinf_data);
         cache.Pinf = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Pinf_data);
@@ -68,7 +68,7 @@ extern "C"
         tiny_VectorNx x0, x1; // current and next simulation states
 
         // Map data from trajectory_data
-        Matrix<tinytype, NSTATES, NTOTAL, Eigen::ColMajor> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data).transpose();
+        Matrix<tinytype, NSTATES, NTOTAL> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data).transpose();
         work.Xref = Xref_total.block<NSTATES, NHORIZON>(0, 0);
 
         // Initial state

@@ -15,8 +15,8 @@ extern "C" {
     typedef Matrix<tinytype, NINPUTS, NSTATES> tiny_MatrixNuNx;
     typedef Matrix<tinytype, NINPUTS, NINPUTS> tiny_MatrixNuNu;
 
-    typedef Matrix<tinytype, NSTATES, NHORIZON, Eigen::ColMajor> tiny_MatrixNxNh;       // Nu x Nh
-    typedef Matrix<tinytype, NINPUTS, NHORIZON - 1, Eigen::ColMajor> tiny_MatrixNuNhm1; // Nu x Nh-1
+    typedef Matrix<tinytype, NSTATES, NHORIZON> tiny_MatrixNxNh;       // Nu x Nh
+    typedef Matrix<tinytype, NINPUTS, NHORIZON - 1> tiny_MatrixNuNhm1; // Nu x Nh-1
 
     /**
      * Matrices that must be recomputed with changes in time step, rho

@@ -182,6 +182,7 @@ static void codegen_example_main(time_t start_time, const char *codegen_dname) {
     fprintf(main_f, "int main()\n");
     fprintf(main_f, "{\n");
     fprintf(main_f, "\tint exitflag = 1;\n");
+    fprintf(main_f, "\t// Double check some data\n");
     fprintf(main_f, "\tstd::cout << tiny_data_solver.settings->max_iter << std::endl;\n");
     fprintf(main_f, "\tstd::cout << tiny_data_solver.cache->AmBKt.format(CleanFmt) << std::endl;\n");
     fprintf(main_f, "\tstd::cout << tiny_data_solver.work->Adyn.format(CleanFmt) << std::endl;\n\n");
@@ -229,7 +230,7 @@ int tiny_codegen(const int nx, const int nu, const int N,
     tiny_MatrixX Bdyn = tiny_MatrixX::Map(Bdyn_data, nx, nu);
     tiny_MatrixX Q = tiny_MatrixX::Map(Q_data, nx, 1);
     tiny_MatrixX Qf = tiny_MatrixX::Map(Qf_data, nx, 1);
-    tiny_MatrixX R = tiny_MatrixX::Map(R_data, nx, 1);
+    tiny_MatrixX R = tiny_MatrixX::Map(R_data, nu, 1);
     tiny_MatrixX x_min = tiny_MatrixX::Map(x_min_data, N, nx).transpose(); // x_min is col-major
     tiny_MatrixX x_max = tiny_MatrixX::Map(x_max_data, N, nx).transpose();
     tiny_MatrixX u_min = tiny_MatrixX::Map(u_min_data, N-1, nu).transpose(); // u_min is col-major
@@ -238,7 +239,7 @@ int tiny_codegen(const int nx, const int nu, const int N,
     // Update by adding rho * identity matrix to Q, Qf, R
     Q = Q + rho * tiny_MatrixX::Ones(nx, 1);
     Qf = Qf + rho * tiny_MatrixX::Ones(nx, 1);
-    R = R + rho * tiny_MatrixX::Ones(nx, 1);
+    R = R + rho * tiny_MatrixX::Ones(nu, 1);
     tiny_MatrixX Q1 = Q.array().matrix().asDiagonal();
     tiny_MatrixX Qf1 = Qf.array().matrix().asDiagonal();
     tiny_MatrixX R1 = R.array().matrix().asDiagonal();
@@ -262,7 +263,7 @@ int tiny_codegen(const int nx, const int nu, const int N,
         Kinf = (R1 + Bdyn.transpose() * Ptp1 * Bdyn).inverse() * Bdyn.transpose() * Ptp1 * Adyn;
         Pinf = Q1 + Adyn.transpose() * Ptp1 * (Adyn - Bdyn * Kinf);
         // if Kinf converges, break
-        if ((Kinf - Ktp1).cwiseAbs().maxCoeff() < 1e-6)
+        if ((Kinf - Ktp1).cwiseAbs().maxCoeff() < 1e-5)
         {
             std::cout << "Kinf converged after " << i+1 << " iterations" << std::endl;
             break;
@@ -270,6 +271,8 @@ int tiny_codegen(const int nx, const int nu, const int N,
         Ktp1 = Kinf;
         Ptp1 = Pinf;
     }
+
+    std::cout << "Precomputing finished" << std::endl;
 
     // Compute cached matrices
     tiny_MatrixX Quu_inv = (R1 + Bdyn.transpose() * Pinf * Bdyn).inverse();
@@ -347,7 +350,7 @@ int tiny_codegen(const int nx, const int nu, const int N,
     fprintf(data_f, "\t(tiny_MatrixNuNx() << "); print_matrix(data_f, Kinf, nu*nx); fprintf(data_f, ").finished(),\t// Kinf\n");
     fprintf(data_f, "\t(tiny_MatrixNxNx() << "); print_matrix(data_f, Pinf, nx*nx); fprintf(data_f, ").finished(),\t// Pinf\n");
     fprintf(data_f, "\t(tiny_MatrixNuNu() << "); print_matrix(data_f, Quu_inv, nu*nu); fprintf(data_f, ").finished(),\t// Quu_inv\n");
-    fprintf(data_f, "\t(tiny_MatrixNxNu() << "); print_matrix(data_f, AmBKt, nx*nu); fprintf(data_f, ").finished(),\t// AmBKt\n");
+    fprintf(data_f, "\t(tiny_MatrixNxNx() << "); print_matrix(data_f, AmBKt, nx*nu); fprintf(data_f, ").finished(),\t// AmBKt\n");
     fprintf(data_f, "\t(tiny_MatrixNxNu() << "); print_matrix(data_f, coeff_d2p, nx*nu); fprintf(data_f, ").finished(),\t// coeff_d2p\n");
     fprintf(data_f, "};\n\n");
 
