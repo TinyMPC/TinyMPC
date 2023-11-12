@@ -18,10 +18,10 @@ extern "C"
     tinytype R_data[m] = {2, 2};
     tinytype rho_value = 0.1;
 
-    tinytype x_min_data[n * N] = {-1.1};
-    tinytype x_max_data[n * N] = {1.1};
-    tinytype u_min_data[m * (N - 1)] = {-0.5};
-    tinytype u_max_data[m * (N - 1)] = {0.5};
+    tinytype x_min_data[n * N];
+    tinytype x_max_data[n * N];
+    tinytype u_min_data[m * (N - 1)];
+    tinytype u_max_data[m * (N - 1)];
 
     // char tinympc_dir[255] = "your absolute path to tinympc";
     char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC";
@@ -29,6 +29,17 @@ extern "C"
 
     int main()
     {
+        // Set up constraints (for-loop in main)
+        int i = 0;
+        for (i = 0; i < n * N; i++) {
+            x_min_data[i] = -5;
+            x_max_data[i] = 5;
+        }
+        for (i = 0; i < m * (N - 1); i++) {
+            u_min_data[i] = -5;
+            u_max_data[i] = 5;
+        }
+
         // Python will call this function with the above data
         tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data, x_min_data, x_max_data, u_min_data, u_max_data, rho_value, 1e-3, 1e-3, 100, 1, tinympc_dir, output_dir);
         // This function copies source code to `generated_code` directory, create workspace data, a main.cpp file

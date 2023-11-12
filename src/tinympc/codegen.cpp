@@ -258,7 +258,7 @@ int tiny_codegen(const int nx, const int nu, const int N,
     tiny_MatrixX Kinf = tiny_MatrixX::Zero(nu, nx);
     tiny_MatrixX Pinf = tiny_MatrixX::Zero(nx, nx);
 
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 1000; i++)
     {
         Kinf = (R1 + Bdyn.transpose() * Ptp1 * Bdyn).inverse() * Bdyn.transpose() * Ptp1 * Adyn;
         Pinf = Q1 + Adyn.transpose() * Ptp1 * (Adyn - Bdyn * Kinf);
@@ -350,7 +350,7 @@ int tiny_codegen(const int nx, const int nu, const int N,
     fprintf(data_f, "\t(tiny_MatrixNuNx() << "); print_matrix(data_f, Kinf, nu*nx); fprintf(data_f, ").finished(),\t// Kinf\n");
     fprintf(data_f, "\t(tiny_MatrixNxNx() << "); print_matrix(data_f, Pinf, nx*nx); fprintf(data_f, ").finished(),\t// Pinf\n");
     fprintf(data_f, "\t(tiny_MatrixNuNu() << "); print_matrix(data_f, Quu_inv, nu*nu); fprintf(data_f, ").finished(),\t// Quu_inv\n");
-    fprintf(data_f, "\t(tiny_MatrixNxNx() << "); print_matrix(data_f, AmBKt, nx*nu); fprintf(data_f, ").finished(),\t// AmBKt\n");
+    fprintf(data_f, "\t(tiny_MatrixNxNx() << "); print_matrix(data_f, AmBKt, nx*nx); fprintf(data_f, ").finished(),\t// AmBKt\n");
     fprintf(data_f, "\t(tiny_MatrixNxNu() << "); print_matrix(data_f, coeff_d2p, nx*nu); fprintf(data_f, ").finished(),\t// coeff_d2p\n");
     fprintf(data_f, "};\n\n");
 

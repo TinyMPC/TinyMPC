@@ -10,37 +10,22 @@
 
 extern "C"
 {
-    // Model parameters
-    const tinytype mc = 0.5;
-    const tinytype mp = 0.2;
-    const tinytype l = 0.3;
-    const tinytype b = 0.1;
-    const tinytype g = 9.8;
-    const tinytype I = 0.006;
-
+    // Model size
     const int n = 4;  // state dimension
     const int m = 1;  // input dimension
     const int N = 10; // horizon
 
-    const tinytype a11 = (-I + mp * l * l) * b / (I * mc + I * mp + mc * mp * l * l);
-    const tinytype a12 = mp * mp * g * l * l / (I * mc + I * mp + mc * mp * l * l);
-    const tinytype a31 = -mp * l * b / (I * mc + I * mp + mc * mp * l * l);
-    const tinytype a32 = mp * g * l * (mp + mc) / (I * mc + I * mp + mc * mp * l * l);
-    const tinytype b1 = (I + mp * l * l) / (I * mc + I * mp + mc * mp * l * l);
-    const tinytype b3 = mp * l / (I * mc + I * mp + mc * mp * l * l);
-
     // Model matrices
-    tinytype Adyn_data[n * n] = {0, 1, 0, 1,
-                                 0, a11, a12, 0,
-                                 0, 0, 0, 1,
-                                 0, a31, a32, 0}; // Row-major
-    tinytype Bdyn_data[n * m] = {0, b1, 0, b3};
+    // Ad' = [1.0 0.0 0.0 0.0; 0.01 1.0 0.0 0.0; 2.2330083403300767e-5 0.004466210576510177 1.0002605176397052 0.05210579005928538; 7.443037974683548e-8 2.2330083403300767e-5 0.01000086835443038 1.0002605176397052]
+    tinytype Adyn_data[n * n] = {1.0, 0.0, 0.0, 0.0, 0.01, 1.0, 0.0, 0.0, 2.2330083403300767e-5, 0.004466210576510177, 1.0002605176397052, 0.05210579005928538, 7.443037974683548e-8, 2.2330083403300767e-5, 0.01000086835443038, 1.0002605176397052};
+    // Bd = [7.468368562730335e-5, 0.014936765390161838, 3.79763323185387e-5, 0.007595596218554721]
+    tinytype Bdyn_data[n * m] = {7.468368562730335e-5, 0.014936765390161838, 3.79763323185387e-5, 0.007595596218554721};
 
     // Cost matrices
-    tinytype Q_data[n] = {1, 0, 1, 0};
-    tinytype Qf_data[n] = {10, 0, 10, 0};
+    tinytype Q_data[n] = {10, 1, 10, 1};
+    tinytype Qf_data[n] = {10, 1, 10, 1};
     tinytype R_data[m] = {1};
-    tinytype rho_value = 0.1;
+    tinytype rho_value = 0.0;
 
     // Constraints
     tinytype x_min_data[n * N] = {-10};
@@ -56,10 +41,21 @@ extern "C"
 
     // char tinympc_dir[255] = "your absolute path to tinympc";
     char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC";
-    char output_dir[255] = "/generated_code";
+    char output_dir[255] = "/generated_code2";
 
     int main()
     {
+        // Set up constraints (for-loop in main)
+        int i = 0;
+        for (i = 0; i < n * N; i++) {
+            x_min_data[i] = -5;
+            x_max_data[i] = 5;
+        }
+        for (i = 0; i < m * (N - 1); i++) {
+            u_min_data[i] = -5;
+            u_max_data[i] = 5;
+        }
+
         // Python will call this function with the above data
         tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data, x_min_data, x_max_data, u_min_data, u_max_data, rho_value, abs_pri_tol, rel_pri_tol, max_iter, verbose, tinympc_dir, output_dir);
 

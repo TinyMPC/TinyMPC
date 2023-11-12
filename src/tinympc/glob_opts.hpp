@@ -1,6 +1,6 @@
 #pragma once
 
-typedef float tinytype;
+typedef double tinytype;
 
 #define NSTATES 12
 #define NINPUTS 4
