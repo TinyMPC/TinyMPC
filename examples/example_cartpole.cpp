@@ -25,7 +25,7 @@ extern "C"
     tinytype Q_data[n] = {10, 1, 10, 1};
     tinytype Qf_data[n] = {10, 1, 10, 1};
     tinytype R_data[m] = {1};
-    tinytype rho_value = 0.0;
+    tinytype rho_value = 0.1;
 
     // Constraints
     tinytype x_min_data[n * N] = {-10};
@@ -41,7 +41,7 @@ extern "C"
 
     // char tinympc_dir[255] = "your absolute path to tinympc";
     char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC";
-    char output_dir[255] = "/generated_code2";
+    char output_dir[255] = "/generated_code";
 
     int main()
     {
@@ -65,78 +65,52 @@ extern "C"
 } /* extern "C" */
 
 
-/*
+/* Copy this to main in the generated code
 
-#include <iostream>
-
-#include <tinympc/admm.hpp>
-#include <tinympc/tiny_data_workspace.hpp>
-
-using namespace Eigen;
-IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-
-#ifdef __cplusplus
-extern "C"
+int main()
 {
-#endif
+	int exitflag = 1;
+	TinyWorkspace* work = tiny_data_solver.work; 
+	tiny_data_solver.work->Xref = tiny_MatrixNxNh::Zero();
+	tiny_data_solver.work->Uref = tiny_MatrixNuNhm1::Zero();
+	tiny_data_solver.settings->max_iter = 150;
+	tiny_data_solver.settings->en_input_bound = 1;
+	tiny_data_solver.settings->en_state_bound = 1;
 
-	int main()
+	tiny_VectorNx x0, x1; // current and next simulation states
+	x0 << 0.0, 0, 0.2, 0; // initial state
+
+	int i = 0;
+	for (int k = 0; k < 200; ++k)
 	{
-		int exitflag = 1;
-		std::cout << tiny_data_solver.settings->max_iter << std::endl;
-		std::cout << tiny_data_solver.cache->AmBKt.format(CleanFmt) << std::endl;
-		std::cout << tiny_data_solver.work->Adyn.format(CleanFmt) << std::endl;
-
-		exitflag = tiny_solve(&tiny_data_solver);
-
-		if (exitflag == 0)
-			printf("HOORAY! Solved with no error!\n");
-		else
-			printf("OOPS! Something went wrong!\n");
-
-		TinyWorkspace work = *(tiny_data_solver.work); // for convenience
-		tiny_VectorNx x0, x1; // current and next simulation states
-
-		// Upright set point
-		tiny_VectorNx Xref_origin;
-		Xref_origin << 0, 0, M_PI, 0;
+		printf("tracking error at step %2d: %.4f\n", k, (x0 - work->Xref.col(1)).norm());		
 		
-		work.Xref = Xref_origin.replicate<1, NHORIZON>();
+		// 1. Update measurement
+		work->x.col(0) = x0;
 
-		// Initial state
-		x0 << 0, 0.1, M_PI - 0.1, 0.1;
+		// 2. Update reference (if needed)
 
-		for (int k = 0; k < 70; ++k)
-		{
-			printf("tracking error at step %2d: %.4f\n", k, (x0 - work.Xref.col(1)).norm());
+		// 3. Reset dual variables (if needed)
+		work->y = tiny_MatrixNuNhm1::Zero();
+		work->g = tiny_MatrixNxNh::Zero();
 
-			// 1. Update measurement
-			work.x.col(0) = x0;
+		// 4. Solve MPC problem
+		exitflag = tiny_solve(&tiny_data_solver);
+		// if (exitflag == 0)
+		// 	printf("HOORAY! Solved with no error!\n");
+		// else
+		// 	printf("OOPS! Something went wrong!\n");
+		// 	// break;
 
-			// 2. Update reference (if needed)
+		std::cout << work->iter << std::endl;
+		std::cout << work->u.col(0).transpose().format(CleanFmt) << std::endl;
 
-			// 3. Reset dual variables (if needed)
-			work.y = tiny_MatrixNuNhm1::Zero();
-			work.g = tiny_MatrixNxNh::Zero();
-
-			// 4. Solve MPC problem
-			tiny_solve(&tiny_data_solver);
-
-			// std::cout << work.iter << std::endl;
-			// std::cout << work.u.col(0).transpose().format(CleanFmt) << std::endl;
-
-			// 5. Simulate forward
-			x1 = work.Adyn * x0 + work.Bdyn * work.u.col(0);
-			x0 = x1;
-
-			// std::cout << x0.transpose().format(CleanFmt) << std::endl;
-		}
-
-		return 0;
+		// 5. Simulate forward
+		// work->u.col(0) = -tiny_data_solver.cache->Kinf * (x0 - work->Xref.col(0));
+		x1 = work->Adyn * x0 + work->Bdyn * work->u.col(0);
+		x0 = x1;
+		// std::cout << x0.transpose().format(CleanFmt) << std::endl;
 	}
-
-#ifdef __cplusplus
-} 
-#endif
+}
 
 */

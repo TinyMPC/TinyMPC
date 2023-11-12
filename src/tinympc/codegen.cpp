@@ -109,7 +109,7 @@ static void copy_dir(char *src_dir_name, char *dest_dir_name) {
 
 static void print_matrix(FILE *f, tiny_MatrixX mat, int num_elements) {
     for (int i=0; i<num_elements; i++) {
-        fprintf(f, "(tinytype)%.16f", mat.reshaped()[i]);
+        fprintf(f, "(tinytype)%.16f", mat.reshaped<RowMajor>()[i]);
         if (i < num_elements-1)
             fprintf(f, ",");
     }
