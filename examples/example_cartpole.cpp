@@ -79,7 +79,7 @@ int main()
 	tiny_data_solver.settings->en_state_bound = 1;
 
 	tiny_VectorNx x0, x1; // current and next simulation states
-	x0 << 0.0, 0, 0.2, 0; // initial state
+	x0 << 0.0, 0, 0.1, 0; // initial state
 
 	int i = 0;
 	for (int k = 0; k < 200; ++k)
