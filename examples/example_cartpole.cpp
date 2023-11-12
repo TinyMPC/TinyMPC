@@ -6,8 +6,9 @@
 #include <tinympc/admm.hpp>
 #include <tinympc/codegen.hpp>
 
-// For codegen, double type should be used, otherwise, Riccati may fail.
-// The embedded code is still float type.
+// Codegen only uses tinytype in `glob_opts.hpp`
+// For codegen, change it to double, otherwise, Riccati may fail. 
+// The embedded code is still float type.  
 
 extern "C"
 {
@@ -29,10 +30,10 @@ extern "C"
     tinytype rho_value = 0.1;
 
     // Constraints
-    tinytype x_min_data[n * N] = {-10};
-    tinytype x_max_data[n * N] = {10};
-    tinytype u_min_data[m * (N - 1)] = {-10};
-    tinytype u_max_data[m * (N - 1)] = {10};
+    tinytype x_min_data[n * N];
+    tinytype x_max_data[n * N];
+    tinytype u_min_data[m * (N - 1)];
+    tinytype u_max_data[m * (N - 1)];
 
     // Solver options
     tinytype abs_pri_tol = 1e-3;
