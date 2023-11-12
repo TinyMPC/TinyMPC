@@ -1,5 +1,5 @@
-// Inverted pendulum example with codegen, the code is generated in `generated_code` directory, build and run it to see the result.
-// Reference: https://ctms.engin.umich.edu/CTMS/index.php?example=InvertedPendulum&section=SystemModeling
+// Cartpole example with codegen, the code is generated in `generated_code` directory, build and run it to see the result.
+// You just need a discrete-time LTI model of upright cartpole.
 
 #include <iostream>
 
