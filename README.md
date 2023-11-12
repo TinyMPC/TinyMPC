@@ -2,6 +2,8 @@
 
 Model-predictive control on resource-constrained microcontrollers
 
+Website: [https://tinympc.org/](https://tinympc.org/)
+
 ## Building on Ubuntu
 
 1. On terminal, clone this repo

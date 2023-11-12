@@ -12,63 +12,63 @@
 
 extern "C"
 {
-    
-// Model size
-const int n = 4;  // state dimension
-const int m = 1;  // input dimension
-const int N = 10; // horizon
 
-// Model matrices
-// Ad' = [1.0 0.0 0.0 0.0; 0.01 1.0 0.0 0.0; 2.2330083403300767e-5 0.004466210576510177 1.0002605176397052 0.05210579005928538; 7.443037974683548e-8 2.2330083403300767e-5 0.01000086835443038 1.0002605176397052]
-tinytype Adyn_data[n * n] = {1.0, 0.0, 0.0, 0.0, 0.01, 1.0, 0.0, 0.0, 2.2330083403300767e-5, 0.004466210576510177, 1.0002605176397052, 0.05210579005928538, 7.443037974683548e-8, 2.2330083403300767e-5, 0.01000086835443038, 1.0002605176397052};
-// Bd = [7.468368562730335e-5, 0.014936765390161838, 3.79763323185387e-5, 0.007595596218554721]
-tinytype Bdyn_data[n * m] = {7.468368562730335e-5, 0.014936765390161838, 3.79763323185387e-5, 0.007595596218554721};
+    // Model size
+    const int n = 4;  // state dimension
+    const int m = 1;  // input dimension
+    const int N = 10; // horizon
 
-// Cost matrices
-tinytype Q_data[n] = {10, 1, 10, 1};
-tinytype Qf_data[n] = {10, 1, 10, 1};
-tinytype R_data[m] = {1};
-tinytype rho_value = 0.1;
+    // Model matrices
+    // Ad' = [1.0 0.0 0.0 0.0; 0.01 1.0 0.0 0.0; 2.2330083403300767e-5 0.004466210576510177 1.0002605176397052 0.05210579005928538; 7.443037974683548e-8 2.2330083403300767e-5 0.01000086835443038 1.0002605176397052]
+    tinytype Adyn_data[n * n] = {1.0, 0.0, 0.0, 0.0, 0.01, 1.0, 0.0, 0.0, 2.2330083403300767e-5, 0.004466210576510177, 1.0002605176397052, 0.05210579005928538, 7.443037974683548e-8, 2.2330083403300767e-5, 0.01000086835443038, 1.0002605176397052};
+    // Bd = [7.468368562730335e-5, 0.014936765390161838, 3.79763323185387e-5, 0.007595596218554721]
+    tinytype Bdyn_data[n * m] = {7.468368562730335e-5, 0.014936765390161838, 3.79763323185387e-5, 0.007595596218554721};
 
-// Constraints
-tinytype x_min_data[n * N];
-tinytype x_max_data[n * N];
-tinytype u_min_data[m * (N - 1)];
-tinytype u_max_data[m * (N - 1)];
+    // Cost matrices
+    tinytype Q_data[n] = {10, 1, 10, 1};
+    tinytype Qf_data[n] = {10, 1, 10, 1};
+    tinytype R_data[m] = {1};
+    tinytype rho_value = 0.1;
 
-// Solver options
-tinytype abs_pri_tol = 1e-3;
-tinytype rel_pri_tol = 1e-3;
-int max_iter = 100;
-int verbose = 1; // for code-gen
+    // Constraints
+    tinytype x_min_data[n * N];
+    tinytype x_max_data[n * N];
+    tinytype u_min_data[m * (N - 1)];
+    tinytype u_max_data[m * (N - 1)];
 
-// char tinympc_dir[255] = "your absolute path to tinympc";  // TODO: relative path
-char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC";
-char output_dir[255] = "/generated_code";
+    // Solver options
+    tinytype abs_pri_tol = 1e-3;
+    tinytype rel_pri_tol = 1e-3;
+    int max_iter = 100;
+    int verbose = 1; // for code-gen
 
-int main()
-{
-    // Set up constraints (for-loop in main)
-    int i = 0;
-    for (i = 0; i < n * N; i++)
+    // char tinympc_dir[255] = "your absolute path to tinympc";  // TODO: relative path
+    char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC";
+    char output_dir[255] = "/generated_code";
+
+    int main()
     {
-        x_min_data[i] = -5;
-        x_max_data[i] = 5;
-    }
-    for (i = 0; i < m * (N - 1); i++)
-    {
-        u_min_data[i] = -5;
-        u_max_data[i] = 5;
-    }
+        // Set up constraints (for-loop in main)
+        int i = 0;
+        for (i = 0; i < n * N; i++)
+        {
+            x_min_data[i] = -5;
+            x_max_data[i] = 5;
+        }
+        for (i = 0; i < m * (N - 1); i++)
+        {
+            u_min_data[i] = -5;
+            u_max_data[i] = 5;
+        }
 
-    // We can also can this function from Python, Matlab, Julia (expected)
-    tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data,
-                    x_min_data, x_max_data, u_min_data, u_max_data,
-                    rho_value, abs_pri_tol, rel_pri_tol, max_iter, verbose,
-                    tinympc_dir, output_dir);
+        // We can also can this function from Python, Matlab, Julia (expected)
+        tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data,
+                     x_min_data, x_max_data, u_min_data, u_max_data,
+                     rho_value, abs_pri_tol, rel_pri_tol, max_iter, verbose,
+                     tinympc_dir, output_dir);
 
-    return 0;
-}
+        return 0;
+    }
 
 } /* extern "C" */
 
