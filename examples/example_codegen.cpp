@@ -1,3 +1,8 @@
+// Example of using codegen to generate C++ code for a random MPC problem
+// The generated code is in `generated_code` directory
+// The code is not optimized, it is just a demo of how to use codegen
+// High-level languages like Python, Matlab, Julia, etc. will call this function to generate code
+
 #include <iostream>
 
 #include <tinympc/admm.hpp>
@@ -9,7 +14,7 @@
 
 extern "C"
 {
-    // Random data
+    // Random data 
     const int n = 2;  // state dimension
     const int m = 2;  // input dimension
     const int N = 10;  // horizon
@@ -25,7 +30,7 @@ extern "C"
     tinytype u_min_data[m * (N - 1)];
     tinytype u_max_data[m * (N - 1)];
 
-    // char tinympc_dir[255] = "your absolute path to tinympc";
+    // char tinympc_dir[255] = "your absolute path to tinympc"; #TODO: relative
     char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC";
     char output_dir[255] = "/generated_code";
 
@@ -42,9 +47,10 @@ extern "C"
             u_max_data[i] = 5;
         }
 
-        // Python will call this function with the above data
+        // We can also can this function from Python, Matlab, Julia (expected)
         tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data, x_min_data, x_max_data, u_min_data, u_max_data, rho_value, 1e-3, 1e-3, 100, 1, tinympc_dir, output_dir);
-        // This function copies source code to `generated_code` directory, create workspace data, a main.cpp file
+
+        // This function copies source code to `generated_code` directory, create workspace data, a tiny_main.cpp file
 
         // generated_code/tinympc/glob_opts.hpp
         // generated_code/tinympc/types.hpp (fixed)
