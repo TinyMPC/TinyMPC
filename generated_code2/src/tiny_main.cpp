@@ -17,40 +17,52 @@ extern "C" {
 int main()
 {
 	int exitflag = 1;
-	TinyWorkspace work = *(tiny_data_solver.work); 
+	TinyWorkspace* work = tiny_data_solver.work; 
 	tiny_data_solver.work->Xref = tiny_MatrixNxNh::Zero();
 	tiny_data_solver.work->Uref = tiny_MatrixNuNhm1::Zero();
-	tiny_data_solver.settings->max_iter = 100;
+	tiny_data_solver.settings->max_iter = 10;
 	tiny_data_solver.settings->en_input_bound = 0;
 	tiny_data_solver.settings->en_state_bound = 0;
+	std::cout << tiny_data_solver.cache->Kinf.format(CleanFmt) << std::endl;
+	std::cout << tiny_data_solver.work->Adyn.format(CleanFmt) << std::endl;
 
 	tiny_VectorNx x0, x1; // current and next simulation states
-	x0 << 1.0, 0, 0, 0;
+	x0 << 0.0, 0, 0.2, 0; // initial state
 
 	int i = 0;
-	for (int k = 0; k < 1000; ++k)
+	for (int k = 0; k < 3; ++k)
 	{
-			printf("tracking error at step %2d: %.4f\n", k, (x0 - work.Xref.col(1)).norm());
+			
 			
 			// 1. Update measurement
-			work.x.col(0) = x0;
+			// work->x.col(0) = x0;
 
 			// 2. Update reference (if needed)
 
 			// 3. Reset dual variables (if needed)
-			work.y = tiny_MatrixNuNhm1::Zero();
-			work.g = tiny_MatrixNxNh::Zero();
+			// work->y = tiny_MatrixNuNhm1::Zero();
+			// work->g = tiny_MatrixNxNh::Zero();
 
 			// 4. Solve MPC problem
-			tiny_solve(&tiny_data_solver);
+			// exitflag = tiny_solve(&tiny_data_solver);
+			// if (exitflag == 0)
+			// 	printf("HOORAY! Solved with no error!\n");
+			// else
+			// 	printf("OOPS! Something went wrong!\n");
+			// 	// break;
 
-			// std::cout << work.iter << std::endl;
-			// std::cout << work.u.col(0).transpose().format(CleanFmt) << std::endl;
+			// std::cout << work->iter << std::endl;
+			// std::cout << work->u.col(0).transpose().format(CleanFmt) << std::endl;
 
 			// 5. Simulate forward
-			x1 = work.Adyn * x0 + work.Bdyn * work.u.col(0);
+			work->u.col(0) = -tiny_data_solver.cache->Kinf * (x0 - work->Xref.col(0));
+			std::cout << work->u.col(0).transpose().format(CleanFmt) << std::endl;
+			std::cout << work->Adyn.format(CleanFmt) << std::endl;
+			std::cout << work->Bdyn.format(CleanFmt) << std::endl;
+			std::cout << x0.transpose().format(CleanFmt) << std::endl;
+			x1 = work->Adyn * x0 + work->Bdyn * work->u.col(0);
 			x0 = x1;
-
+			printf("tracking error at step %2d: %.4f\n", k, (x0 - work->Xref.col(1)).norm());
 			// std::cout << x0.transpose().format(CleanFmt) << std::endl;
 	}
 }

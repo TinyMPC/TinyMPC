@@ -37,6 +37,8 @@ extern "C"
         for (int i = 0; i < NHORIZON - 1; i++)
         {
             (solver->work->u.col(i)).noalias() = -solver->cache->Kinf.lazyProduct(solver->work->x.col(i)) - solver->work->d.col(i);
+            // std::cout << solver->cache->Kinf << std::endl;
+            // std::cout << solver->work->x.col(i) << std::endl;
             // solver->work->u.col(i) << .001, .02, .3, 4;
             // DEBUG_PRINT("u(0): %f\n", solver->work->u.col(0)(0));
             // multAdyn(solver->Ax->cache.Adyn, solver->work->x.col(i));
@@ -105,9 +107,11 @@ extern "C"
         update_linear_cost(solver);
         for (int i = 0; i < solver->settings->max_iter; i++)
         {
+            // std::cout << solver->work->iter << std::endl;
 
             // Solve linear system with Riccati and roll out to get new trajectory
             update_primal(solver);
+            
 
             // Project slack variables into feasible domain
             update_slack(solver);
