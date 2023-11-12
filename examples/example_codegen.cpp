@@ -3,7 +3,8 @@
 #include <tinympc/admm.hpp>
 #include <tinympc/codegen.hpp>
 
-// For codegen, double type should be used, otherwise, Riccati won't converge.
+// For codegen, double type should be used, otherwise, Riccati may fail.
+// The embedded code is still float type.
 
 extern "C"
 {

@@ -6,7 +6,8 @@
 #include <tinympc/admm.hpp>
 #include <tinympc/codegen.hpp>
 
-// For codegen, double type should be used, otherwise, Riccati won't converge.
+// For codegen, double type should be used, otherwise, Riccati may fail.
+// The embedded code is still float type.
 
 extern "C"
 {
@@ -39,7 +40,7 @@ extern "C"
     int max_iter = 100;
     int verbose = 1; // for code-gen
 
-    // char tinympc_dir[255] = "your absolute path to tinympc";
+    // char tinympc_dir[255] = "your absolute path to tinympc";  // TODO: relative path
     char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC";
     char output_dir[255] = "/generated_code";
 
@@ -65,7 +66,7 @@ extern "C"
 } /* extern "C" */
 
 
-/* Copy this to main in the generated code
+/* Copy this to main in the generated code to run MPC
 
 int main()
 {
