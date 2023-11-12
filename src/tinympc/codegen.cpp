@@ -109,7 +109,7 @@ static void copy_dir(char *src_dir_name, char *dest_dir_name) {
 
 static void print_matrix(FILE *f, tiny_MatrixX mat, int num_elements) {
     for (int i=0; i<num_elements; i++) {
-        fprintf(f, "(tinytype)%.16f", mat.reshaped()[i]);
+        fprintf(f, "(tinytype)%.16f", mat.reshaped<RowMajor>()[i]);
         if (i < num_elements-1)
             fprintf(f, ",");
     }
@@ -258,7 +258,7 @@ int tiny_codegen(const int nx, const int nu, const int N,
     tiny_MatrixX Kinf = tiny_MatrixX::Zero(nu, nx);
     tiny_MatrixX Pinf = tiny_MatrixX::Zero(nx, nx);
 
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 1000; i++)
     {
         Kinf = (R1 + Bdyn.transpose() * Ptp1 * Bdyn).inverse() * Bdyn.transpose() * Ptp1 * Adyn;
         Pinf = Q1 + Adyn.transpose() * Ptp1 * (Adyn - Bdyn * Kinf);
@@ -350,7 +350,7 @@ int tiny_codegen(const int nx, const int nu, const int N,
     fprintf(data_f, "\t(tiny_MatrixNuNx() << "); print_matrix(data_f, Kinf, nu*nx); fprintf(data_f, ").finished(),\t// Kinf\n");
     fprintf(data_f, "\t(tiny_MatrixNxNx() << "); print_matrix(data_f, Pinf, nx*nx); fprintf(data_f, ").finished(),\t// Pinf\n");
     fprintf(data_f, "\t(tiny_MatrixNuNu() << "); print_matrix(data_f, Quu_inv, nu*nu); fprintf(data_f, ").finished(),\t// Quu_inv\n");
-    fprintf(data_f, "\t(tiny_MatrixNxNx() << "); print_matrix(data_f, AmBKt, nx*nu); fprintf(data_f, ").finished(),\t// AmBKt\n");
+    fprintf(data_f, "\t(tiny_MatrixNxNx() << "); print_matrix(data_f, AmBKt, nx*nx); fprintf(data_f, ").finished(),\t// AmBKt\n");
     fprintf(data_f, "\t(tiny_MatrixNxNu() << "); print_matrix(data_f, coeff_d2p, nx*nu); fprintf(data_f, ").finished(),\t// coeff_d2p\n");
     fprintf(data_f, "};\n\n");
 
