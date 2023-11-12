@@ -247,10 +247,10 @@ extern "C"
         tiny_MatrixX Q = tiny_MatrixX::Map(Q_data, nx, 1);
         tiny_MatrixX Qf = tiny_MatrixX::Map(Qf_data, nx, 1);
         tiny_MatrixX R = tiny_MatrixX::Map(R_data, nu, 1);
-        tiny_MatrixX x_min = tiny_MatrixX::Map(x_min_data, N, nx).transpose(); // x_min is col-major
-        tiny_MatrixX x_max = tiny_MatrixX::Map(x_max_data, N, nx).transpose();
-        tiny_MatrixX u_min = tiny_MatrixX::Map(u_min_data, N - 1, nu).transpose(); // u_min is col-major
-        tiny_MatrixX u_max = tiny_MatrixX::Map(u_max_data, N - 1, nu).transpose();
+        tiny_MatrixX x_min = tiny_MatrixX::Map(x_min_data, nx, N); 
+        tiny_MatrixX x_max = tiny_MatrixX::Map(x_max_data, nx, N);
+        tiny_MatrixX u_min = tiny_MatrixX::Map(u_min_data, nu, N - 1); 
+        tiny_MatrixX u_max = tiny_MatrixX::Map(u_max_data, nu, N - 1);
 
         // Update by adding rho * identity matrix to Q, Qf, R
         Q = Q + rho * tiny_MatrixX::Ones(nx, 1);
