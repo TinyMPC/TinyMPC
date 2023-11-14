@@ -522,6 +522,10 @@ extern "C"
         fprintf(data_hpp_f, "}\n");
         fprintf(data_hpp_f, "#endif\n");
 
+        // Close codegen data header file
+        fclose(data_hpp_f);
+        printf("Data header generated in %s\n", workspace_hpp_fname);
+
         // Create CMakeLists.txt files
 
         // CMakeLists.txt for codegen_dir/src/

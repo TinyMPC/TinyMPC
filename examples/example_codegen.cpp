@@ -31,8 +31,7 @@ extern "C"
     tinytype u_min_data[m * (N - 1)] = {2, 3, 2, 3};
     tinytype u_max_data[m * (N - 1)] = {-2, -3, -2, -3};
 
-    // char tinympc_dir[255] = "your absolute path to tinympc"; #TODO: relative
-    char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC";
+    char tinympc_dir[255] = "/your/absolute/path/to/TinyMPC/"; // This will be given by high level language
     char output_dir[255] = "/generated_code";
 
     int main()
