@@ -674,8 +674,10 @@ extern "C"
 
         fprintf(readme_f, "An example main function is included in src/tiny_main.cpp\n\n");
 
+        fprintf(readme_f, "Enable wrapper for high-level interfaces.\n\n");
+
         fprintf(readme_f, "CMakeLists.txt files are included for easy integration into \
-                existing CMake projects.");
+                existing CMake projects.");        
 
         fprintf(readme_f, "To run the example with cmake:\n");
         fprintf(readme_f, "```\n \
