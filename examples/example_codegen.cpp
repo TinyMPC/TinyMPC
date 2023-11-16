@@ -31,13 +31,24 @@ extern "C"
     tinytype u_min_data[m * (N - 1)] = {2, 3, 2, 3};
     tinytype u_max_data[m * (N - 1)] = {-2, -3, -2, -3};
 
-    char tinympc_dir[255] = "/your/absolute/path/to/TinyMPC/"; // This will be given by high level language
+    // Solver options
+    tinytype abs_pri_tol = 1e-3;
+    tinytype rel_pri_tol = 1e-3;
+    int max_iter = 100;
+    int check_termination = 1; 
+    int gen_wrapper = 0;
+
+    // char tinympc_dir[255] = "/your/absolute/path/to/TinyMPC"; // TODO: relative path
+    char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC"; 
     char output_dir[255] = "/generated_code";
 
     int main()
     {
         // We can also can this function from Python, Matlab, Julia (expected)
-        tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data, x_min_data, x_max_data, u_min_data, u_max_data, rho_value, 1e-3, 1e-3, 100, 1, tinympc_dir, output_dir);
+        tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data,
+                     x_min_data, x_max_data, u_min_data, u_max_data,
+                     rho_value, abs_pri_tol, rel_pri_tol, max_iter, check_termination, gen_wrapper,
+                     tinympc_dir, output_dir);
 
         // This function copies source code to `generated_code` directory, create workspace data, a tiny_main.cpp file
 

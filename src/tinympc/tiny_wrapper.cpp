@@ -1,6 +1,4 @@
-#include <tinympc/tiny_data_workspace.hpp>
-#include <tinympc/admm.hpp>
-#include <iostream>
+#include "tinympc/tiny_wrapper.hpp"
 
 extern "C"{
     void set_x(float *x0){

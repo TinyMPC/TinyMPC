@@ -38,7 +38,8 @@ extern "C"
     tinytype abs_pri_tol = 1e-3;
     tinytype rel_pri_tol = 1e-3;
     int max_iter = 100;
-    int verbose = 1; // for code-gen
+    int check_termination = 1; 
+    int gen_wrapper = 1;
 
     // char tinympc_dir[255] = "your absolute path to tinympc";  // TODO: relative path
     char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC";
@@ -62,7 +63,7 @@ extern "C"
         // We can also can this function from Python, Matlab, Julia (expected)
         tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data,
                      x_min_data, x_max_data, u_min_data, u_max_data,
-                     rho_value, abs_pri_tol, rel_pri_tol, max_iter, verbose,
+                     rho_value, abs_pri_tol, rel_pri_tol, max_iter, check_termination, gen_wrapper,
                      tinympc_dir, output_dir);
 
         return 0;

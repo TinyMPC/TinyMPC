@@ -218,7 +218,7 @@ extern "C"
     int tiny_codegen(const int nx, const int nu, const int N,
                      tinytype *Adyn_data, tinytype *Bdyn_data, tinytype *Q_data, tinytype *Qf_data, tinytype *R_data,
                      tinytype *x_min_data, tinytype *x_max_data, tinytype *u_min_data, tinytype *u_max_data,
-                     tinytype rho, tinytype abs_pri_tol, tinytype abs_dua_tol, int max_iters, int check_termination,
+                     tinytype rho, tinytype abs_pri_tol, tinytype abs_dua_tol, int max_iters, int check_termination, int gen_wrapper,
                      const char *tinympc_dir, const char *output_dir)
     {
         int en_state_bound = 0;
@@ -247,9 +247,9 @@ extern "C"
         tiny_MatrixX Q = tiny_MatrixX::Map(Q_data, nx, 1);
         tiny_MatrixX Qf = tiny_MatrixX::Map(Qf_data, nx, 1);
         tiny_MatrixX R = tiny_MatrixX::Map(R_data, nu, 1);
-        tiny_MatrixX x_min = tiny_MatrixX::Map(x_min_data, nx, N); 
+        tiny_MatrixX x_min = tiny_MatrixX::Map(x_min_data, nx, N);
         tiny_MatrixX x_max = tiny_MatrixX::Map(x_max_data, nx, N);
-        tiny_MatrixX u_min = tiny_MatrixX::Map(u_min_data, nu, N - 1); 
+        tiny_MatrixX u_min = tiny_MatrixX::Map(u_min_data, nu, N - 1);
         tiny_MatrixX u_max = tiny_MatrixX::Map(u_max_data, nu, N - 1);
 
         // Update by adding rho * identity matrix to Q, Qf, R
@@ -334,6 +334,7 @@ extern "C"
         data_f = fopen(data_workspace_fname, "w+");
         if (data_f == NULL)
             printf("ERROR OPENING DATA WORKSPACE FILE\n");
+        printf("Please check your tinympc_dir\n");
         // return tiny_error(TINY_FOPEN_ERROR);
 
         // Preamble
@@ -571,6 +572,10 @@ extern "C"
 
         fprintf(tinympc_cmake_f, "add_library(tinympc STATIC\n");
         fprintf(tinympc_cmake_f, "admm.cpp\n");
+        if (gen_wrapper != 0)
+        {
+            fprintf(tinympc_cmake_f, "tiny_wrapper.cpp\n");
+        }
         fprintf(tinympc_cmake_f, ")\n\n");
 
         fprintf(tinympc_cmake_f, "target_include_directories(tinympc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)");
@@ -634,6 +639,19 @@ extern "C"
         sprintf(dst_fname, "%s%s/tinympc/types.hpp", tinympc_dir, output_dir);
         copy_file(src_fname, dst_fname);
         printf("Content of %s copied to %s\n", src_fname, dst_fname);
+
+        if (gen_wrapper != 0)
+        {
+            sprintf(src_fname, "%s/src/tinympc/tiny_wrapper.hpp", tinympc_dir);
+            sprintf(dst_fname, "%s%s/tinympc/tiny_wrapper.hpp", tinympc_dir, output_dir);
+            copy_file(src_fname, dst_fname);
+            printf("Content of %s copied to %s\n", src_fname, dst_fname);
+
+            sprintf(src_fname, "%s/src/tinympc/tiny_wrapper.cpp", tinympc_dir);
+            sprintf(dst_fname, "%s%s/tinympc/tiny_wrapper.cpp", tinympc_dir, output_dir);
+            copy_file(src_fname, dst_fname);
+            printf("Content of %s copied to %s\n", src_fname, dst_fname);
+        }
 
         // Create README.md
         char readme_fname[PATH_LENGTH + FILE_LENGTH];
