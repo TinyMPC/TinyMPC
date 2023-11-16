@@ -95,6 +95,8 @@ int main()
         work->x.col(0) = x0;
 
         // 2. Update reference (if needed)
+        // you can also use C wrapper (intended for high-level languages) 
+        // by including tiny_wrapper.hpp and call `set_xref(...)` function
 
         // 3. Reset dual variables (if needed)
         work->y = tiny_MatrixNuNhm1::Zero();
@@ -102,6 +104,7 @@ int main()
 
         // 4. Solve MPC problem
         exitflag = tiny_solve(&tiny_data_solver);
+
         // if (exitflag == 0)
         // 	printf("HOORAY! Solved with no error!\n");
         // else
