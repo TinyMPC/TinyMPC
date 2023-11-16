@@ -87,7 +87,7 @@ int main()
     x0 << 0.0, 0, 0.1, 0; // initial state
 
     int i = 0;
-    for (int k = 0; k < 200; ++k)
+    for (int k = 0; k < 300; ++k)
     {
         printf("tracking error at step %2d: %.4f\n", k, (x0 - work->Xref.col(1)).norm());
 
