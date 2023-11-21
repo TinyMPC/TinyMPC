@@ -1,3 +1,11 @@
+// Quadrotor tracking example
+// Make sure NSTATES=12, NINPUTS=4 in glob_opts.hpp
+// States: x (m), y, z, phi, theta, psi, dx, dy, dz, dphi, dtheta, dpsi
+// phi, theta, psi are not Euler angles, they are Rodiguez parameters
+// check this paper for more details: https://roboticexplorationlab.org/papers/planning_with_attitude.pdf
+// Inputs: u1, u2, u3, u4 (motor thrust 0-1, order from Crazyflie)
+
+
 #include <iostream>
 
 #include <tinympc/admm.hpp>

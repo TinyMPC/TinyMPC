@@ -14,8 +14,8 @@ extern "C"
 {
 
     // Model size
-    const int n = 4;  // state dimension
-    const int m = 1;  // input dimension
+    const int n = 4;  // state dimension: x (m), theta (rad), dx, dtheta
+    const int m = 1;  // input dimension: F (Newtons)
     const int N = 10; // horizon
 
     // Model matrices (all matrices are col-major to be consistent with Eigen)
