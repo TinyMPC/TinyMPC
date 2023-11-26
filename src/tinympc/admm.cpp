@@ -88,7 +88,7 @@ extern "C"
      * Check for termination condition by evaluating whether the largest absolute
      * primal and dual residuals for states and inputs are below threhold.
      */
-    bool check_termination(TinySolver *solver)
+    bool termination_condition(TinySolver *solver)
     {
         if (solver->work->iter % solver->settings->check_termination == 0)
         {
@@ -132,7 +132,7 @@ extern "C"
             update_linear_cost(solver);
 
             // Check for whether cost is ~minimized~ by calculating residuals
-            if (check_termination(solver)) {
+            if (termination_condition(solver)) {
                 solver->work->status = 1; // TINY_SOLVED
                 return 0;
             }

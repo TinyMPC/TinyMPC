@@ -15,7 +15,7 @@ extern "C"
     void update_slack(TinySolver *solver);
     void update_dual(TinySolver *solver);
     void update_linear_cost(TinySolver *solver);
-    bool check_termination(TinySolver *solver);
+    bool termination_condition(TinySolver *solver);
 
 #ifdef __cplusplus
 }
