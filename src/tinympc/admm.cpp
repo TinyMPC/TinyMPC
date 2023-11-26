@@ -117,6 +117,8 @@ extern "C"
         for (int i = 0; i < solver->settings->max_iter; i++)
         {
 
+            solver->work->iter = i + 1;
+
             // Solve linear system with Riccati and roll out to get new trajectory
             forward_pass(solver);
 
@@ -138,8 +140,6 @@ extern "C"
             // Save previous slack variables
             solver->work->v = solver->work->vnew;
             solver->work->z = solver->work->znew;
-
-            solver->work->iter = i + 1;
 
             backward_pass_grad(solver);
 
