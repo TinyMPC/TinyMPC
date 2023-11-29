@@ -10,15 +10,6 @@ extern "C"
     static uint64_t startTimestamp;
 
     /**
-     * Do backward Riccati pass then forward roll out
-     */
-    void update_primal(TinySolver *solver)
-    {
-        backward_pass_grad(solver);
-        forward_pass(solver);
-    }
-
-    /**
      * Update linear terms from Riccati backward pass
      */
     void backward_pass_grad(TinySolver *solver)
@@ -93,21 +84,43 @@ extern "C"
         solver->work->p.col(NHORIZON - 1) -= solver->cache->rho * (solver->work->vnew.col(NHORIZON - 1) - solver->work->g.col(NHORIZON - 1));
     }
 
+    /**
+     * Check for termination condition by evaluating whether the largest absolute
+     * primal and dual residuals for states and inputs are below threhold.
+     */
+    bool termination_condition(TinySolver *solver)
+    {
+        if (solver->work->iter % solver->settings->check_termination == 0)
+        {
+            solver->work->primal_residual_state = (solver->work->x - solver->work->vnew).cwiseAbs().maxCoeff();
+            solver->work->dual_residual_state = ((solver->work->v - solver->work->vnew).cwiseAbs().maxCoeff()) * solver->cache->rho;
+            solver->work->primal_residual_input = (solver->work->u - solver->work->znew).cwiseAbs().maxCoeff();
+            solver->work->dual_residual_input = ((solver->work->z - solver->work->znew).cwiseAbs().maxCoeff()) * solver->cache->rho;
+
+            if (solver->work->primal_residual_state < solver->settings->abs_pri_tol &&
+                solver->work->primal_residual_input < solver->settings->abs_pri_tol &&
+                solver->work->dual_residual_state < solver->settings->abs_dua_tol &&
+                solver->work->dual_residual_input < solver->settings->abs_dua_tol)
+            {
+                return true;                 
+            }
+        }
+        return false;
+    }
+
     int tiny_solve(TinySolver *solver)
     {
         // Initialize variables
         solver->work->status = 11; // TINY_UNSOLVED
         solver->work->iter = 1;
 
-        forward_pass(solver);
-        update_slack(solver);
-        update_dual(solver);
-        update_linear_cost(solver);
         for (int i = 0; i < solver->settings->max_iter; i++)
         {
 
+            solver->work->iter = i + 1;
+
             // Solve linear system with Riccati and roll out to get new trajectory
-            update_primal(solver);
+            forward_pass(solver);
 
             // Project slack variables into feasible domain
             update_slack(solver);
@@ -118,28 +131,17 @@ extern "C"
             // Update linear control cost terms using reference trajectory, duals, and slack variables
             update_linear_cost(solver);
 
-            if (solver->work->iter % solver->settings->check_termination == 0)
-            {
-                solver->work->primal_residual_state = (solver->work->x - solver->work->vnew).cwiseAbs().maxCoeff();
-                solver->work->dual_residual_state = ((solver->work->v - solver->work->vnew).cwiseAbs().maxCoeff()) * solver->cache->rho;
-                solver->work->primal_residual_input = (solver->work->u - solver->work->znew).cwiseAbs().maxCoeff();
-                solver->work->dual_residual_input = ((solver->work->z - solver->work->znew).cwiseAbs().maxCoeff()) * solver->cache->rho;
-
-                if (solver->work->primal_residual_state < solver->settings->abs_pri_tol &&
-                    solver->work->primal_residual_input < solver->settings->abs_pri_tol &&
-                    solver->work->dual_residual_state < solver->settings->abs_dua_tol &&
-                    solver->work->dual_residual_input < solver->settings->abs_dua_tol)
-                {
-                    solver->work->status = 1; // TINY_SOLVED
-                    return 0;                 // 0 means solved with no error
-                }
+            // Check for whether cost is ~minimized~ by calculating residuals
+            if (termination_condition(solver)) {
+                solver->work->status = 1; // TINY_SOLVED
+                return 0;
             }
 
             // Save previous slack variables
             solver->work->v = solver->work->vnew;
             solver->work->z = solver->work->znew;
 
-            solver->work->iter += 1;
+            backward_pass_grad(solver);
 
             // std::cout << solver->work->primal_residual_state << std::endl;
             // std::cout << solver->work->dual_residual_state << std::endl;
