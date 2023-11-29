@@ -334,7 +334,7 @@ extern "C"
         data_f = fopen(data_workspace_fname, "w+");
         if (data_f == NULL)
             printf("ERROR OPENING DATA WORKSPACE FILE\n");
-        printf("Please check your tinympc_dir\n");
+        // printf("Please check your tinympc_dir\n");
         // return tiny_error(TINY_FOPEN_ERROR);
 
         // Preamble
