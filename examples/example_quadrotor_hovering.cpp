@@ -36,7 +36,6 @@ extern "C"
         work.Adyn = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Adyn_data);
         work.Bdyn = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(Bdyn_data);
         work.Q = Eigen::Map<tiny_VectorNx>(Q_data);
-        work.Qf = Eigen::Map<tiny_VectorNx>(Qf_data);
         work.R = Eigen::Map<tiny_VectorNu>(R_data);
         work.u_min = tiny_MatrixNuNhm1::Constant(-0.5);
         work.u_max = tiny_MatrixNuNhm1::Constant(0.5);

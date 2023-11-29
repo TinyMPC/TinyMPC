@@ -216,7 +216,7 @@ extern "C"
     }
 
     int tiny_codegen(const int nx, const int nu, const int N,
-                     tinytype *Adyn_data, tinytype *Bdyn_data, tinytype *Q_data, tinytype *Qf_data, tinytype *R_data,
+                     tinytype *Adyn_data, tinytype *Bdyn_data, tinytype *Q_data, tinytype *R_data,
                      tinytype *x_min_data, tinytype *x_max_data, tinytype *u_min_data, tinytype *u_max_data,
                      tinytype rho, tinytype abs_pri_tol, tinytype abs_dua_tol, int max_iters, int check_termination, int gen_wrapper,
                      const char *tinympc_dir, const char *output_dir)
@@ -245,32 +245,28 @@ extern "C"
         tiny_MatrixX Adyn = tiny_MatrixX::Map(Adyn_data, nx, nx);
         tiny_MatrixX Bdyn = tiny_MatrixX::Map(Bdyn_data, nx, nu);
         tiny_MatrixX Q = tiny_MatrixX::Map(Q_data, nx, 1);
-        tiny_MatrixX Qf = tiny_MatrixX::Map(Qf_data, nx, 1);
         tiny_MatrixX R = tiny_MatrixX::Map(R_data, nu, 1);
         tiny_MatrixX x_min = tiny_MatrixX::Map(x_min_data, nx, N);
         tiny_MatrixX x_max = tiny_MatrixX::Map(x_max_data, nx, N);
         tiny_MatrixX u_min = tiny_MatrixX::Map(u_min_data, nu, N - 1);
         tiny_MatrixX u_max = tiny_MatrixX::Map(u_max_data, nu, N - 1);
 
-        // Update by adding rho * identity matrix to Q, Qf, R
+        // Update by adding rho * identity matrix to Q, R
         Q = Q + rho * tiny_MatrixX::Ones(nx, 1);
-        Qf = Qf + rho * tiny_MatrixX::Ones(nx, 1);
         R = R + rho * tiny_MatrixX::Ones(nu, 1);
         tiny_MatrixX Q1 = Q.array().matrix().asDiagonal();
-        tiny_MatrixX Qf1 = Qf.array().matrix().asDiagonal();
         tiny_MatrixX R1 = R.array().matrix().asDiagonal();
 
         // Printing
         std::cout << "A = " << Adyn.format(CleanFmt) << std::endl;
         std::cout << "B = " << Bdyn.format(CleanFmt) << std::endl;
         std::cout << "Q = " << Q1.format(CleanFmt) << std::endl;
-        std::cout << "Qf = " << Qf1.format(CleanFmt) << std::endl;
         std::cout << "R = " << R1.format(CleanFmt) << std::endl;
         std::cout << "rho = " << rho << std::endl;
 
         // Riccati recursion to get Kinf, Pinf
         tiny_MatrixX Ktp1 = tiny_MatrixX::Zero(nu, nx);
-        tiny_MatrixX Ptp1 = Qf1;
+        tiny_MatrixX Ptp1 = rho * tiny_MatrixX::Ones(nx, 1).array().matrix().asDiagonal();
         tiny_MatrixX Kinf = tiny_MatrixX::Zero(nu, nx);
         tiny_MatrixX Pinf = tiny_MatrixX::Zero(nx, nx);
 
@@ -436,9 +432,6 @@ extern "C"
         fprintf(data_f, "\t(tiny_VectorNx() << ");
         print_matrix(data_f, Q, nx);
         fprintf(data_f, ").finished(),\t// Q\n");
-        fprintf(data_f, "\t(tiny_VectorNx() << ");
-        print_matrix(data_f, Qf, nx);
-        fprintf(data_f, ").finished(),\t// Qf\n");
         fprintf(data_f, "\t(tiny_VectorNu() << ");
         print_matrix(data_f, R, nu);
         fprintf(data_f, ").finished(),\t// R\n");

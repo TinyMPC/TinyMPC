@@ -24,7 +24,6 @@ extern "C"
 
     // Cost matrices
     tinytype Q_data[n] = {10, 1, 10, 1};
-    tinytype Qf_data[n] = {10, 1, 10, 1};
     tinytype R_data[m] = {1};
     tinytype rho_value = 0.1;
 
@@ -42,7 +41,7 @@ extern "C"
     int gen_wrapper = 1;
 
     // char tinympc_dir[255] = "your absolute path to tinympc";  // TODO: relative path
-    char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC";
+    char tinympc_dir[255] = "/home/sam/Git/tinympc/TinyMPC/";
     char output_dir[255] = "/generated_code";
 
     int main()
@@ -60,8 +59,8 @@ extern "C"
             u_max_data[i] = 5;
         }
 
-        // We can also can this function from Python, Matlab, Julia (expected)
-        tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data,
+        // We can also call this function from Python, Matlab, Julia (expected)
+        tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, R_data,
                      x_min_data, x_max_data, u_min_data, u_max_data,
                      rho_value, abs_pri_tol, rel_pri_tol, max_iter, check_termination, gen_wrapper,
                      tinympc_dir, output_dir);

@@ -81,7 +81,6 @@ extern "C"
         int iter;
 
         tiny_VectorNx Q;
-        tiny_VectorNx Qf;
         tiny_VectorNu R;
         tiny_MatrixNxNx Adyn;
         tiny_MatrixNxNu Bdyn;
