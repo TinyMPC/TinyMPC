@@ -35,7 +35,7 @@ extern "C"
 
     // Solver options
     tinytype abs_pri_tol = 1e-3;
-    tinytype rel_pri_tol = 1e-3;
+    tinytype abs_dual_tol = 1e-3;
     int max_iter = 100;
     int check_termination = 1; 
     int gen_wrapper = 1;
@@ -62,7 +62,7 @@ extern "C"
         // We can also call this function from Python, Matlab, Julia (expected)
         tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, R_data,
                      x_min_data, x_max_data, u_min_data, u_max_data,
-                     rho_value, abs_pri_tol, rel_pri_tol, max_iter, check_termination, gen_wrapper,
+                     rho_value, abs_pri_tol, abs_dual_tol, max_iter, check_termination, gen_wrapper,
                      tinympc_dir, output_dir);
 
         return 0;
