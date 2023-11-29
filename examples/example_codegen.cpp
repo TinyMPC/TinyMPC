@@ -22,7 +22,6 @@ extern "C"
     tinytype Adyn_data[n * n] = {1, 5, 1, 2};
     tinytype Bdyn_data[n * m] = {3, 3, 4, 1};
     tinytype Q_data[n] = {1, 1};
-    tinytype Qf_data[n] = {1, 1};
     tinytype R_data[m] = {2, 2};
     tinytype rho_value = 0.1;
 
@@ -45,7 +44,7 @@ extern "C"
     int main()
     {
         // We can also can this function from Python, Matlab, Julia (expected)
-        tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, Qf_data, R_data,
+        tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, R_data,
                      x_min_data, x_max_data, u_min_data, u_max_data,
                      rho_value, abs_pri_tol, rel_pri_tol, max_iter, check_termination, gen_wrapper,
                      tinympc_dir, output_dir);
