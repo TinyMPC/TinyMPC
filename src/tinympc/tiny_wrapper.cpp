@@ -2,6 +2,28 @@
 
 extern "C"
 {
+    void set_x(float *x, int verbose)
+    {
+        for (int i = 0; i < NSTATES; i++)
+        {
+            for (int j = 0; j < NHORIZON; j++)
+            {
+                tiny_data_solver.work->x(i, j) = x[j*NHORIZON + i];
+            }
+        }
+        
+        if (verbose != 0)
+        {
+            for (int j = 0; j < NHORIZON; j++)
+            {
+                for (int i = 0; i < NSTATES; i++)
+                {
+                    printf("set_x result:  %f\n", tiny_data_solver.work->x(i, j));
+                }
+            }
+        }
+    }
+
     void set_x0(float *x0, int verbose)
     {
         for (int i = 0; i < NSTATES; i++)
@@ -30,11 +52,99 @@ extern "C"
 
         if (verbose != 0)
         {
-            for (int i = 0; i < NSTATES; i++)
+            for (int j = 0; j < NHORIZON; j++)
             {
-                for (int j = 0; j < NHORIZON; j++)
+                for (int i = 0; i < NSTATES; i++)
                 {
                     printf("set_xref result:  %f\n", tiny_data_solver.work->Xref(i, j));
+                }
+            }
+        }
+    }
+
+    void set_umin(float *umin, int verbose)
+    {
+        for (int i = 0; i < NINPUTS; i++)
+        {
+            for (int j = 0; j < NHORIZON-1; j++)
+            {
+                tiny_data_solver.work->u_min(i, j) = umin[i];
+            }
+        }
+
+        if (verbose != 0)
+        {
+            for (int j = 0; j < NHORIZON-1; j++)
+            {
+                for (int i = 0; i < NINPUTS; i++)
+                {
+                    printf("set_umin result:  %f\n", tiny_data_solver.work->u_min(i, j));
+                }
+            }
+        }
+    }
+
+    void set_umax(float *umax, int verbose)
+    {
+        for (int i = 0; i < NINPUTS; i++)
+        {
+            for (int j = 0; j < NHORIZON-1; j++)
+            {
+                tiny_data_solver.work->u_max(i, j) = umax[i];
+            }
+        }
+
+        if (verbose != 0)
+        {
+            for (int j = 0; j < NHORIZON-1; j++)
+            {
+                for (int i = 0; i < NINPUTS; i++)
+                {
+                    printf("set_umax result:  %f\n", tiny_data_solver.work->u_max(i, j));
+                }
+            }
+        }
+    }
+    
+    void set_xmin(float *xmin, int verbose)
+    {
+        for (int i = 0; i < NSTATES; i++)
+        {
+            for (int j = 0; j < NHORIZON; j++)
+            {
+                tiny_data_solver.work->x_min(i, j) = xmin[i];
+            }
+        }
+
+        if (verbose != 0)
+        {
+            for (int j = 0; j < NHORIZON; j++)
+            {
+                for (int i = 0; i < NSTATES; i++)
+                {
+                    printf("set_xmin result:  %f\n", tiny_data_solver.work->x_min(i, j));
+                }
+            }
+        }
+    }
+
+    void set_xmax(float *xmax, int verbose)
+    {
+        for (int i = 0; i < NSTATES; i++)
+        {
+            for (int j = 0; j < NHORIZON; j++)
+            {
+                tiny_data_solver.work->x_max(i, j) = xmax[i];
+            }
+        }
+
+        if (verbose != 0)
+        {
+            for (int j = 0; j < NHORIZON; j++)
+            {
+                for (int i = 0; i < NSTATES; i++)
+                {
+                    printf("set_xmax result:  %f\n", tiny_data_solver.work->x_max(i, j));
                 }
             }
         }
