@@ -1,4 +1,7 @@
 // Quadrotor hovering example
+
+// This script is just to show how to use the library, the data for this example is not tuned for our Crazyflie demo. Check the firmware code for more details.
+
 // Make sure in glob_opts.hpp:
 // - NSTATES = 12, NINPUTS=4
 // - NHORIZON = anything you want
@@ -7,6 +10,7 @@
 // phi, theta, psi are NOT Euler angles, they are Rodiguez parameters
 // check this paper for more details: https://roboticexplorationlab.org/papers/planning_with_attitude.pdf
 // Inputs: u1, u2, u3, u4 (motor thrust 0-1, order from Crazyflie)
+
 
 #include <iostream>
 

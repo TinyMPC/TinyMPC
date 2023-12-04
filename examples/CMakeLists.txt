@@ -7,3 +7,4 @@ target_link_libraries(example_quadrotor_tracking LINK_PUBLIC tinympc)
 target_link_libraries(example_quadrotor_hovering LINK_PUBLIC tinympc)
 target_link_libraries(example_codegen LINK_PUBLIC tinympc)
 target_link_libraries(example_cartpole LINK_PUBLIC tinympc)
+

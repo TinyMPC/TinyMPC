@@ -1,4 +1,7 @@
 // Quadrotor tracking example
+
+// This script is just to show how to use the library, the data for this example is not tuned for our Crazyflie demo. Check the firmware code for more details.
+
 // Make sure in glob_opts.hpp:
 // - NSTATES = 12, NINPUTS=4
 // - NHORIZON = anything you want
