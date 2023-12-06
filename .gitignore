@@ -1,4 +1,5 @@
 generated_code/
+build/
 
 #IDEs
 .vscode/
@@ -36,6 +37,7 @@ Testing/
 # Shared objects (inc. Windows DLLs)
 *.dll
 *.so
+!libtinympc.so
 *.so.*
 *.dylib
 
