@@ -303,7 +303,7 @@ extern "C"
         char workspace_tinympc_dname[PATH_LENGTH + DIR_NAME_LENGTH];
         char workspace_include_dname[PATH_LENGTH + DIR_NAME_LENGTH];
 
-        sprintf(workspace_dname, "%s%s", tinympc_dir, output_dir);
+        sprintf(workspace_dname, "%s", output_dir);
         sprintf(workspace_src_dname, "%s/src", workspace_dname);
         sprintf(workspace_tinympc_dname, "%s/tinympc", workspace_dname);
         sprintf(workspace_include_dname, "%s/include", workspace_dname);
@@ -619,29 +619,29 @@ extern "C"
         char src_fname[PATH_LENGTH + DIR_NAME_LENGTH + FILE_LENGTH];
         char dst_fname[PATH_LENGTH + DIR_NAME_LENGTH + FILE_LENGTH];
         sprintf(src_fname, "%s/src/tinympc/admm.hpp", tinympc_dir);
-        sprintf(dst_fname, "%s%s/tinympc/admm.hpp", tinympc_dir, output_dir);
+        sprintf(dst_fname, "%s/tinympc/admm.hpp", output_dir);
         copy_file(src_fname, dst_fname);
         printf("Content of %s copied to %s\n", src_fname, dst_fname);
 
         sprintf(src_fname, "%s/src/tinympc/admm.cpp", tinympc_dir);
-        sprintf(dst_fname, "%s%s/tinympc/admm.cpp", tinympc_dir, output_dir);
+        sprintf(dst_fname, "%s/tinympc/admm.cpp", output_dir);
         copy_file(src_fname, dst_fname);
         printf("Content of %s copied to %s\n", src_fname, dst_fname);
 
         sprintf(src_fname, "%s/src/tinympc/types.hpp", tinympc_dir);
-        sprintf(dst_fname, "%s%s/tinympc/types.hpp", tinympc_dir, output_dir);
+        sprintf(dst_fname, "%s/tinympc/types.hpp", output_dir);
         copy_file(src_fname, dst_fname);
         printf("Content of %s copied to %s\n", src_fname, dst_fname);
 
         if (gen_wrapper != 0)
         {
             sprintf(src_fname, "%s/src/tinympc/tiny_wrapper.hpp", tinympc_dir);
-            sprintf(dst_fname, "%s%s/tinympc/tiny_wrapper.hpp", tinympc_dir, output_dir);
+            sprintf(dst_fname, "%s/tinympc/tiny_wrapper.hpp", output_dir);
             copy_file(src_fname, dst_fname);
             printf("Content of %s copied to %s\n", src_fname, dst_fname);
 
             sprintf(src_fname, "%s/src/tinympc/tiny_wrapper.cpp", tinympc_dir);
-            sprintf(dst_fname, "%s%s/tinympc/tiny_wrapper.cpp", tinympc_dir, output_dir);
+            sprintf(dst_fname, "%s/tinympc/tiny_wrapper.cpp", output_dir);
             copy_file(src_fname, dst_fname);
             printf("Content of %s copied to %s\n", src_fname, dst_fname);
         }

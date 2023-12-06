@@ -39,7 +39,7 @@ extern "C"
 
     // char tinympc_dir[255] = "/your/absolute/path/to/TinyMPC"; // TODO: relative path
     char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC"; 
-    char output_dir[255] = "/generated_code";
+    char output_dir[255] = "/home/khai/SSD/Code/TinyMPC/generated_code";
 
     int main()
     {

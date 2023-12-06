@@ -40,9 +40,9 @@ extern "C"
     int check_termination = 1; 
     int gen_wrapper = 1;
 
-    // char tinympc_dir[255] = "your absolute path to tinympc";  // TODO: relative path
-    char tinympc_dir[255] = "/home/sam/Git/tinympc/TinyMPC/";
-    char output_dir[255] = "/generated_code";
+    // char tinympc_dir[255] = "/your/absolute/path/to/TinyMPC"; // TODO: relative path
+    char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC/";
+    char output_dir[255] = "/home/khai/SSD/Code/TinyMPC/generated_code";
 
     int main()
     {

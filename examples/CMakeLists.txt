@@ -1,10 +1,12 @@
-add_executable(example_quadrotor_tracking example_quadrotor_tracking.cpp)
-add_executable(example_quadrotor_hovering example_quadrotor_hovering.cpp)
-add_executable(example_codegen example_codegen.cpp)
-add_executable(example_cartpole example_cartpole.cpp)
+add_executable(quadrotor_tracking quadrotor_tracking.cpp)
+target_link_libraries(quadrotor_tracking LINK_PUBLIC tinympc)
 
-target_link_libraries(example_quadrotor_tracking LINK_PUBLIC tinympc)
-target_link_libraries(example_quadrotor_hovering LINK_PUBLIC tinympc)
-target_link_libraries(example_codegen LINK_PUBLIC tinympc)
-target_link_libraries(example_cartpole LINK_PUBLIC tinympc)
+add_executable(quadrotor_hovering quadrotor_hovering.cpp)
+target_link_libraries(quadrotor_hovering LINK_PUBLIC tinympc)
+
+add_executable(codegen_random codegen_random.cpp)
+target_link_libraries(codegen_random LINK_PUBLIC tinympc)
+
+add_executable(codegen_cartpole codegen_cartpole.cpp)
+target_link_libraries(codegen_cartpole LINK_PUBLIC tinympc)
 
