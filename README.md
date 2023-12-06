@@ -53,7 +53,7 @@ If you are using TinyMPC, we encourage you to
 * [Cite the related papers](https://tinympc.org/docs/citing/),
 * Put a star on this repository.
 
-**We are looking forward to hearing your success stories with TinyMPC!** Please share them with us.
+**Excited to hear your TinyMPC success stories—share them with us!**
 
 ## Bug reports and support
 
