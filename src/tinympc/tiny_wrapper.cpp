@@ -42,11 +42,11 @@ extern "C"
 
     void set_umin(float *umin, int verbose)
     {
-        for (int i = 0; i < NINPUTS; i++)
+        for (int j = 0; j < NHORIZON - 1; j++)
         {
-            for (int j = 0; j < NHORIZON - 1; j++)
+            for (int i = 0; i < NINPUTS; i++)
             {
-                tiny_data_solver.work->u_min(i, j) = umin[i];
+                tiny_data_solver.work->u_min(i, j) = umin[j * NINPUTS + i];
             }
         }
 
@@ -64,11 +64,11 @@ extern "C"
 
     void set_umax(float *umax, int verbose)
     {
-        for (int i = 0; i < NINPUTS; i++)
+        for (int j = 0; j < NHORIZON - 1; j++)
         {
-            for (int j = 0; j < NHORIZON - 1; j++)
+            for (int i = 0; i < NINPUTS; i++)
             {
-                tiny_data_solver.work->u_max(i, j) = umax[i];
+                tiny_data_solver.work->u_max(i, j) = umax[j * NINPUTS + i];
             }
         }
 
@@ -86,11 +86,11 @@ extern "C"
 
     void set_xmin(float *xmin, int verbose)
     {
-        for (int i = 0; i < NSTATES; i++)
+        for (int j = 0; j < NHORIZON; j++)
         {
-            for (int j = 0; j < NHORIZON; j++)
+            for (int i = 0; i < NSTATES; i++)
             {
-                tiny_data_solver.work->x_min(i, j) = xmin[i];
+                tiny_data_solver.work->x_min(i, j) = xmin[j * NSTATES + i];
             }
         }
 
@@ -108,11 +108,11 @@ extern "C"
 
     void set_xmax(float *xmax, int verbose)
     {
-        for (int i = 0; i < NSTATES; i++)
+        for (int j = 0; j < NHORIZON; j++)
         {
-            for (int j = 0; j < NHORIZON; j++)
+            for (int i = 0; i < NSTATES; i++)
             {
-                tiny_data_solver.work->x_max(i, j) = xmax[i];
+                tiny_data_solver.work->x_max(i, j) = xmax[j * NSTATES + i];
             }
         }
 
@@ -158,19 +158,6 @@ extern "C"
             for (int i = 0; i < NHORIZON; i++)
             {
                 printf("x_soln:  %f\n", x_soln[i]);
-            }
-        }
-    }
-
-    void get_xref(float *xref, int verbose)
-    {
-        Eigen::Map<tiny_MatrixNxNh>(xref, tiny_data_solver.work->Xref.rows(), tiny_data_solver.work->Xref.cols()) = tiny_data_solver.work->Xref;
-
-        if (verbose != 0)
-        {
-            for (int i = 0; i < NHORIZON; i++)
-            {
-                printf("x_soln:  %f\n", xref[i]);
             }
         }
     }
