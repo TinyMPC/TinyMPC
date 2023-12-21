@@ -81,7 +81,7 @@ extern "C"
         tiny_VectorNx x0, x1; // current and next simulation states
 
         // Map data from trajectory_data
-        Matrix<tinytype, NSTATES, NTOTAL> Xref_total = Eigen::Map<Matrix<tinytype, NTOTAL, NSTATES, Eigen::RowMajor>>(Xref_data).transpose();
+        Matrix<tinytype, NSTATES, NTOTAL> Xref_total = Eigen::Map<Matrix<tinytype, NSTATES, NTOTAL>>(Xref_data);
         work.Xref = Xref_total.block<NSTATES, NHORIZON>(0, 0);
 
         // Initial state
