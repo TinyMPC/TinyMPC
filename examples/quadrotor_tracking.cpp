@@ -9,7 +9,7 @@
 // - tinytype = float if you want to run on microcontrollers
 // States: x (m), y, z, phi, theta, psi, dx, dy, dz, dphi, dtheta, dpsi
 // phi, theta, psi are NOT Euler angles, they are Rodiguez parameters
-// check this paper for more details: https://roboticexplorationlab.org/papers/planning_with_attitude.pdf
+// check this paper for more details: https://ieeexplore.ieee.org/document/9326337
 // Inputs: u1, u2, u3, u4 (motor thrust 0-1, order from Crazyflie)
 
 #include <iostream>
@@ -101,8 +101,8 @@ extern "C"
             work.Xref = Xref_total.block<NSTATES, NHORIZON>(0, k);
 
             // 3. Reset dual variables if needed
-            work.y = tiny_MatrixNuNhm1::Zero();
-            work.g = tiny_MatrixNxNh::Zero();
+            // work.y = tiny_MatrixNuNhm1::Zero();
+            // work.g = tiny_MatrixNxNh::Zero();
 
             // 4. Solve MPC problem
             tiny_solve(&solver);

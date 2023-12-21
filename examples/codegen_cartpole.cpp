@@ -98,8 +98,8 @@ int main()
         // by including tiny_wrapper.hpp and call `set_xref(...)` function
 
         // 3. Reset dual variables (if needed)
-        work->y = tiny_MatrixNuNhm1::Zero();
-        work->g = tiny_MatrixNxNh::Zero();
+        // work->y = tiny_MatrixNuNhm1::Zero();
+        // work->g = tiny_MatrixNxNh::Zero();
 
         // 4. Solve MPC problem
         exitflag = tiny_solve(&tiny_data_solver);
