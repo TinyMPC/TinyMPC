@@ -30,7 +30,6 @@ extern "C"
         tiny_MatrixNxNx Pinf;
         tiny_MatrixNuNu Quu_inv;
         tiny_MatrixNxNx AmBKt;
-        tiny_MatrixNxNu coeff_d2p;
     } TinyCache;
 
     /**

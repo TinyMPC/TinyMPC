@@ -289,13 +289,11 @@ extern "C"
         // Compute cached matrices
         tiny_MatrixX Quu_inv = (R1 + Bdyn.transpose() * Pinf * Bdyn).inverse();
         tiny_MatrixX AmBKt = (Adyn - Bdyn * Kinf).transpose();
-        tiny_MatrixX coeff_d2p = Kinf.transpose() * R1 - AmBKt * Pinf * Bdyn;
 
         std::cout << "Kinf = " << Kinf.format(CleanFmt) << std::endl;
         std::cout << "Pinf = " << Pinf.format(CleanFmt) << std::endl;
         std::cout << "Quu_inv = " << Quu_inv.format(CleanFmt) << std::endl;
         std::cout << "AmBKt = " << AmBKt.format(CleanFmt) << std::endl;
-        std::cout << "coeff_d2p = " << coeff_d2p.format(CleanFmt) << std::endl;
 
         // Make code gen output directory structure
         char workspace_dname[PATH_LENGTH];
@@ -372,9 +370,6 @@ extern "C"
         fprintf(data_f, "\t(tiny_MatrixNxNx() << ");
         print_matrix(data_f, AmBKt, nx * nx);
         fprintf(data_f, ").finished(),\t// AmBKt\n");
-        fprintf(data_f, "\t(tiny_MatrixNxNu() << ");
-        print_matrix(data_f, coeff_d2p, nx * nu);
-        fprintf(data_f, ").finished(),\t// coeff_d2p\n");
         fprintf(data_f, "};\n\n");
 
         // Write workspace (problem variables) to workspace file
