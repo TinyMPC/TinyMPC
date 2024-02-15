@@ -112,13 +112,10 @@ extern "C"
     {
         // Initialize variables
         solver->work->status = 11; // TINY_UNSOLVED
-        solver->work->iter = 1;
+        solver->work->iter = 0;
 
         for (int i = 0; i < solver->settings->max_iter; i++)
         {
-
-            solver->work->iter = i + 1;
-
             // Solve linear system with Riccati and roll out to get new trajectory
             forward_pass(solver);
 
@@ -143,6 +140,8 @@ extern "C"
 
             backward_pass_grad(solver);
 
+            solver->work->iter = i + 1;
+            
             // std::cout << solver->work->primal_residual_state << std::endl;
             // std::cout << solver->work->dual_residual_state << std::endl;
             // std::cout << solver->work->primal_residual_input << std::endl;
