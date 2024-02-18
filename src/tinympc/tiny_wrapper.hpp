@@ -13,6 +13,7 @@ extern "C"
 
     void set_x0(float *x0, int verbose);
     void set_xref(float *xref, int verbose);
+    void set_uref(float *uref, int verbose);
     void set_umin(float *umin, int verbose);
     void set_umax(float *umax, int verbose);
     void set_xmin(float *xmin, int verbose);

@@ -76,8 +76,8 @@ extern "C"
      */
     void update_linear_cost(TinySolver *solver)
     {
-        // solver->work->r = -(solver->Uref.array().colwise() * solver->work->r.array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
-        solver->work->r = -solver->cache->rho * (solver->work->znew - solver->work->y);
+        solver->work->r = -(solver->work->Uref.array().colwise() * solver->work->R.array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
+        (solver->work->r).noalias() -= solver->cache->rho * (solver->work->znew - solver->work->y);
         solver->work->q = -(solver->work->Xref.array().colwise() * solver->work->Q.array());
         (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vnew - solver->work->g);
         solver->work->p.col(NHORIZON - 1) = -(solver->work->Xref.col(NHORIZON - 1).transpose().lazyProduct(solver->cache->Pinf));

@@ -30,11 +30,33 @@ extern "C"
 
         if (verbose != 0)
         {
-        for (int j = 0; j < NHORIZON; j++)
-        {
-            for (int i = 0; i < NSTATES; i++)
+            for (int j = 0; j < NHORIZON; j++)
             {
+                for (int i = 0; i < NSTATES; i++)
+                {
                     printf("set_xref result:  %f\n", tiny_data_solver.work->Xref(i, j));
+                }
+            }
+        }
+    }
+
+    void set_uref(float *xref, int verbose)
+    {
+        for (int j = 0; j < NHORIZON - 1; j++)
+        {
+            for (int i = 0; i < NINPUTS; i++)
+            {
+                tiny_data_solver.work->Uref(i, j) = xref[j * NINPUTS + i];
+            }
+        }
+
+        if (verbose != 0)
+        {
+            for (int j = 0; j < NHORIZON - 1; j++)
+            {
+                for (int i = 0; i < NINPUTS; i++)
+                {
+                    printf("set_xref result:  %f\n", tiny_data_solver.work->Uref(i, j));
                 }
             }
         }
