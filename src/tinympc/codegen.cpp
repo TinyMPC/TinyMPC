@@ -9,7 +9,7 @@
 #include <iostream>
 #include <Eigen/Dense>
 
-#include "types.hpp"
+// #include "types.hpp"
 #include "codegen.hpp"
 
 #ifdef __cplusplus
@@ -376,37 +376,29 @@ extern "C"
 
         fprintf(data_f, "\t(tiny_MatrixNxNh() << ");
         print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
-        print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         fprintf(data_f, ").finished(),\t// x\n"); // x
         fprintf(data_f, "\t(tiny_MatrixNuNhm1() << ");
-        print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         fprintf(data_f, ").finished(),\t// u\n"); // u
 
         fprintf(data_f, "\t(tiny_MatrixNxNh() << ");
         print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
-        print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         fprintf(data_f, ").finished(),\t// q\n"); // q
         fprintf(data_f, "\t(tiny_MatrixNuNhm1() << ");
-        print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         fprintf(data_f, ").finished(),\t// r\n"); // r
 
         fprintf(data_f, "\t(tiny_MatrixNxNh() << ");
         print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
-        print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         fprintf(data_f, ").finished(),\t// p\n"); // p
         fprintf(data_f, "\t(tiny_MatrixNuNhm1() << ");
-        print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         fprintf(data_f, ").finished(),\t// d\n"); // d
 
         fprintf(data_f, "\t(tiny_MatrixNxNh() << ");
         print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
-        print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         fprintf(data_f, ").finished(),\t// v\n"); // v
         fprintf(data_f, "\t(tiny_MatrixNxNh() << ");
-        print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         fprintf(data_f, ").finished(),\t// vnew\n"); // vnew
         fprintf(data_f, "\t(tiny_MatrixNuNhm1() << ");
