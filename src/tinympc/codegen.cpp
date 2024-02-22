@@ -34,8 +34,6 @@ extern "C"
     using namespace Eigen;
     IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
 
-    typedef Matrix<tinytype, Dynamic, Dynamic> tiny_MatrixX;
-
     static void copy_file(char *src_file_name, char *dest_file_name)
     {
         FILE *src_f, *dst_f;
@@ -115,7 +113,7 @@ extern "C"
         closedir(src_dir);
     }
 
-    static void print_matrix(FILE *f, tiny_MatrixX mat, int num_elements)
+    static void print_matrix(FILE *f, MatrixXd mat, int num_elements)
     {
         for (int i = 0; i < num_elements; i++)
         {
@@ -216,9 +214,9 @@ extern "C"
     }
 
     int tiny_codegen(const int nx, const int nu, const int N,
-                     tinytype *Adyn_data, tinytype *Bdyn_data, tinytype *Q_data, tinytype *R_data,
-                     tinytype *x_min_data, tinytype *x_max_data, tinytype *u_min_data, tinytype *u_max_data,
-                     tinytype rho, tinytype abs_pri_tol, tinytype abs_dua_tol, int max_iters, int check_termination, int gen_wrapper,
+                     double *Adyn_data, double *Bdyn_data, double *Q_data, double *R_data,
+                     double *x_min_data, double *x_max_data, double *u_min_data, double *u_max_data,
+                     double rho, double abs_pri_tol, double abs_dua_tol, int max_iters, int check_termination, int gen_wrapper,
                      const char *tinympc_dir, const char *output_dir)
     {
         int en_state_bound = 0;
@@ -242,20 +240,20 @@ extern "C"
             en_input_bound = 0;
         }
 
-        tiny_MatrixX Adyn = tiny_MatrixX::Map(Adyn_data, nx, nx);
-        tiny_MatrixX Bdyn = tiny_MatrixX::Map(Bdyn_data, nx, nu);
-        tiny_MatrixX Q = tiny_MatrixX::Map(Q_data, nx, 1);
-        tiny_MatrixX R = tiny_MatrixX::Map(R_data, nu, 1);
-        tiny_MatrixX x_min = tiny_MatrixX::Map(x_min_data, nx, N);
-        tiny_MatrixX x_max = tiny_MatrixX::Map(x_max_data, nx, N);
-        tiny_MatrixX u_min = tiny_MatrixX::Map(u_min_data, nu, N - 1);
-        tiny_MatrixX u_max = tiny_MatrixX::Map(u_max_data, nu, N - 1);
+        MatrixXd Adyn = MatrixXd::Map(Adyn_data, nx, nx);
+        MatrixXd Bdyn = MatrixXd::Map(Bdyn_data, nx, nu);
+        MatrixXd Q = MatrixXd::Map(Q_data, nx, 1);
+        MatrixXd R = MatrixXd::Map(R_data, nu, 1);
+        MatrixXd x_min = MatrixXd::Map(x_min_data, nx, N);
+        MatrixXd x_max = MatrixXd::Map(x_max_data, nx, N);
+        MatrixXd u_min = MatrixXd::Map(u_min_data, nu, N - 1);
+        MatrixXd u_max = MatrixXd::Map(u_max_data, nu, N - 1);
 
         // Update by adding rho * identity matrix to Q, R
-        Q = Q + rho * tiny_MatrixX::Ones(nx, 1);
-        R = R + rho * tiny_MatrixX::Ones(nu, 1);
-        tiny_MatrixX Q1 = Q.array().matrix().asDiagonal();
-        tiny_MatrixX R1 = R.array().matrix().asDiagonal();
+        Q = Q + rho * MatrixXd::Ones(nx, 1);
+        R = R + rho * MatrixXd::Ones(nu, 1);
+        MatrixXd Q1 = Q.array().matrix().asDiagonal();
+        MatrixXd R1 = R.array().matrix().asDiagonal();
 
         // Printing
         std::cout << "A = " << Adyn.format(CleanFmt) << std::endl;
@@ -265,10 +263,10 @@ extern "C"
         std::cout << "rho = " << rho << std::endl;
 
         // Riccati recursion to get Kinf, Pinf
-        tiny_MatrixX Ktp1 = tiny_MatrixX::Zero(nu, nx);
-        tiny_MatrixX Ptp1 = rho * tiny_MatrixX::Ones(nx, 1).array().matrix().asDiagonal();
-        tiny_MatrixX Kinf = tiny_MatrixX::Zero(nu, nx);
-        tiny_MatrixX Pinf = tiny_MatrixX::Zero(nx, nx);
+        MatrixXd Ktp1 = MatrixXd::Zero(nu, nx);
+        MatrixXd Ptp1 = rho * MatrixXd::Ones(nx, 1).array().matrix().asDiagonal();
+        MatrixXd Kinf = MatrixXd::Zero(nu, nx);
+        MatrixXd Pinf = MatrixXd::Zero(nx, nx);
 
         for (int i = 0; i < 1000; i++)
         {
@@ -377,44 +375,44 @@ extern "C"
         fprintf(data_f, "TinyWorkspace work = {\n");
 
         fprintf(data_f, "\t(tiny_MatrixNxNh() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nx, N), nx * N);
+        print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         fprintf(data_f, ").finished(),\t// x\n"); // x
         fprintf(data_f, "\t(tiny_MatrixNuNhm1() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nu, N - 1), nu * (N - 1));
+        print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         fprintf(data_f, ").finished(),\t// u\n"); // u
 
         fprintf(data_f, "\t(tiny_MatrixNxNh() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nx, N), nx * N);
+        print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         fprintf(data_f, ").finished(),\t// q\n"); // q
         fprintf(data_f, "\t(tiny_MatrixNuNhm1() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nu, N - 1), nu * (N - 1));
+        print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         fprintf(data_f, ").finished(),\t// r\n"); // r
 
         fprintf(data_f, "\t(tiny_MatrixNxNh() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nx, N), nx * N);
+        print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         fprintf(data_f, ").finished(),\t// p\n"); // p
         fprintf(data_f, "\t(tiny_MatrixNuNhm1() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nu, N - 1), nu * (N - 1));
+        print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         fprintf(data_f, ").finished(),\t// d\n"); // d
 
         fprintf(data_f, "\t(tiny_MatrixNxNh() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nx, N), nx * N);
+        print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         fprintf(data_f, ").finished(),\t// v\n"); // v
         fprintf(data_f, "\t(tiny_MatrixNxNh() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nx, N), nx * N);
+        print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         fprintf(data_f, ").finished(),\t// vnew\n"); // vnew
         fprintf(data_f, "\t(tiny_MatrixNuNhm1() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nu, N - 1), nu * (N - 1));
+        print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         fprintf(data_f, ").finished(),\t// z\n"); // z
         fprintf(data_f, "\t(tiny_MatrixNuNhm1() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nu, N - 1), nu * (N - 1));
+        print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         fprintf(data_f, ").finished(),\t// znew\n"); // znew
 
         fprintf(data_f, "\t(tiny_MatrixNxNh() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nx, N), nx * N);
+        print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         fprintf(data_f, ").finished(),\t// g\n"); // g
         fprintf(data_f, "\t(tiny_MatrixNuNhm1() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nu, N - 1), nu * (N - 1));
+        print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         fprintf(data_f, ").finished(),\t// y\n"); // y
 
         fprintf(data_f, "\t(tinytype)%.16f,\t// state primal residual\n", 0.0);
@@ -450,14 +448,14 @@ extern "C"
         print_matrix(data_f, x_max, nx * N);
         fprintf(data_f, ").finished(),\t// x_max\n");
         fprintf(data_f, "\t(tiny_MatrixNxNh() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nx, N), nx * N);
+        print_matrix(data_f, MatrixXd::Zero(nx, N), nx * N);
         fprintf(data_f, ").finished(),\t// Xref\n");
         fprintf(data_f, "\t(tiny_MatrixNuNhm1() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nu, N - 1), nu * (N - 1));
+        print_matrix(data_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
         fprintf(data_f, ").finished(),\t// Uref\n");
 
         fprintf(data_f, "\t(tiny_VectorNu() << ");
-        print_matrix(data_f, tiny_MatrixX::Zero(nu, 1), nu);
+        print_matrix(data_f, MatrixXd::Zero(nu, 1), nu);
         fprintf(data_f, ").finished()\t// Qu\n");
         fprintf(data_f, "};\n\n");
 
@@ -558,7 +556,7 @@ extern "C"
         fprintf(tinympc_cmake_f, "# This file was autogenerated by TinyMPC on %s", ctime(&start_time));
         fprintf(tinympc_cmake_f, "#\n\n");
 
-        fprintf(tinympc_cmake_f, "add_library(tinympc STATIC\n");
+        fprintf(tinympc_cmake_f, "add_library(tinympc SHARED\n");
         fprintf(tinympc_cmake_f, "admm.cpp\n");
         fprintf(tinympc_cmake_f, ")\n\n");
 

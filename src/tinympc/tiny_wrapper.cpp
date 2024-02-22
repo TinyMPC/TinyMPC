@@ -179,7 +179,9 @@ extern "C"
         {
             for (int i = 0; i < NHORIZON; i++)
             {
-                printf("x_soln:  %f\n", x_soln[i]);
+                for (int j = 0; j < NSTATES; j++) {
+                    printf("x_soln:  %f\n", x_soln[i*NSTATES + j]);
+                }
             }
         }
     }
