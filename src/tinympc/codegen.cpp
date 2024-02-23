@@ -180,7 +180,7 @@ extern "C"
         fprintf(main_f, "#include <iostream>\n\n");
 
         fprintf(main_f, "#include <tinympc/admm.hpp>\n");
-        fprintf(main_f, "#include <tinympc/tiny_data_workspace.hpp>\n\n");
+        fprintf(main_f, "#include \"tinympc/tiny_data_workspace.hpp\"\n\n");
 
         fprintf(main_f, "using namespace Eigen;\n");
         fprintf(main_f, "IOFormat CleanFmt(4, 0, \", \", \"\\n\", \"[\", \"]\");\n\n");
