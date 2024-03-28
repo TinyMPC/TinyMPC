@@ -65,7 +65,9 @@ If you are using TinyMPC, we encourage you to
 @misc{tinympc2,
       title={Code Generation for Conic Model-Predictive Control on Microcontrollers with TinyMPC}, 
       author={Sam Schoedel and Khai Nguyen and Elakhya Nedumaran and Brian Plancher and Zachary Manchester},
-      year = {2024}
+      year={2024},
+      eprint={2403.18149},
+      archivePrefix={arXiv},
 }
 
 ```
