@@ -52,8 +52,24 @@ make
 
 If you are using TinyMPC, we encourage you to
 
-* [Cite the related papers](https://tinympc.org/docs/citing/),
-* Put a star on this repository.
+* Cite the related papers:
+```
+@inproceedings{tinympc,
+      title={TinyMPC: Model-Predictive Control on Resource-Constrained Microcontrollers}, 
+      author={Khai Nguyen and Sam Schoedel and Anoushka Alavilli and Brian Plancher and Zachary Manchester},
+      booktitle={IEEE International Conference on Robotics and Automation (ICRA)},
+      year = {2024}
+}
+```
+```
+@misc{tinympc2,
+      title={Code Generation for Conic Model-Predictive Control on Microcontrollers with TinyMPC}, 
+      author={Sam Schoedel and Khai Nguyen and Elakhya Nedumaran and Brian Plancher and Zachary Manchester},
+      year = {2024}
+}
+
+```
+* Put a star ⭐ on this repository.
 
 **Excited to hear your TinyMPC success stories—share them with us!**
 
