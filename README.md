@@ -1,12 +1,12 @@
-# TinyMPC
+# TinyMPC: Model-predictive control on resource-constrained microcontrollers
 
-Model-predictive control on resource-constrained microcontrollers
+<img src="https://github.com/TinyMPC/TinyMPC.github.io/blob/main/docs/media/lightmode-banner.png" width=50%>
 
 If you have any questions related to the solver, visit the [GitHub Discussions](https://github.com/orgs/TinyMPC/discussions) page. This guarantees accessibility for everyone.
 
 The documentation is available at [tinympc.org](https://tinympc.org/)
 
-High-level language interfaces with detailed examples are available in [Python](https://github.com/TinyMPC/tinympc-python), [Julia](https://github.com/TinyMPC/tinympc-julia), and [MATLAB](https://github.com/TinyMPC/tinympc-matlab).
+High-level language interfaces with detailed examples and code generation are available in [Python](https://github.com/TinyMPC/tinympc-python), [Julia](https://github.com/TinyMPC/tinympc-julia), and [MATLAB](https://github.com/TinyMPC/tinympc-matlab).
 
 ## Building
 
@@ -19,19 +19,19 @@ git clone https://github.com/TinyMPC/TinyMPC.git
 2. Navigate to root directory and run
 
 ```bash
-mkdir build && cd build
+cd TinyMPC & mkdir build & cd build
 ```
 
 3. Run CMake configure step
 
 ```bash
-cmake ../
+cmake ..
 ```
 
 4. Build TinyMPC
 
 ```bash
-make 
+cmake --build .
 ```
 
 ## Examples
