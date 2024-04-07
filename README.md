@@ -19,7 +19,7 @@ git clone https://github.com/TinyMPC/TinyMPC.git
 2. Navigate to root directory and run
 
 ```bash
-cd TinyMPC & mkdir build & cd build
+cd TinyMPC && mkdir build && cd build
 ```
 
 3. Run CMake configure step
