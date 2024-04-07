@@ -1,6 +1,8 @@
 # TinyMPC: Model-predictive control on resource-constrained microcontrollers
 
-<img src="https://github.com/TinyMPC/TinyMPC.github.io/blob/main/docs/media/lightmode-banner.png" width=50%>
+<p align="center">
+<img align="center" src="https://github.com/TinyMPC/TinyMPC.github.io/blob/main/docs/media/lightmode-banner.png" width=50%>
+</p>
 
 If you have any questions related to the solver, visit the [GitHub Discussions](https://github.com/orgs/TinyMPC/discussions) page. This guarantees accessibility for everyone.
 
