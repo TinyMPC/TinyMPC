@@ -1,4 +1,4 @@
-# TinyMPC: Model-predictive control on resource-constrained microcontrollers
+# TinyMPC: Model-Predictive Control on Resource-Constrained Microcontrollers
 
 <p align="center">
 <img align="center" src="https://github.com/TinyMPC/TinyMPC.github.io/blob/main/docs/media/lightmode-banner.png" width=50%>
