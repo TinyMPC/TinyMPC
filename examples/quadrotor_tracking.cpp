@@ -12,6 +12,13 @@
 // check this paper for more details: https://ieeexplore.ieee.org/document/9326337
 // Inputs: u1, u2, u3, u4 (motor thrust 0-1, order from Crazyflie)
 
+
+#define NSTATES 12
+#define NINPUTS 4
+
+#define NHORIZON 10
+#define NTOTAL 301
+
 #include <iostream>
 
 #include <tinympc/admm.hpp>

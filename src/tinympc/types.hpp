@@ -1,7 +1,8 @@
 #pragma once
 
+
 #include <Eigen.h>
-#include "glob_opts.hpp"
+// #include "glob_opts.hpp"
 
 using Eigen::Matrix;
 
@@ -9,6 +10,8 @@ using Eigen::Matrix;
 extern "C"
 {
 #endif
+
+    typedef double tinytype;  // should be double if you want to generate code
 
     typedef Matrix<tinytype, NSTATES, 1> tiny_VectorNx;
     typedef Matrix<tinytype, NINPUTS, 1> tiny_VectorNu;
