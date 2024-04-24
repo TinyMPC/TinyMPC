@@ -2,14 +2,20 @@
 
 // This script is just to show how to use the library, the data for this example is not tuned for our Crazyflie demo. Check the firmware code for more details.
 
-// Make sure in glob_opts.hpp:
-// - NSTATES = 12, NINPUTS=4
+// - NSTATES = 12
+// - NINPUTS = 4
 // - NHORIZON = anything you want
 // - tinytype = float if you want to run on microcontrollers
 // States: x (m), y, z, phi, theta, psi, dx, dy, dz, dphi, dtheta, dpsi
 // phi, theta, psi are NOT Euler angles, they are Rodiguez parameters
 // check this paper for more details: https://ieeexplore.ieee.org/document/9326337
 // Inputs: u1, u2, u3, u4 (motor thrust 0-1, order from Crazyflie)
+
+
+#define NSTATES 12
+#define NINPUTS 4
+
+#define NHORIZON 10
 
 
 #include <iostream>
@@ -27,19 +33,30 @@ extern "C"
     TinySettings settings;
     TinySolver solver{&settings, &cache, &work};
 
+    typedef Matrix<tinytype, NINPUTS, NHORIZON-1> tiny_MatrixNuNhm1;
+    typedef Matrix<tinytype, NSTATES, NHORIZON> tiny_MatrixNxNh;
+    typedef Matrix<tinytype, NSTATES, 1> tiny_VectorNx;
+    
     int main()
     {
         // Map data from problem_data (array in row-major order)
         cache.rho = rho_value;
-        cache.Kinf = Eigen::Map<Matrix<tinytype, NINPUTS, NSTATES, Eigen::RowMajor>>(Kinf_data);
-        cache.Pinf = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Pinf_data);
-        cache.Quu_inv = Eigen::Map<Matrix<tinytype, NINPUTS, NINPUTS, Eigen::RowMajor>>(Quu_inv_data);
-        cache.AmBKt = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(AmBKt_data);
+        cache.Kinf = Map<Matrix<tinytype, NINPUTS, NSTATES, RowMajor>>(Kinf_data);
+        cache.Pinf = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Pinf_data);
+        cache.Quu_inv = Map<Matrix<tinytype, NINPUTS, NINPUTS, RowMajor>>(Quu_inv_data);
+        cache.AmBKt = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(AmBKt_data);
 
-        work.Adyn = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Adyn_data);
-        work.Bdyn = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(Bdyn_data);
-        work.Q = Eigen::Map<tiny_VectorNx>(Q_data);
-        work.R = Eigen::Map<tiny_VectorNu>(R_data);
+        work.Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
+        work.Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS, RowMajor>>(Bdyn_data);
+        work.Q = Map<Matrix<tinytype, NSTATES, 1>>(Q_data);
+        work.R = Map<Matrix<tinytype, NINPUTS, 1>>(R_data);
+
+        
+        // TODO: Make function to handle variable initialization so specific important parts (like nx, nu, and N) aren't forgotten
+        work.nx = NSTATES;
+        work.nu = NINPUTS;
+        work.N = NHORIZON;
+
         work.u_min = tiny_MatrixNuNhm1::Constant(-0.5);
         work.u_max = tiny_MatrixNuNhm1::Constant(0.5);
         work.x_min = tiny_MatrixNxNh::Constant(-5);

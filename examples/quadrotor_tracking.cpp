@@ -2,8 +2,8 @@
 
 // This script is just to show how to use the library, the data for this example is not tuned for our Crazyflie demo. Check the firmware code for more details.
 
-// Make sure in glob_opts.hpp:
-// - NSTATES = 12, NINPUTS=4
+// - NSTATES = 12
+// - NINPUTS = 4
 // - NHORIZON = anything you want
 // - NTOTAL = 301 if using reference trajectory from trajectory_data/
 // - tinytype = float if you want to run on microcontrollers
@@ -37,7 +37,7 @@ extern "C"
 
     typedef Matrix<tinytype, NINPUTS, NHORIZON-1> tiny_MatrixNuNhm1;
     typedef Matrix<tinytype, NSTATES, NHORIZON> tiny_MatrixNxNh;
-    typedef Matrix<tinytype, Dynamic, 1> tiny_VectorNx;
+    typedef Matrix<tinytype, NSTATES, 1> tiny_VectorNx;
 
     int main()
     {
