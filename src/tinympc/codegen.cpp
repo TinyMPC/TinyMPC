@@ -124,7 +124,7 @@ extern "C"
     {
 
         // Write main function
-        char main_fname[PATH_LENGTH + DIR_NAME_LENGTH];
+        char main_fname[PATH_LENGTH + DIR_NAME_LENGTH + FILE_LENGTH];
         FILE *main_f;
         sprintf(main_fname, "%s/tiny_main.cpp", codegen_dname);
 
