@@ -8,10 +8,6 @@
 #include <tinympc/admm.hpp>
 #include <tinympc/codegen.hpp>
 
-// Codegen only cares tinytype in `glob_opts.hpp`
-// For codegen, change it to double, otherwise, Riccati may fail.
-// The embedded code is still float type.
-
 extern "C"
 {
 
@@ -38,8 +34,8 @@ extern "C"
     int gen_wrapper = 0;
 
     // char tinympc_dir[255] = "/your/absolute/path/to/TinyMPC"; // TODO: relative path
-    char tinympc_dir[255] = "/home/khai/SSD/Code/TinyMPC"; 
-    char output_dir[255] = "/home/khai/SSD/Code/TinyMPC/generated_code";
+    char tinympc_dir[255] = "/home/sam/Git/tinympc/TinyMPC"; 
+    char output_dir[255] = "/home/sam/Git/tinympc/TinyMPC/generated_code";
 
     int main()
     {
@@ -51,7 +47,6 @@ extern "C"
 
         // This function copies source code to `generated_code` directory, create workspace data, a tiny_main.cpp file
 
-        // generated_code/tinympc/glob_opts.hpp
         // generated_code/tinympc/types.hpp (fixed)
         // generated_code/tinympc/admm.hpp (fixed)
         // generated_code/tinympc/admm.cpp (fixed)

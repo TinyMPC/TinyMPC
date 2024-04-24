@@ -2,7 +2,6 @@
 
 
 #include <Eigen.h>
-// #include "glob_opts.hpp"
 
 using namespace Eigen;
 
@@ -16,7 +15,7 @@ extern "C"
     typedef Matrix<tinytype, Dynamic, Dynamic> tinyMatrix;
     typedef Matrix<tinytype, Dynamic, 1> tinyVector;
 
-    // typedef Matrix<tinytype, Dynamic, 1> tiny_VectorNx;
+    // typedef Matrix<tinytype, NSTATES, 1> tiny_VectorNx;
     // typedef Matrix<tinytype, NINPUTS, 1> tiny_VectorNu;
     // typedef Matrix<tinytype, NSTATES, NSTATES> tiny_MatrixNxNx;
     // typedef Matrix<tinytype, NSTATES, NINPUTS> tiny_MatrixNxNu;
@@ -58,7 +57,7 @@ extern "C"
     {
         int nx; // Number of states
         int nu; // Number of control inputs
-        int N;  // Length of the horizon
+        int N;  // Number of knotpoints in the horizon
 
         // State and input
         tinyMatrix x;    // nx x N
