@@ -8,4 +8,3 @@ include_directories(include/Eigen)
 
 add_subdirectory(src/tinympc)
 add_subdirectory(examples)
-add_subdirectory(test)

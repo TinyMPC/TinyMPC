@@ -35,19 +35,30 @@ extern "C"
     TinySettings settings;
     TinySolver solver{&settings, &cache, &work};
 
+    typedef Matrix<tinytype, NINPUTS, NHORIZON-1> tiny_MatrixNuNhm1;
+    typedef Matrix<tinytype, NSTATES, NHORIZON> tiny_MatrixNxNh;
+    typedef Matrix<tinytype, Dynamic, 1> tiny_VectorNx;
+
     int main()
     {
         // Map data from problem_data (array in row-major order)
         cache.rho = rho_value;
-        cache.Kinf = Eigen::Map<Matrix<tinytype, NINPUTS, NSTATES, Eigen::RowMajor>>(Kinf_data);
-        cache.Pinf = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Pinf_data);
-        cache.Quu_inv = Eigen::Map<Matrix<tinytype, NINPUTS, NINPUTS, Eigen::RowMajor>>(Quu_inv_data);
-        cache.AmBKt = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(AmBKt_data);
+        cache.Kinf = Map<Matrix<tinytype, NINPUTS, NSTATES, RowMajor>>(Kinf_data);
+        cache.Pinf = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Pinf_data);
+        cache.Quu_inv = Map<Matrix<tinytype, NINPUTS, NINPUTS, RowMajor>>(Quu_inv_data);
+        cache.AmBKt = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(AmBKt_data);
 
-        work.Adyn = Eigen::Map<Matrix<tinytype, NSTATES, NSTATES, Eigen::RowMajor>>(Adyn_data);
-        work.Bdyn = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(Bdyn_data);
-        work.Q = Eigen::Map<tiny_VectorNx>(Q_data);
-        work.R = Eigen::Map<tiny_VectorNu>(R_data);
+        work.Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
+        work.Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS, RowMajor>>(Bdyn_data);
+        work.Q = Map<Matrix<tinytype, NSTATES, 1>>(Q_data);
+        work.R = Map<Matrix<tinytype, NINPUTS, 1>>(R_data);
+
+
+        // TODO: Make function to handle variable initialization so specific important parts (like nx, nu, and N) aren't forgotten
+        work.nx = NSTATES;
+        work.nu = NINPUTS;
+        work.N = NHORIZON;
+
         work.u_min = tiny_MatrixNuNhm1::Constant(-0.5);
         work.u_max = tiny_MatrixNuNhm1::Constant(0.5);
         work.x_min = tiny_MatrixNxNh::Constant(-5);
@@ -77,6 +88,7 @@ extern "C"
         work.status = 0;
         work.iter = 0;
 
+
         settings.abs_pri_tol = 0.001;
         settings.abs_dua_tol = 0.001;
         settings.max_iter = 100;
@@ -95,8 +107,7 @@ extern "C"
 
         // std::cout << work.Xref << std::endl;
 
-        // for (int k = 0; k < 50; ++k)
-        for (int k = 0; k < NTOTAL - NHORIZON - 1; ++k)
+        for (int k = 0; k < NTOTAL - NHORIZON; ++k)
         {
             std::cout << "tracking error: " << (x0 - work.Xref.col(1)).norm() << std::endl;
 
@@ -107,8 +118,9 @@ extern "C"
             work.Xref = Xref_total.block<NSTATES, NHORIZON>(0, k);
 
             // 3. Reset dual variables if needed
-            // work.y = tiny_MatrixNuNhm1::Zero();
-            // work.g = tiny_MatrixNxNh::Zero();
+            work.y = tiny_MatrixNuNhm1::Zero();
+            work.g = tiny_MatrixNxNh::Zero();
+
 
             // 4. Solve MPC problem
             tiny_solve(&solver);
