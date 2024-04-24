@@ -18,7 +18,7 @@ extern "C"
 #endif
 
 /* Define the maximum allowed length of the path (directory + filename + extension) */
-#define PATH_LENGTH 4096
+#define PATH_LENGTH 2048
 
 /* Define the maximum allowed length of the dirname */
 #define DIR_NAME_LENGTH 100
@@ -71,8 +71,8 @@ extern "C"
 
         // printf("reading source directory %s\n", src_dir_name);
 
-        char dir_entry_full_name[PATH_LENGTH];
-        char codegen_dest_file_name[PATH_LENGTH];
+        char dir_entry_full_name[PATH_LENGTH + DIR_NAME_LENGTH];
+        char codegen_dest_file_name[PATH_LENGTH + DIR_NAME_LENGTH];
         struct stat buffer;
         while (dir_entry = readdir(src_dir))
         {
@@ -124,7 +124,7 @@ extern "C"
     {
 
         // Write main function
-        char main_fname[PATH_LENGTH];
+        char main_fname[PATH_LENGTH + DIR_NAME_LENGTH];
         FILE *main_f;
         sprintf(main_fname, "%s/tiny_main.cpp", codegen_dname);
 
