@@ -1,4 +1,4 @@
-add_library(tinympcstatic STATIC
+add_library(tinympc STATIC
     admm.cpp
     codegen.cpp
 )
