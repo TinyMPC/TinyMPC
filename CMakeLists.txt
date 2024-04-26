@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(include/Eigen)
 
-
 add_subdirectory(examples)
 add_subdirectory(src/tinympc)
 

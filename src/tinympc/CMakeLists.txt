@@ -3,9 +3,8 @@ add_library(tinympcstatic STATIC
     codegen.cpp
 )
 
-
 target_include_directories(tinympcstatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
-target_include_directories(tinympcstatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
+target_include_directories(tinympcstatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Eigen)
 
 # add_library(tinympcShared SHARED
 #     admm.cpp
