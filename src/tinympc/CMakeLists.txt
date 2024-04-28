@@ -4,7 +4,7 @@ add_library(tinympcstatic STATIC
 )
 
 target_include_directories(tinympcstatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
-# target_include_directories(tinympcstatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Eigen)
+target_include_directories(tinympcstatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Eigen)
 
 # add_library(tinympcShared SHARED
 #     admm.cpp
