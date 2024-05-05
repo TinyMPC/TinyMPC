@@ -6,8 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(include/Eigen)
 
-add_subdirectory(examples)
+# find_package(Eigen3 REQUIRED)
+# include_directories(${EIGEN3_INCLUDE_DIR})
+# message("${EIGEN3_INCLUDE_DIR}")
+
 add_subdirectory(src/tinympc)
+add_subdirectory(examples)
 
 # # ----------------------------------------------
 # # TINYMPCLIB

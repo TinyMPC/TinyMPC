@@ -4,6 +4,7 @@ add_library(tinympcstatic STATIC
     codegen.cpp
 )
 
+# target_link_libraries(tinympcstatic PUBLIC Eigen)
 target_include_directories(tinympcstatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_include_directories(tinympcstatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Eigen)
 
