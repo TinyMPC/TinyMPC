@@ -13,7 +13,7 @@ extern "C"
 
     int tiny_precompute_and_set_cache(TinyCache *cache, tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, int nx, int nu, double rho);
 
-    void tiny_update_settings(tinytype abs_pri_tol, tinytype abs_dua_tol, int max_iter, int check_termination, int en_state_bound, int en_input_bound);
+    void tiny_update_settings(TinySettings*, tinytype abs_pri_tol, tinytype abs_dua_tol, int max_iter, int check_termination, int en_state_bound, int en_input_bound);
     void tiny_set_default_settings(TinySettings* settings);
 
 
