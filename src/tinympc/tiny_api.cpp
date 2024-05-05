@@ -10,8 +10,8 @@ extern "C" {
 using namespace Eigen;
 IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
 
-void tiny_precompute_and_set_cache(TinyCache *cache, tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, int nx, int nu, double rho) {
-    
+int tiny_precompute_and_set_cache(TinyCache *cache, tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, int nx, int nu, double rho) {
+
     // Update by adding rho * identity matrix to Q, R
     Q = Q + rho * tinyMatrix::Ones(nx, 1);
     R = R + rho * tinyMatrix::Ones(nu, 1);
@@ -61,6 +61,8 @@ void tiny_precompute_and_set_cache(TinyCache *cache, tinyMatrix Adyn, tinyMatrix
     cache->Pinf = Pinf;
     cache->Quu_inv = Quu_inv;
     cache->AmBKt = AmBKt;
+
+    return 0; // return success
 }
 
 void tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype abs_dua_tol,
@@ -75,6 +77,8 @@ void tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype
 }
 
 void tiny_set_default_settings(TinySettings* settings) {
+    if (!settings)
+        return;
     settings->abs_pri_tol = TINY_DEFAULT_ABS_PRI_TOL;
     settings->abs_dua_tol = TINY_DEFAULT_ABS_DUA_TOL;
     settings->max_iter = TINY_DEFAULT_MAX_ITER;
