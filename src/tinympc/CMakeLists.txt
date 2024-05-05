@@ -1,5 +1,6 @@
 add_library(tinympcstatic STATIC
     admm.cpp
+    tiny_api.cpp
     codegen.cpp
 )
 

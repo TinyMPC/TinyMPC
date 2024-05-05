@@ -1,3 +1,93 @@
+#include "tiny_api.hpp"
+#include "tiny_api_constants.hpp"
+
+#include <iostream>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+using namespace Eigen;
+IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+
+void tiny_precompute_and_set_cache(TinyCache *cache, tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, int nx, int nu, double rho) {
+    
+    // Update by adding rho * identity matrix to Q, R
+    Q = Q + rho * tinyMatrix::Ones(nx, 1);
+    R = R + rho * tinyMatrix::Ones(nu, 1);
+    tinyMatrix Q1 = Q.array().matrix().asDiagonal();
+    tinyMatrix R1 = R.array().matrix().asDiagonal();
+
+    // Printing
+    std::cout << "A = " << Adyn.format(CleanFmt) << std::endl;
+    std::cout << "B = " << Bdyn.format(CleanFmt) << std::endl;
+    std::cout << "Q = " << Q1.format(CleanFmt) << std::endl;
+    std::cout << "R = " << R1.format(CleanFmt) << std::endl;
+    std::cout << "rho = " << rho << std::endl;
+
+    // Riccati recursion to get Kinf, Pinf
+    tinyMatrix Ktp1 = tinyMatrix::Zero(nu, nx);
+    tinyMatrix Ptp1 = rho * tinyMatrix::Ones(nx, 1).array().matrix().asDiagonal();
+    tinyMatrix Kinf = tinyMatrix::Zero(nu, nx);
+    tinyMatrix Pinf = tinyMatrix::Zero(nx, nx);
+
+    for (int i = 0; i < 1000; i++)
+    {
+        Kinf = (R1 + Bdyn.transpose() * Ptp1 * Bdyn).inverse() * Bdyn.transpose() * Ptp1 * Adyn;
+        Pinf = Q1 + Adyn.transpose() * Ptp1 * (Adyn - Bdyn * Kinf);
+        // if Kinf converges, break
+        if ((Kinf - Ktp1).cwiseAbs().maxCoeff() < 1e-5)
+        {
+            std::cout << "Kinf converged after " << i + 1 << " iterations" << std::endl;
+            break;
+        }
+        Ktp1 = Kinf;
+        Ptp1 = Pinf;
+    }
+
+    std::cout << "Precomputing finished" << std::endl;
+
+    // Compute cached matrices
+    tinyMatrix Quu_inv = (R1 + Bdyn.transpose() * Pinf * Bdyn).inverse();
+    tinyMatrix AmBKt = (Adyn - Bdyn * Kinf).transpose();
+
+    std::cout << "Kinf = " << Kinf.format(CleanFmt) << std::endl;
+    std::cout << "Pinf = " << Pinf.format(CleanFmt) << std::endl;
+    std::cout << "Quu_inv = " << Quu_inv.format(CleanFmt) << std::endl;
+    std::cout << "AmBKt = " << AmBKt.format(CleanFmt) << std::endl;
+
+    cache->rho = rho;
+    cache->Kinf = Kinf;
+    cache->Pinf = Pinf;
+    cache->Quu_inv = Quu_inv;
+    cache->AmBKt = AmBKt;
+}
+
+void tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype abs_dua_tol,
+                    int max_iter, int check_termination, 
+                    int en_state_bound, int en_input_bound) {
+    settings->abs_pri_tol = abs_pri_tol;
+    settings->abs_dua_tol = abs_dua_tol;
+    settings->max_iter = max_iter;
+    settings->check_termination = check_termination;
+    settings->en_state_bound = en_state_bound;
+    settings->en_input_bound = en_input_bound;
+}
+
+void tiny_set_default_settings(TinySettings* settings) {
+    settings->abs_pri_tol = TINY_DEFAULT_ABS_PRI_TOL;
+    settings->abs_dua_tol = TINY_DEFAULT_ABS_DUA_TOL;
+    settings->max_iter = TINY_DEFAULT_MAX_ITER;
+    settings->check_termination = TINY_DEFAULT_CHECK_TERMINATION;
+    settings->en_state_bound = TINY_DEFAULT_EN_STATE_BOUND;
+    settings->en_input_bound = TINY_DEFAULT_EN_INPUT_BOUND;
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+
 // #include "tinympc/tiny_wrapper.hpp"
 
 // extern "C"
