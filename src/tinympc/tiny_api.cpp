@@ -18,6 +18,8 @@ int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
                 TinySettings* settings) {
 
     // Initialize solution
+    solution->iter = 0;
+    solution->solved = 0;
     solution->x = tinyMatrix::Zero(nx, N);
     solution->u = tinyMatrix::Zero(nu, N-1);
 

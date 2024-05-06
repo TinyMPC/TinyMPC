@@ -112,6 +112,7 @@ extern "C"
     {
         // Initialize variables
         solver->solution->solved = 0;
+        solver->solution->iter = 0;
         solver->work->status = 11; // TINY_UNSOLVED
         solver->work->iter = 0;
 
