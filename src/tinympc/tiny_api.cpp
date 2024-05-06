@@ -11,6 +11,15 @@ using namespace Eigen;
 IOFormat TinyFmt(4, 0, ", ", "\n", "[", "]");
 
 
+static int check_dimension(std::string matrix_name, std::string rows_or_columns, int actual, int expected) {
+    if (actual != expected) {
+        std::cout << matrix_name << " has " << actual << " " << rows_or_columns << ". Expected " << expected << "." << std::endl;
+        return 1;
+    }
+    return 0;
+}
+
+
 int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
                 tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 
                 tinytype rho, int nx, int nu, int N,
@@ -27,6 +36,25 @@ int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
     work->nx = nx;
     work->nu = nu;
     work->N = N;
+
+    // Make sure arguments are the correct shapes
+    int status = 0;
+    status |= check_dimension("State transition matrix (A)", "rows", Adyn.rows(), nx);
+    status |= check_dimension("State transition matrix (A)", "columns", Adyn.cols(), nx);
+    status |= check_dimension("Input matrix (B)", "rows",  Bdyn.rows(), nx);
+    status |= check_dimension("Input matrix (B)", "columns",  Bdyn.cols(), nu);
+    status |= check_dimension("State stage cost (Q)", "rows",  Q.rows(), nx);
+    status |= check_dimension("State stage cost (Q)", "columns",  Q.cols(), nx);
+    status |= check_dimension("State input cost (R)", "rows",  R.rows(), nu);
+    status |= check_dimension("State input cost (R)", "columns",  R.cols(), nu);
+    status |= check_dimension("Lower state bounds (x_min)", "rows", x_min.rows(), nx);
+    status |= check_dimension("Lower state bounds (x_min)", "cols", x_min.cols(), N);
+    status |= check_dimension("Lower state bounds (x_max)", "rows", x_max.rows(), nx);
+    status |= check_dimension("Lower state bounds (x_max)", "cols", x_max.cols(), N);
+    status |= check_dimension("Lower input bounds (u_min)", "rows", u_min.rows(), nu);
+    status |= check_dimension("Lower input bounds (u_min)", "cols", u_min.cols(), N-1);
+    status |= check_dimension("Lower input bounds (u_max)", "rows", u_max.rows(), nu);
+    status |= check_dimension("Lower input bounds (u_max)", "cols", u_max.cols(), N-1);
     
     work->x = tinyMatrix::Zero(nx, N);
     work->u = tinyMatrix::Zero(nu, N-1);
@@ -69,7 +97,7 @@ int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
 
     
     // Initialize cache
-    int status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, work->Q.asDiagonal(), work->R.asDiagonal(), nx, nu, rho, verbose);
+    status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, work->Q.asDiagonal(), work->R.asDiagonal(), nx, nu, rho, verbose);
     if (status) {
         return status;
     }
