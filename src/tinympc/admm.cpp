@@ -134,13 +134,15 @@ extern "C"
 
             // Check for whether cost is minimized by calculating residuals
             if (termination_condition(solver)) {
-                std::cout << "solution found" << std::endl;
                 solver->work->status = 1; // TINY_SOLVED
 
                 // Save solution
+                solver->solution->iter = solver->work->iter;
                 solver->solution->solved = 1;
                 solver->solution->x = solver->work->vnew;
                 solver->solution->u = solver->work->znew;
+                std::cout << "solution found" << std::endl;
+                std::cout << "iters: " << solver->solution->iter << std::endl;
                 return 0;
             }
 
