@@ -97,11 +97,6 @@ extern "C"
             solver->work->primal_residual_input = (solver->work->u - solver->work->znew).cwiseAbs().maxCoeff();
             solver->work->dual_residual_input = ((solver->work->z - solver->work->znew).cwiseAbs().maxCoeff()) * solver->cache->rho;
 
-            std::cout << "primal residual state: " << solver->work->primal_residual_state << std::endl;
-            std::cout << "primal residual input: " << solver->work->primal_residual_input << std::endl;
-            std::cout << "dual residual state: " << solver->work->dual_residual_state << std::endl;
-            std::cout << "dual residual input: " << solver->work->dual_residual_input << std::endl;
-
             if (solver->work->primal_residual_state < solver->settings->abs_pri_tol &&
                 solver->work->primal_residual_input < solver->settings->abs_pri_tol &&
                 solver->work->dual_residual_state < solver->settings->abs_dua_tol &&
@@ -115,7 +110,6 @@ extern "C"
 
     int tiny_solve(TinySolver *solver)
     {
-        std::cout << "solving" << std::endl;
         // Initialize variables
         solver->solution->solved = 0;
         solver->solution->iter = 0;
@@ -124,7 +118,6 @@ extern "C"
 
         for (int i = 0; i < solver->settings->max_iter; i++)
         {
-            std::cout << "in the ADMM loop" << std::endl;
             // Solve linear system with Riccati and roll out to get new trajectory
             forward_pass(solver);
 
@@ -148,8 +141,6 @@ extern "C"
                 solver->solution->solved = 1;
                 solver->solution->x = solver->work->vnew;
                 solver->solution->u = solver->work->znew;
-                std::cout << "solution found" << std::endl;
-                std::cout << "iters: " << solver->solution->iter << std::endl;
                 return 0;
             }
 
@@ -164,8 +155,6 @@ extern "C"
         solver->solution->solved = 0;
         solver->solution->x = solver->work->vnew;
         solver->solution->u = solver->work->znew;
-        std::cout << "max iters reached" << std::endl;
-        std::cout << "iters: " << solver->solution->iter << std::endl;
         return 1;
     }
 
