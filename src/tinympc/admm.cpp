@@ -110,6 +110,7 @@ extern "C"
 
     int tiny_solve(TinySolver *solver)
     {
+        std::cout << "solving" << std::endl;
         // Initialize variables
         solver->solution->solved = 0;
         solver->solution->iter = 0;
@@ -118,6 +119,7 @@ extern "C"
 
         for (int i = 0; i < solver->settings->max_iter; i++)
         {
+            std::cout << "in the ADMM loop" << std::endl;
             // Solve linear system with Riccati and roll out to get new trajectory
             forward_pass(solver);
 
@@ -132,6 +134,7 @@ extern "C"
 
             // Check for whether cost is minimized by calculating residuals
             if (termination_condition(solver)) {
+                std::cout << "solution found" << std::endl;
                 solver->work->status = 1; // TINY_SOLVED
 
                 // Save solution
@@ -149,6 +152,7 @@ extern "C"
 
             solver->work->iter += 1;
         }
+        std::cout << "max iters reached" << std::endl;
         return 1;
     }
 
