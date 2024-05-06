@@ -154,7 +154,12 @@ extern "C"
 
             solver->work->iter += 1;
         }
+        solver->solution->iter = solver->work->iter;
+        solver->solution->solved = 0;
+        solver->solution->x = solver->work->vnew;
+        solver->solution->u = solver->work->znew;
         std::cout << "max iters reached" << std::endl;
+        std::cout << "iters: " << solver->solution->iter << std::endl;
         return 1;
     }
 
