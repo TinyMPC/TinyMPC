@@ -14,7 +14,7 @@ extern "C"
     int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
                    tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 
                    tinytype rho, int nx, int nu, int N,
-                   tinyVector x_min, tinyVector x_max, tinyVector u_min, tinyVector u_max,
+                   tinyMatrix x_min, tinyMatrix x_max, tinyMatrix u_min, tinyMatrix u_max,
                    TinySettings* settings);
     int tiny_precompute_and_set_cache(TinyCache *cache, 
                                       tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R,

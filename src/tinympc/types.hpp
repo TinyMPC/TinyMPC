@@ -54,7 +54,7 @@ extern "C"
      * Solution
      */
     typedef struct {
-        int solved = 0;
+        int solved;
         tinyMatrix x; // nx x N
         tinyMatrix u; // nu x N-1
     } TinySolution;

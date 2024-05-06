@@ -107,13 +107,13 @@ int main()
         // 	// break;
 
         std::cout << work->iter << std::endl;
-        std::cout << work->u.col(0).transpose().format(CleanFmt) << std::endl;
+        std::cout << work->u.col(0).transpose().format(TinyFmt) << std::endl;
 
         // 5. Simulate forward
         // work->u.col(0) = -tiny_data_solver.cache->Kinf * (x0 - work->Xref.col(0));
         x1 = work->Adyn * x0 + work->Bdyn * work->u.col(0);
         x0 = x1;
-        // std::cout << x0.transpose().format(CleanFmt) << std::endl;
+        // std::cout << x0.transpose().format(TinyFmt) << std::endl;
     }
 }
 

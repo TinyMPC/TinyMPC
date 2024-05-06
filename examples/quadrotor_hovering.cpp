@@ -23,7 +23,7 @@
 #include <tinympc/admm.hpp>
 #include "problem_data/quadrotor_20hz_params.hpp"
 
-Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+Eigen::IOFormat TinyFmt(4, 0, ", ", "\n", "[", "]");
 
 extern "C"
 {
@@ -125,13 +125,13 @@ extern "C"
             tiny_solve(&solver);
 
             // std::cout << work.iter << std::endl;
-            // std::cout << work.u.col(0).transpose().format(CleanFmt) << std::endl;
+            // std::cout << work.u.col(0).transpose().format(TinyFmt) << std::endl;
 
             // 5. Simulate forward
             x1 = work.Adyn * x0 + work.Bdyn * work.u.col(0);
             x0 = x1;
 
-            // std::cout << x0.transpose().format(CleanFmt) << std::endl;
+            // std::cout << x0.transpose().format(TinyFmt) << std::endl;
         }
 
         return 0;

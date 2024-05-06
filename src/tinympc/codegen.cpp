@@ -29,7 +29,7 @@ extern "C"
 #define BUF_SIZE 65536
 
     using namespace Eigen;
-    IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+    IOFormat TinyFmt(4, 0, ", ", "\n", "[", "]");
 
     static void copy_file(char *src_file_name, char *dest_file_name)
     {
@@ -146,7 +146,7 @@ extern "C"
         fprintf(main_f, "#include <tinympc/tiny_data_workspace.hpp>\n\n");
 
         fprintf(main_f, "using namespace Eigen;\n");
-        fprintf(main_f, "IOFormat CleanFmt(4, 0, \", \", \"\\n\", \"[\", \"]\");\n\n");
+        fprintf(main_f, "IOFormat TinyFmt(4, 0, \", \", \"\\n\", \"[\", \"]\");\n\n");
 
         fprintf(main_f, "#ifdef __cplusplus\n");
         fprintf(main_f, "extern \"C\" {\n");
@@ -157,8 +157,8 @@ extern "C"
         fprintf(main_f, "\tint exitflag = 1;\n");
         fprintf(main_f, "\t// Double check some data\n");
         fprintf(main_f, "\tstd::cout << tiny_data_solver.settings->max_iter << std::endl;\n");
-        fprintf(main_f, "\tstd::cout << tiny_data_solver.cache->AmBKt.format(CleanFmt) << std::endl;\n");
-        fprintf(main_f, "\tstd::cout << tiny_data_solver.work->Adyn.format(CleanFmt) << std::endl;\n\n");
+        fprintf(main_f, "\tstd::cout << tiny_data_solver.cache->AmBKt.format(TinyFmt) << std::endl;\n");
+        fprintf(main_f, "\tstd::cout << tiny_data_solver.work->Adyn.format(TinyFmt) << std::endl;\n\n");
 
         fprintf(main_f, "\texitflag = tiny_solve(&tiny_data_solver);\n\n");
         fprintf(main_f, "\tif (exitflag == 0) printf(\"HOORAY! Solved with no error!\\n\");\n");
@@ -219,10 +219,10 @@ extern "C"
         MatrixXd R1 = R.array().matrix().asDiagonal();
 
         // Printing
-        std::cout << "A = " << Adyn.format(CleanFmt) << std::endl;
-        std::cout << "B = " << Bdyn.format(CleanFmt) << std::endl;
-        std::cout << "Q = " << Q1.format(CleanFmt) << std::endl;
-        std::cout << "R = " << R1.format(CleanFmt) << std::endl;
+        std::cout << "A = " << Adyn.format(TinyFmt) << std::endl;
+        std::cout << "B = " << Bdyn.format(TinyFmt) << std::endl;
+        std::cout << "Q = " << Q1.format(TinyFmt) << std::endl;
+        std::cout << "R = " << R1.format(TinyFmt) << std::endl;
         std::cout << "rho = " << rho << std::endl;
 
         // Riccati recursion to get Kinf, Pinf
@@ -251,10 +251,10 @@ extern "C"
         MatrixXd Quu_inv = (R1 + Bdyn.transpose() * Pinf * Bdyn).inverse();
         MatrixXd AmBKt = (Adyn - Bdyn * Kinf).transpose();
 
-        std::cout << "Kinf = " << Kinf.format(CleanFmt) << std::endl;
-        std::cout << "Pinf = " << Pinf.format(CleanFmt) << std::endl;
-        std::cout << "Quu_inv = " << Quu_inv.format(CleanFmt) << std::endl;
-        std::cout << "AmBKt = " << AmBKt.format(CleanFmt) << std::endl;
+        std::cout << "Kinf = " << Kinf.format(TinyFmt) << std::endl;
+        std::cout << "Pinf = " << Pinf.format(TinyFmt) << std::endl;
+        std::cout << "Quu_inv = " << Quu_inv.format(TinyFmt) << std::endl;
+        std::cout << "AmBKt = " << AmBKt.format(TinyFmt) << std::endl;
 
         // Make code gen output directory structure
         char workspace_dname[PATH_LENGTH];

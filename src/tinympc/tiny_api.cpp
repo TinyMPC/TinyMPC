@@ -8,68 +8,70 @@ extern "C" {
 #endif
 
 using namespace Eigen;
-IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+IOFormat TinyFmt(4, 0, ", ", "\n", "[", "]");
 
 
 int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
                 tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 
                 tinytype rho, int nx, int nu, int N,
-                tinyVector x_min, tinyVector x_max, tinyVector u_min, tinyVector u_max,
+                tinyMatrix x_min, tinyMatrix x_max, tinyMatrix u_min, tinyMatrix u_max,
                 TinySettings* settings) {
 
-    // Initialize solution
-    solution->x = tinyMatrix::Zero(nx, N);
-    solution->u = tinyMatrix::Zero(nu, N-1);
+    // // Initialize solution
+    // solution->x = tinyMatrix::Zero(nx, N);
+    // solution->u = tinyMatrix::Zero(nu, N-1);
 
-    // Initialize cache
-    int status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, Q, R, nx, nu, rho);
-    if (status) {
-        return status;
-    }
+    // // Initialize cache
+    // int status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, Q, R, nx, nu, rho);
+    // if (status) {
+    //     return status;
+    // }
 
-    // Initialize workspace
-    work->nx = nx;
-    work->nu = nu;
-    work->N = N;
+    // // Initialize workspace
+    // work->nx = nx;
+    // work->nu = nu;
+    // work->N = N;
     
-    work->x = tinyMatrix::Zero(nx, N);
-    work->u = tinyMatrix::Zero(nu, N-1);
+    // work->x = tinyMatrix::Zero(nx, N);
+    // work->u = tinyMatrix::Zero(nu, N-1);
 
-    work->q = tinyMatrix::Zero(nx, N);
-    work->r = tinyMatrix::Zero(nu, N-1);
+    // work->q = tinyMatrix::Zero(nx, N);
+    // work->r = tinyMatrix::Zero(nu, N-1);
 
-    work->p = tinyMatrix::Zero(nx, N);
-    work->d = tinyMatrix::Zero(nu, N-1);
+    // work->p = tinyMatrix::Zero(nx, N);
+    // work->d = tinyMatrix::Zero(nu, N-1);
 
-    work->v = tinyMatrix::Zero(nx, N);
-    work->vnew = tinyMatrix::Zero(nx, N);
-    work->z = tinyMatrix::Zero(nu, N-1);
-    work->znew = tinyMatrix::Zero(nu, N-1);
+    // work->v = tinyMatrix::Zero(nx, N);
+    // work->vnew = tinyMatrix::Zero(nx, N);
+    // work->z = tinyMatrix::Zero(nu, N-1);
+    // work->znew = tinyMatrix::Zero(nu, N-1);
     
-    work->g = tinyMatrix::Zero(nx, N);
-    work->y = tinyMatrix::Zero(nu, N-1);
+    // work->g = tinyMatrix::Zero(nx, N);
+    // work->y = tinyMatrix::Zero(nu, N-1);
 
-    work->Q = Q.diagonal();
-    work->R = R.diagonal();
-    work->Adyn = Adyn;
-    work->Bdyn = Bdyn;
+    // work->Q = Q.diagonal();
+    // work->R = R.diagonal();
+    // work->Adyn = Adyn;
+    // work->Bdyn = Bdyn;
 
-    work->x_min = x_min;
-    work->x_max = x_max;
-    work->u_min = u_min;
-    work->u_max = u_max;
+    // work->x_min = x_min;
+    // work->x_max = x_max;
+    // work->u_min = u_min;
+    // work->u_max = u_max;
 
-    work->Xref = tinyMatrix::Zero(nx, N);
-    work->Uref = tinyMatrix::Zero(nu, N-1);
+    // work->Xref = tinyMatrix::Zero(nx, N);
+    // work->Uref = tinyMatrix::Zero(nu, N-1);
 
-    work->Qu = tinyVector::Zero(nu);
+    // work->Qu = tinyVector::Zero(nu);
 
-    work->primal_residual_state = 0;
-    work->primal_residual_input = 0;
-    work->dual_residual_state = 0;
-    work->dual_residual_input = 0;
-    work->status = 0;
-    work->iter = 0;
+    // work->primal_residual_state = 0;
+    // work->primal_residual_input = 0;
+    // work->dual_residual_state = 0;
+    // work->dual_residual_input = 0;
+    // work->status = 0;
+    // work->iter = 0;
+
+    return 0;
 }
 
 int tiny_precompute_and_set_cache(TinyCache *cache,
@@ -81,10 +83,10 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     tinyMatrix R1 = R + rho * tinyMatrix::Identity(nu, nu);
 
     // Printing
-    std::cout << "A = " << Adyn.format(CleanFmt) << std::endl;
-    std::cout << "B = " << Bdyn.format(CleanFmt) << std::endl;
-    std::cout << "Q = " << Q1.format(CleanFmt) << std::endl;
-    std::cout << "R = " << R1.format(CleanFmt) << std::endl;
+    std::cout << "A = " << Adyn.format(TinyFmt) << std::endl;
+    std::cout << "B = " << Bdyn.format(TinyFmt) << std::endl;
+    std::cout << "Q = " << Q1.format(TinyFmt) << std::endl;
+    std::cout << "R = " << R1.format(TinyFmt) << std::endl;
     std::cout << "rho = " << rho << std::endl;
 
     // Riccati recursion to get Kinf, Pinf
@@ -113,10 +115,10 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     tinyMatrix Quu_inv = (R1 + Bdyn.transpose() * Pinf * Bdyn).inverse();
     tinyMatrix AmBKt = (Adyn - Bdyn * Kinf).transpose();
 
-    std::cout << "Kinf = " << Kinf.format(CleanFmt) << std::endl;
-    std::cout << "Pinf = " << Pinf.format(CleanFmt) << std::endl;
-    std::cout << "Quu_inv = " << Quu_inv.format(CleanFmt) << std::endl;
-    std::cout << "AmBKt = " << AmBKt.format(CleanFmt) << std::endl;
+    std::cout << "Kinf = " << Kinf.format(TinyFmt) << std::endl;
+    std::cout << "Pinf = " << Pinf.format(TinyFmt) << std::endl;
+    std::cout << "Quu_inv = " << Quu_inv.format(TinyFmt) << std::endl;
+    std::cout << "AmBKt = " << AmBKt.format(TinyFmt) << std::endl;
 
     cache->rho = rho;
     cache->Kinf = Kinf;
