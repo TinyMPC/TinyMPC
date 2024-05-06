@@ -64,7 +64,7 @@ extern "C"
                                 work->Adyn, work->Bdyn, work->Q.asDiagonal(), work->R.asDiagonal(),
                                 rho_value, NSTATES, NINPUTS, NHORIZON,
                                 work->x_min, work->x_max, work->u_min, work->u_max,
-                                settings);
+                                settings, 1);
 
 
 

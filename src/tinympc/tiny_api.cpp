@@ -15,7 +15,7 @@ int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
                 tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 
                 tinytype rho, int nx, int nu, int N,
                 tinyMatrix x_min, tinyMatrix x_max, tinyMatrix u_min, tinyMatrix u_max,
-                TinySettings* settings) {
+                TinySettings* settings, int verbose) {
 
     // Initialize solution
     solution->iter = 0;
@@ -24,7 +24,7 @@ int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
     solution->u = tinyMatrix::Zero(nu, N-1);
 
     // Initialize cache
-    int status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, Q, R, nx, nu, rho);
+    int status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, Q, R, nx, nu, rho, verbose);
     if (status) {
         return status;
     }
@@ -78,18 +78,20 @@ int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
 
 int tiny_precompute_and_set_cache(TinyCache *cache,
                                   tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R,
-                                  int nx, int nu, tinytype rho) {
+                                  int nx, int nu, tinytype rho, int verbose) {
 
     // Update by adding rho * identity matrix to Q, R
     tinyMatrix Q1 = Q + rho * tinyMatrix::Identity(nx, nx);
     tinyMatrix R1 = R + rho * tinyMatrix::Identity(nu, nu);
 
     // Printing
-    std::cout << "A = " << Adyn.format(TinyFmt) << std::endl;
-    std::cout << "B = " << Bdyn.format(TinyFmt) << std::endl;
-    std::cout << "Q = " << Q1.format(TinyFmt) << std::endl;
-    std::cout << "R = " << R1.format(TinyFmt) << std::endl;
-    std::cout << "rho = " << rho << std::endl;
+    if (verbose) {
+        std::cout << "A = " << Adyn.format(TinyFmt) << std::endl;
+        std::cout << "B = " << Bdyn.format(TinyFmt) << std::endl;
+        std::cout << "Q = " << Q1.format(TinyFmt) << std::endl;
+        std::cout << "R = " << R1.format(TinyFmt) << std::endl;
+        std::cout << "rho = " << rho << std::endl;
+    }
 
     // Riccati recursion to get Kinf, Pinf
     tinyMatrix Ktp1 = tinyMatrix::Zero(nu, nx);
@@ -104,23 +106,29 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
         // if Kinf converges, break
         if ((Kinf - Ktp1).cwiseAbs().maxCoeff() < 1e-5)
         {
-            std::cout << "Kinf converged after " << i + 1 << " iterations" << std::endl;
+            if (verbose) {
+                std::cout << "Kinf converged after " << i + 1 << " iterations" << std::endl;
+            }
             break;
         }
         Ktp1 = Kinf;
         Ptp1 = Pinf;
     }
 
-    std::cout << "Precomputing finished" << std::endl;
+    if (verbose) {
+        std::cout << "Precomputing finished" << std::endl;
+    }
 
     // Compute cached matrices
     tinyMatrix Quu_inv = (R1 + Bdyn.transpose() * Pinf * Bdyn).inverse();
     tinyMatrix AmBKt = (Adyn - Bdyn * Kinf).transpose();
 
-    std::cout << "Kinf = " << Kinf.format(TinyFmt) << std::endl;
-    std::cout << "Pinf = " << Pinf.format(TinyFmt) << std::endl;
-    std::cout << "Quu_inv = " << Quu_inv.format(TinyFmt) << std::endl;
-    std::cout << "AmBKt = " << AmBKt.format(TinyFmt) << std::endl;
+    if (verbose) {
+        std::cout << "Kinf = " << Kinf.format(TinyFmt) << std::endl;
+        std::cout << "Pinf = " << Pinf.format(TinyFmt) << std::endl;
+        std::cout << "Quu_inv = " << Quu_inv.format(TinyFmt) << std::endl;
+        std::cout << "AmBKt = " << AmBKt.format(TinyFmt) << std::endl;
+    }
 
     cache->rho = rho;
     cache->Kinf = Kinf;
