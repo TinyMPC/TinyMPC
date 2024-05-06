@@ -11,23 +11,21 @@ extern "C"
 {
 #endif
 
-    int tiny_precompute_and_set_cache(TinyCache *cache, tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, int nx, int nu, double rho);
+    int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
+                   tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 
+                   tinytype rho, int nx, int nu, int N,
+                   tinyVector x_min, tinyVector x_max, tinyVector u_min, tinyVector u_max,
+                   TinySettings* settings);
+    int tiny_precompute_and_set_cache(TinyCache *cache, 
+                                      tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R,
+                                      int nx, int nu, tinytype rho);
 
-    void tiny_update_settings(TinySettings*, tinytype abs_pri_tol, tinytype abs_dua_tol, int max_iter, int check_termination, int en_state_bound, int en_input_bound);
+    void tiny_update_settings(TinySettings* settings,
+                              tinytype abs_pri_tol, tinytype abs_dua_tol, 
+                              int max_iter, int check_termination, 
+                              int en_state_bound, int en_input_bound);
     void tiny_set_default_settings(TinySettings* settings);
 
-
-    // void set_x0(float *x0, int verbose);
-    // void set_xref(float *xref, int verbose);
-    // void set_uref(float *uref, int verbose);
-    // void set_umin(float *umin, int verbose);
-    // void set_umax(float *umax, int verbose);
-    // void set_xmin(float *xmin, int verbose);
-    // void set_xmax(float *xmax, int verbose);
-    // void reset_dual_variables(int verbose);
-    // void call_tiny_solve(int verbose);
-    // void get_x(float *x_soln, int verbose);
-    // void get_u(float *u_soln, int verbose);
 
 #ifdef __cplusplus
 }

@@ -10,7 +10,71 @@ extern "C" {
 using namespace Eigen;
 IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
 
-int tiny_precompute_and_set_cache(TinyCache *cache, tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, int nx, int nu, double rho) {
+
+int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
+                tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 
+                tinytype rho, int nx, int nu, int N,
+                tinyVector x_min, tinyVector x_max, tinyVector u_min, tinyVector u_max,
+                TinySettings* settings) {
+
+    // Initialize solution
+    solution->x = tinyMatrix::Zero(nx, N);
+    solution->u = tinyMatrix::Zero(nu, N-1);
+
+    // Initialize cache
+    int status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, Q, R, nx, nu, rho);
+    if (status) {
+        return status;
+    }
+
+    // Initialize workspace
+    work->nx = nx;
+    work->nu = nu;
+    work->N = N;
+    
+    work->x = tinyMatrix::Zero(nx, N);
+    work->u = tinyMatrix::Zero(nu, N-1);
+
+    work->q = tinyMatrix::Zero(nx, N);
+    work->r = tinyMatrix::Zero(nu, N-1);
+
+    work->p = tinyMatrix::Zero(nx, N);
+    work->d = tinyMatrix::Zero(nu, N-1);
+
+    work->v = tinyMatrix::Zero(nx, N);
+    work->vnew = tinyMatrix::Zero(nx, N);
+    work->z = tinyMatrix::Zero(nu, N-1);
+    work->znew = tinyMatrix::Zero(nu, N-1);
+    
+    work->g = tinyMatrix::Zero(nx, N);
+    work->y = tinyMatrix::Zero(nu, N-1);
+
+    work->Q = Q.diagonal();
+    work->R = R.diagonal();
+    work->Adyn = Adyn;
+    work->Bdyn = Bdyn;
+
+    work->x_min = x_min;
+    work->x_max = x_max;
+    work->u_min = u_min;
+    work->u_max = u_max;
+
+    work->Xref = tinyMatrix::Zero(nx, N);
+    work->Uref = tinyMatrix::Zero(nu, N-1);
+
+    work->Qu = tinyVector::Zero(nu);
+
+    work->primal_residual_state = 0;
+    work->primal_residual_input = 0;
+    work->dual_residual_state = 0;
+    work->dual_residual_input = 0;
+    work->status = 0;
+    work->iter = 0;
+}
+
+int tiny_precompute_and_set_cache(TinyCache *cache,
+                                  tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R,
+                                  int nx, int nu, tinytype rho) {
 
     // Update by adding rho * identity matrix to Q, R
     tinyMatrix Q1 = Q + rho * tinyMatrix::Identity(nx, nx);
