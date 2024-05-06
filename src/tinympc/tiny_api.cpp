@@ -17,59 +17,59 @@ int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
                 tinyMatrix x_min, tinyMatrix x_max, tinyMatrix u_min, tinyMatrix u_max,
                 TinySettings* settings) {
 
-    // // Initialize solution
-    // solution->x = tinyMatrix::Zero(nx, N);
-    // solution->u = tinyMatrix::Zero(nu, N-1);
+    // Initialize solution
+    solution->x = tinyMatrix::Zero(nx, N);
+    solution->u = tinyMatrix::Zero(nu, N-1);
 
-    // // Initialize cache
-    // int status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, Q, R, nx, nu, rho);
-    // if (status) {
-    //     return status;
-    // }
+    // Initialize cache
+    int status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, Q, R, nx, nu, rho);
+    if (status) {
+        return status;
+    }
 
-    // // Initialize workspace
-    // work->nx = nx;
-    // work->nu = nu;
-    // work->N = N;
+    // Initialize workspace
+    work->nx = nx;
+    work->nu = nu;
+    work->N = N;
     
-    // work->x = tinyMatrix::Zero(nx, N);
-    // work->u = tinyMatrix::Zero(nu, N-1);
+    work->x = tinyMatrix::Zero(nx, N);
+    work->u = tinyMatrix::Zero(nu, N-1);
 
-    // work->q = tinyMatrix::Zero(nx, N);
-    // work->r = tinyMatrix::Zero(nu, N-1);
+    work->q = tinyMatrix::Zero(nx, N);
+    work->r = tinyMatrix::Zero(nu, N-1);
 
-    // work->p = tinyMatrix::Zero(nx, N);
-    // work->d = tinyMatrix::Zero(nu, N-1);
+    work->p = tinyMatrix::Zero(nx, N);
+    work->d = tinyMatrix::Zero(nu, N-1);
 
-    // work->v = tinyMatrix::Zero(nx, N);
-    // work->vnew = tinyMatrix::Zero(nx, N);
-    // work->z = tinyMatrix::Zero(nu, N-1);
-    // work->znew = tinyMatrix::Zero(nu, N-1);
+    work->v = tinyMatrix::Zero(nx, N);
+    work->vnew = tinyMatrix::Zero(nx, N);
+    work->z = tinyMatrix::Zero(nu, N-1);
+    work->znew = tinyMatrix::Zero(nu, N-1);
     
-    // work->g = tinyMatrix::Zero(nx, N);
-    // work->y = tinyMatrix::Zero(nu, N-1);
+    work->g = tinyMatrix::Zero(nx, N);
+    work->y = tinyMatrix::Zero(nu, N-1);
 
-    // work->Q = Q.diagonal();
-    // work->R = R.diagonal();
-    // work->Adyn = Adyn;
-    // work->Bdyn = Bdyn;
+    work->Q = Q.diagonal();
+    work->R = R.diagonal();
+    work->Adyn = Adyn;
+    work->Bdyn = Bdyn;
 
-    // work->x_min = x_min;
-    // work->x_max = x_max;
-    // work->u_min = u_min;
-    // work->u_max = u_max;
+    work->x_min = x_min;
+    work->x_max = x_max;
+    work->u_min = u_min;
+    work->u_max = u_max;
 
-    // work->Xref = tinyMatrix::Zero(nx, N);
-    // work->Uref = tinyMatrix::Zero(nu, N-1);
+    work->Xref = tinyMatrix::Zero(nx, N);
+    work->Uref = tinyMatrix::Zero(nu, N-1);
 
-    // work->Qu = tinyVector::Zero(nu);
+    work->Qu = tinyVector::Zero(nu);
 
-    // work->primal_residual_state = 0;
-    // work->primal_residual_input = 0;
-    // work->dual_residual_state = 0;
-    // work->dual_residual_input = 0;
-    // work->status = 0;
-    // work->iter = 0;
+    work->primal_residual_state = 0;
+    work->primal_residual_input = 0;
+    work->dual_residual_state = 0;
+    work->dual_residual_input = 0;
+    work->status = 0;
+    work->iter = 0;
 
     return 0;
 }
