@@ -13,10 +13,8 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
 int tiny_precompute_and_set_cache(TinyCache *cache, tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, int nx, int nu, double rho) {
 
     // Update by adding rho * identity matrix to Q, R
-    Q = Q + rho * tinyMatrix::Ones(nx, 1).asDiagonal();
-    R = R + rho * tinyMatrix::Ones(nu, 1).asDiagonal();
-    tinyMatrix Q1 = Q.array().matrix().asDiagonal();
-    tinyMatrix R1 = R.array().matrix().asDiagonal();
+    tinyMatrix Q1 = Q + rho * tinyMatrix::Identity(nx, nx);
+    tinyMatrix R1 = R + rho * tinyMatrix::Identity(nu, nu);
 
     // Printing
     std::cout << "A = " << Adyn.format(CleanFmt) << std::endl;
