@@ -17,7 +17,7 @@
 #define NINPUTS 1
 
 #define NHORIZON 10
-#define NTOTAL 301
+#define NTOTAL 400
 
 #include <iostream>
 
@@ -77,10 +77,10 @@ extern "C"
         work->Xref = tinyMatrix::Zero(NSTATES, NHORIZON);
 
         // Initial state
-        x0 = work->Xref.col(0);
+        x0 << 0.5, 0.0, 0.0, 0.0;
 
-        // for (int k = 0; k < NTOTAL - NHORIZON; ++k)
-        // {
+        for (int k = 0; k < NTOTAL - NHORIZON; ++k)
+        {
             std::cout << "tracking error: " << (x0 - work->Xref.col(1)).norm() << std::endl;
 
             // 1. Update measurement
@@ -99,7 +99,7 @@ extern "C"
             // 5. Simulate forward
             x1 = work->Adyn * x0 + work->Bdyn * work->u.col(0);
             x0 = x1;
-        // }
+        }
 
         return 0;
     }
