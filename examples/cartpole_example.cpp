@@ -84,7 +84,7 @@ extern "C"
             std::cout << "tracking error: " << (x0 - work->Xref.col(1)).norm() << std::endl;
 
             // 1. Update measurement
-            work->x.col(0) = x0;
+            tiny_set_x0(&solver, x0);
 
             // 2. Update reference
 
