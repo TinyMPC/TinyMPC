@@ -20,6 +20,8 @@ extern "C" {
                                       tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R,
                                       int nx, int nu, tinytype rho, int verbose);
 
+    void tiny_set_x0(TinySolver* solver, tinyVector x0);
+
     void tiny_update_settings(TinySettings* settings,
                               tinytype abs_pri_tol, tinytype abs_dua_tol, 
                               int max_iter, int check_termination, 
