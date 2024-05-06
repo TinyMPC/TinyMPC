@@ -79,6 +79,7 @@ extern "C"
         // Initial state
         x0 << 0.5, 0.0, 0.0, 0.0;
 
+
         for (int k = 0; k < NTOTAL - NHORIZON; ++k)
         {
             std::cout << "tracking error: " << (x0 - work->Xref.col(1)).norm() << std::endl;
