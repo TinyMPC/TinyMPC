@@ -7,9 +7,9 @@
 
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
+
 
     int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
                    tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 

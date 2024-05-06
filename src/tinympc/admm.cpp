@@ -97,6 +97,11 @@ extern "C"
             solver->work->primal_residual_input = (solver->work->u - solver->work->znew).cwiseAbs().maxCoeff();
             solver->work->dual_residual_input = ((solver->work->z - solver->work->znew).cwiseAbs().maxCoeff()) * solver->cache->rho;
 
+            std::cout << "primal residual state: " << solver->work->primal_residual_state << std::endl;
+            std::cout << "primal residual input: " << solver->work->primal_residual_input << std::endl;
+            std::cout << "dual residual state: " << solver->work->dual_residual_state << std::endl;
+            std::cout << "dual residual input: " << solver->work->dual_residual_input << std::endl;
+
             if (solver->work->primal_residual_state < solver->settings->abs_pri_tol &&
                 solver->work->primal_residual_input < solver->settings->abs_pri_tol &&
                 solver->work->dual_residual_state < solver->settings->abs_dua_tol &&
@@ -132,6 +137,8 @@ extern "C"
             // Update linear control cost terms using reference trajectory, duals, and slack variables
             update_linear_cost(solver);
 
+            solver->work->iter += 1;
+
             // Check for whether cost is minimized by calculating residuals
             if (termination_condition(solver)) {
                 solver->work->status = 1; // TINY_SOLVED
@@ -152,7 +159,6 @@ extern "C"
 
             backward_pass_grad(solver);
 
-            solver->work->iter += 1;
         }
         solver->solution->iter = solver->work->iter;
         solver->solution->solved = 0;

@@ -23,12 +23,6 @@ int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
     solution->x = tinyMatrix::Zero(nx, N);
     solution->u = tinyMatrix::Zero(nu, N-1);
 
-    // Initialize cache
-    int status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, Q, R, nx, nu, rho, verbose);
-    if (status) {
-        return status;
-    }
-
     // Initialize workspace
     work->nx = nx;
     work->nu = nu;
@@ -51,8 +45,8 @@ int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
     work->g = tinyMatrix::Zero(nx, N);
     work->y = tinyMatrix::Zero(nu, N-1);
 
-    work->Q = Q.diagonal();
-    work->R = R.diagonal();
+    work->Q = (Q + rho * tinyMatrix::Identity(nx, nx)).diagonal();
+    work->R = (R + rho * tinyMatrix::Identity(nu, nu)).diagonal();
     work->Adyn = Adyn;
     work->Bdyn = Bdyn;
 
@@ -72,6 +66,14 @@ int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
     work->dual_residual_input = 0;
     work->status = 0;
     work->iter = 0;
+
+    
+    // Initialize cache
+    int status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, work->Q.asDiagonal(), work->R.asDiagonal(), nx, nu, rho, verbose);
+    if (status) {
+        return status;
+    }
+
 
     return 0;
 }
