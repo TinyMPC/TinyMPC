@@ -33,7 +33,8 @@ extern "C"
     TinyCache cache;
     TinyWorkspace work;
     TinySettings settings;
-    TinySolver solver{&settings, &cache, &work};
+    TinySolution solution;
+    TinySolver solver{&solution, &settings, &cache, &work};
 
     typedef Matrix<tinytype, NINPUTS, NHORIZON-1> tiny_MatrixNuNhm1;
     typedef Matrix<tinytype, NSTATES, NHORIZON> tiny_MatrixNxNh;
@@ -41,6 +42,10 @@ extern "C"
 
     int main()
     {
+        solution.solved = 0;
+        solution.x = tiny_MatrixNxNh::Zero();
+        solution.u = tiny_MatrixNuNhm1::Zero();
+
         // Map data from problem_data (array in row-major order)
         cache.rho = rho_value;
         cache.Kinf = Map<Matrix<tinytype, NINPUTS, NSTATES, RowMajor>>(Kinf_data);

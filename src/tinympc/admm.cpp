@@ -111,6 +111,7 @@ extern "C"
     int tiny_solve(TinySolver *solver)
     {
         // Initialize variables
+        solver->solution->solved = 0;
         solver->work->status = 11; // TINY_UNSOLVED
         solver->work->iter = 0;
 
@@ -128,9 +129,14 @@ extern "C"
             // Update linear control cost terms using reference trajectory, duals, and slack variables
             update_linear_cost(solver);
 
-            // Check for whether cost is ~minimized~ by calculating residuals
+            // Check for whether cost is minimized by calculating residuals
             if (termination_condition(solver)) {
                 solver->work->status = 1; // TINY_SOLVED
+
+                // Save solution
+                solver->solution->solved = 1;
+                solver->solution->x = solver->work->vnew;
+                solver->solution->u = solver->work->znew;
                 return 0;
             }
 

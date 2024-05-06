@@ -30,8 +30,7 @@ extern "C"
     /**
      * Matrices that must be recomputed with changes in time step, rho
      */
-    typedef struct
-    {
+    typedef struct {
         tinytype rho;
         tinyMatrix Kinf;       // nu x nx
         tinyMatrix Pinf;       // nx x nx
@@ -42,8 +41,7 @@ extern "C"
     /**
      * User settings
      */
-    typedef struct
-    {
+    typedef struct {
         tinytype abs_pri_tol;
         tinytype abs_dua_tol;
         int max_iter;
@@ -53,10 +51,18 @@ extern "C"
     } TinySettings;
 
     /**
+     * Solution
+     */
+    typedef struct {
+        int solved = 0;
+        tinyMatrix x; // nx x N
+        tinyMatrix u; // nu x N-1
+    } TinySolution;
+
+    /**
      * Problem variables
      */
-    typedef struct
-    {
+    typedef struct {
         int nx; // Number of states
         int nu; // Number of control inputs
         int N;  // Number of knotpoints in the horizon
@@ -118,8 +124,8 @@ extern "C"
     /**
      * Main TinyMPC solver structure that holds all information.
      */
-    typedef struct
-    {
+    typedef struct {
+        TinySolution *solution; // Solution
         TinySettings *settings; // Problem settings
         TinyCache *cache;       // Problem cache
         TinyWorkspace *work;    // Solver workspace
