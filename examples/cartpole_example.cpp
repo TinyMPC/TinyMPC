@@ -61,8 +61,6 @@ extern "C"
         settings->en_input_bound = 1;
         settings->en_state_bound = 1;
 
-        std::cout << work->Q.asDiagonal() << std::endl;
-
         int status = tiny_setup(cache, work, solution,
                                 work->Adyn, work->Bdyn, work->Q.asDiagonal(), work->R.asDiagonal(),
                                 5, NSTATES, NINPUTS, NHORIZON,
