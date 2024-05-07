@@ -19,15 +19,15 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
                                     tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R,
                                     int nx, int nu, tinytype rho, int verbose);
 
-void tiny_update_settings(TinySettings* settings,
+int tiny_update_settings(TinySettings* settings,
                             tinytype abs_pri_tol, tinytype abs_dua_tol, 
                             int max_iter, int check_termination, 
                             int en_state_bound, int en_input_bound);
-void tiny_set_default_settings(TinySettings* settings);
+int tiny_set_default_settings(TinySettings* settings);
 
-void tiny_set_x0(TinySolver* solver, tinyVector x0);
-void tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref);
-void tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref);
+int tiny_set_x0(TinySolver* solver, tinyVector x0);
+int tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref);
+int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref);
 
 #ifdef __cplusplus
 }
