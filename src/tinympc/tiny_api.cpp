@@ -10,7 +10,6 @@ extern "C" {
 using namespace Eigen;
 IOFormat TinyFmt(4, 0, ", ", "\n", "[", "]");
 
-
 static int check_dimension(std::string matrix_name, std::string rows_or_columns, int actual, int expected) {
     if (actual != expected) {
         std::cout << matrix_name << " has " << actual << " " << rows_or_columns << ". Expected " << expected << "." << std::endl;
@@ -19,12 +18,28 @@ static int check_dimension(std::string matrix_name, std::string rows_or_columns,
     return 0;
 }
 
-
 int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
                 tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 
                 tinytype rho, int nx, int nu, int N,
                 tinyMatrix x_min, tinyMatrix x_max, tinyMatrix u_min, tinyMatrix u_max,
                 TinySettings* settings, int verbose) {
+
+    if (!cache) {
+        std::cout << "Error in tiny_setup: cache is nullptr" <<std::endl;
+        return;
+    }
+    if (!work) {
+        std::cout << "Error in tiny_setup: work is nullptr" <<std::endl;
+        return;
+    }
+    if (!solution) {
+        std::cout << "Error in tiny_setup: solution is nullptr" <<std::endl;
+        return;
+    }
+    if (!settings) {
+        std::cout << "Error in tiny_setup: settings is nullptr" <<std::endl;
+        return;
+    }
 
     // Initialize solution
     solution->iter = 0;
@@ -110,6 +125,11 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
                                   tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R,
                                   int nx, int nu, tinytype rho, int verbose) {
 
+    if (!cache) {
+        std::cout << "Error in tiny_precompute_and_set_cache: cache is nullptr" << std::endl;
+        return;
+    }
+
     // Update by adding rho * identity matrix to Q, R
     tinyMatrix Q1 = Q + rho * tinyMatrix::Identity(nx, nx);
     tinyMatrix R1 = R + rho * tinyMatrix::Identity(nu, nu);
@@ -169,16 +189,13 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     return 0; // return success
 }
 
-void tiny_set_x0(TinySolver* solver, tinyVector x0) {
-    if (x0.rows() != solver->work->nx) {
-        perror("Error in tiny_set_x0: x0 is not the correct length");
-    }
-    solver->work->x.col(0) = x0;
-}
-
 void tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype abs_dua_tol,
                     int max_iter, int check_termination, 
                     int en_state_bound, int en_input_bound) {
+    if (!settings) {
+        std::cout << "Error in tiny_update_settings: settings is nullptr" <<std::endl;
+        return;
+    }
     settings->abs_pri_tol = abs_pri_tol;
     settings->abs_dua_tol = abs_dua_tol;
     settings->max_iter = max_iter;
@@ -188,14 +205,45 @@ void tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype
 }
 
 void tiny_set_default_settings(TinySettings* settings) {
-    if (!settings)
+    if (!settings) {
+        std::cout << "Error in tiny_set_default_settings: settings is nullptr" <<std::endl;
         return;
+    }
     settings->abs_pri_tol = TINY_DEFAULT_ABS_PRI_TOL;
     settings->abs_dua_tol = TINY_DEFAULT_ABS_DUA_TOL;
     settings->max_iter = TINY_DEFAULT_MAX_ITER;
     settings->check_termination = TINY_DEFAULT_CHECK_TERMINATION;
     settings->en_state_bound = TINY_DEFAULT_EN_STATE_BOUND;
     settings->en_input_bound = TINY_DEFAULT_EN_INPUT_BOUND;
+}
+
+void tiny_set_x0(TinySolver* solver, tinyVector x0) {
+    if (!solver) {
+        std::cout << "Error in tiny_set_x0: solver is nullptr" <<std::endl;
+        return;
+    }
+    if (x0.rows() != solver->work->nx) {
+        perror("Error in tiny_set_x0: x0 is not the correct length");
+    }
+    solver->work->x.col(0) = x0;
+}
+
+void tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref){
+    if (!solver)
+        return;
+    int status = 0;
+    status |= check_dimension("State reference trajectory (x_ref)", "rows", x_ref.rows(), solver->workspace->nx);
+    status |= check_dimension("State reference trajectory (x_ref)", "columns", x_ref.cols(), solver->workspace->N);
+    solver->work->Xref = x_ref;
+}
+
+void tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref){
+    if (!solver)
+        return;
+    int status = 0;
+    status |= check_dimension("Control/input reference trajectory (u_ref)", "rows", u_ref.rows(), solver->workspace->nu);
+    status |= check_dimension("Control/input reference trajectory (u_ref)", "columns",u_ref.cols(), solver->workspace->N-1);
+    solver->work->Uref = u_ref;
 }
 
 #ifdef __cplusplus
