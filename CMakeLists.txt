@@ -10,46 +10,46 @@ include_directories(include/Eigen)
 # include_directories(${EIGEN3_INCLUDE_DIR})
 # message("${EIGEN3_INCLUDE_DIR}")
 
+
+# Create codegen directories
+set( EMBEDDED_BUILD_ROOT_DIR "${CMAKE_BINARY_DIR}/codegen_src" )
+set( EMBEDDED_BUILD_TINYMPC_DIR "${EMBEDDED_BUILD_ROOT_DIR}/tinympc" )
+set( EMBEDDED_BUILD_INCLUDE_DIR "${EMBEDDED_BUILD_ROOT_DIR}/include" )
+file( MAKE_DIRECTORY ${EMBEDDED_BUILD_ROOT_DIR} )
+file( MAKE_DIRECTORY ${EMBEDDED_BUILD_TINYMPC_DIR} )
+file( MAKE_DIRECTORY ${EMBEDDED_BUILD_INCLUDE_DIR} )
+
+# Create target for copying files
+add_custom_target(copy_codegen_files ALL
+                COMMENT "Copying source files needed for code generation" )
+
+# Copy Eigen from include/* to codegen_src/include/
+add_custom_target(copy_codegen_include_files)
+add_custom_command(TARGET copy_codegen_include_files PRE_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_directory
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/*"
+                    ${EMBEDDED_BUILD_INCLUDE_DIR})
+add_dependencies(copy_codegen_files copy_codegen_include_files)
+
+# Set codegen install directory
+set(TINY_CODEGEN_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/tinympc/codegen_files" CACHE PATH "Location of codegen install")
+install(DIRECTORY
+        "${EMBEDDED_BUILD_ROOT_DIR}/"
+        DESTINATION "${TINY_CODEGEN_INSTALL_DIR}" COMPONENT codegen)
+
+# Add tinympcstatic library
 add_subdirectory(src/tinympc)
+
+# Add example executables
 add_subdirectory(examples)
 
-# # ----------------------------------------------
-# # TINYMPCLIB
-# # ----------------------------------------------
-# add_library(TINYMPCLIB OBJECT "")
 
-# add_subdirectory(src/tinympc)
+# # Copy a sample makefile into the build tree
+# add_custom_command(OUTPUT "${EMBEDDED_BUILD_ROOT_DIR}/Makefile"
+#                     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/configure/Makefile.emosqp" "${EMBEDDED_BUILD_ROOT_DIR}/Makefile"
+#                     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/configure/Makefile.emosqp"
+#                     COMMENT "Copying codegen makefile" )
 
-# get_property(
-#   tinympclib_includes
-#   TARGET TINYMPCLIB
-#   PROPERTY INCLUDE_DIRECTORIES)
-# get_property(
-#   tinympclib_sources
-#   TARGET TINYMPCLIB
-#   PROPERTY SOURCES)
-
-# get_property(
-#   tinympclib_link_libs
-#   TARGET TINYMPCLIB
-#   PROPERTY LINK_LIBRARIES)
-
-
-
-# # ----------------------------------------------
-# # Shared tinympc library
-# # ----------------------------------------------
-# add_library(tinympc SHARED $<TARGET_OBJECTS:TINYMPCLIB>)
-# target_include_directories(tinympc PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/tinympc;${CMAKE_CURRENT_BINARY_DIR}/src/tinympc>"
-#                                        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/tinympc>")
-
-# # Declare that we are building the shared library to get proper symbol exports.
-# # Shared library consumers should also define TINYMPC_SHARED_LIB to get the library
-# # exports properly, so we do it for them in the CMake interface by defining it as
-# # a PUBLIC compile definition.
-# target_compile_definitions(osqp PRIVATE BUILDING_OSQP)
-# target_compile_definitions(osqp PUBLIC  OSQP_SHARED_LIB)
-
-
-# add_subdirectory(examples)
+# add_custom_target( copy_codegen_makefile DEPENDS "${EMBEDDED_BUILD_ROOT_DIR}/Makefile" )
+# add_dependencies( copy_codegen_files copy_codegen_makefile )
 

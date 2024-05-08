@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 using namespace Eigen;
-IOFormat TinyFmt(4, 0, ", ", "\n", "[", "]");
+IOFormat TinyApiFmt(4, 0, ", ", "\n", "[", "]");
 
 static int check_dimension(std::string matrix_name, std::string rows_or_columns, int actual, int expected) {
     if (actual != expected) {
@@ -18,34 +18,33 @@ static int check_dimension(std::string matrix_name, std::string rows_or_columns,
     return 0;
 }
 
-int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
+int tiny_setup(TinySolver** solverp,
                 tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 
                 tinytype rho, int nx, int nu, int N,
                 tinyMatrix x_min, tinyMatrix x_max, tinyMatrix u_min, tinyMatrix u_max,
-                TinySettings* settings, int verbose) {
+                int verbose) {
 
-    if (!cache) {
-        std::cout << "Error in tiny_setup: cache is nullptr" << std::endl;
-        return 1;
-    }
-    if (!work) {
-        std::cout << "Error in tiny_setup: work is nullptr" << std::endl;
-        return 1;
-    }
-    if (!solution) {
-        std::cout << "Error in tiny_setup: solution is nullptr" << std::endl;
-        return 1;
-    }
-    if (!settings) {
-        std::cout << "Error in tiny_setup: settings is nullptr" << std::endl;
-        return 1;
-    }
+    TinySolution *solution = new TinySolution();
+    TinyCache *cache = new TinyCache();
+    TinySettings *settings = new TinySettings();
+    TinyWorkspace *work = new TinyWorkspace();
+    TinySolver *solver = new TinySolver();
+
+    solver->solution = solution;
+    solver->cache = cache;
+    solver->settings = settings;
+    solver->work = work;
+
+    *solverp = solver;
 
     // Initialize solution
     solution->iter = 0;
     solution->solved = 0;
     solution->x = tinyMatrix::Zero(nx, N);
     solution->u = tinyMatrix::Zero(nu, N-1);
+
+    // Initialize settings
+    tiny_set_default_settings(settings);
 
     // Initialize workspace
     work->nx = nx;
@@ -134,10 +133,10 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
 
     // Printing
     if (verbose) {
-        std::cout << "A = " << Adyn.format(TinyFmt) << std::endl;
-        std::cout << "B = " << Bdyn.format(TinyFmt) << std::endl;
-        std::cout << "Q = " << Q1.format(TinyFmt) << std::endl;
-        std::cout << "R = " << R1.format(TinyFmt) << std::endl;
+        std::cout << "A = " << Adyn.format(TinyApiFmt) << std::endl;
+        std::cout << "B = " << Bdyn.format(TinyApiFmt) << std::endl;
+        std::cout << "Q = " << Q1.format(TinyApiFmt) << std::endl;
+        std::cout << "R = " << R1.format(TinyApiFmt) << std::endl;
         std::cout << "rho = " << rho << std::endl;
     }
 
@@ -163,19 +162,17 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
         Ptp1 = Pinf;
     }
 
-    if (verbose) {
-        std::cout << "Precomputing finished" << std::endl;
-    }
-
     // Compute cached matrices
     tinyMatrix Quu_inv = (R1 + Bdyn.transpose() * Pinf * Bdyn).inverse();
     tinyMatrix AmBKt = (Adyn - Bdyn * Kinf).transpose();
 
     if (verbose) {
-        std::cout << "Kinf = " << Kinf.format(TinyFmt) << std::endl;
-        std::cout << "Pinf = " << Pinf.format(TinyFmt) << std::endl;
-        std::cout << "Quu_inv = " << Quu_inv.format(TinyFmt) << std::endl;
-        std::cout << "AmBKt = " << AmBKt.format(TinyFmt) << std::endl;
+        std::cout << "Kinf = " << Kinf.format(TinyApiFmt) << std::endl;
+        std::cout << "Pinf = " << Pinf.format(TinyApiFmt) << std::endl;
+        std::cout << "Quu_inv = " << Quu_inv.format(TinyApiFmt) << std::endl;
+        std::cout << "AmBKt = " << AmBKt.format(TinyApiFmt) << std::endl;
+
+        std::cout << "\nPrecomputation finished!\n" << std::endl;
     }
 
     cache->rho = rho;
@@ -185,6 +182,10 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     cache->AmBKt = AmBKt;
 
     return 0; // return success
+}
+
+int tiny_solve(TinySolver* solver) {
+    return solve(solver);
 }
 
 int tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype abs_dua_tol,
@@ -229,7 +230,7 @@ int tiny_set_x0(TinySolver* solver, tinyVector x0) {
     return 0;
 }
 
-int tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref){
+int tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref) {
     if (!solver) {
         std::cout << "Error in tiny_set_x_ref: solver is nullptr" << std::endl;
         return 1;
@@ -241,7 +242,7 @@ int tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref){
     return 0;
 }
 
-int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref){
+int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref) {
     if (!solver) {
         std::cout << "Error in tiny_set_u_ref: solver is nullptr" << std::endl;
         return 1;
@@ -252,6 +253,8 @@ int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref){
     solver->work->Uref = u_ref;
     return 0;
 }
+
+
 
 #ifdef __cplusplus
 }

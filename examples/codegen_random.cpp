@@ -1,62 +1,66 @@
 // Example of using codegen to generate C++ code for a random MPC problem
-// The generated code is in `generated_code` directory
-// The code is not optimized, it is just a demo of how to use codegen
-// High-level languages like Python, Matlab, Julia, etc. will call this function to generate code
+// The code will be generated in the `tinympc_generated_code_random_example` folder
 
 #include <iostream>
+#include <filesystem>
 
-#include <tinympc/admm.hpp>
+#include <tinympc/tiny_api.hpp>
 #include <tinympc/codegen.hpp>
+
+#define NSTATES 2  // state dimension: x (m), theta (rad), dx, dtheta
+#define NINPUTS 2  // input dimension: F (Newtons)
+#define NHORIZON 3 // horizon
 
 extern "C"
 {
 
-    // Random data (all matrices are col-major to be consistent with Eigen)
-    const int n = 2; // state dimension
-    const int m = 2; // input dimension
-    const int N = 3; // horizon
-    tinytype Adyn_data[n * n] = {1, 5, 1, 2};
-    tinytype Bdyn_data[n * m] = {3, 3, 4, 1};
-    tinytype Q_data[n] = {1, 1};
-    tinytype R_data[m] = {2, 2};
+typedef Matrix<tinytype, NINPUTS, NHORIZON-1, ColMajor> tiny_MatrixNuNhm1;
+typedef Matrix<tinytype, NSTATES, NHORIZON, ColMajor> tiny_MatrixNxNh;
+
+std::filesystem::path output_dir_relative = "tinympc_generated_code_random_example/";
+
+int main()
+{
+    TinySolver *solver;
+
     tinytype rho_value = 0.1;
 
-    tinytype x_min_data[n * N] = {1, 2, 1, 2, 1, 2};
-    tinytype x_max_data[n * N] = {-1, -2, -1, -2, -1, -2};
-    tinytype u_min_data[m * (N - 1)] = {2, 3, 2, 3};
-    tinytype u_max_data[m * (N - 1)] = {-2, -3, -2, -3};
+    tinytype Adyn_data[NSTATES * NSTATES] = {1, 5, 1, 2};
+    tinytype Bdyn_data[NSTATES * NINPUTS] = {3, 3, 4, 1};
+    tinytype Q_data[NSTATES] = {1, 1};
+    tinytype R_data[NINPUTS] = {2, 2};
+
+    tinytype x_min_data[NSTATES * NHORIZON] = {-1, -2, -1, -2, -1, -2};
+    tinytype x_max_data[NSTATES * NHORIZON] = {1, 2, 1, 2, 1, 2};
+    tinytype u_min_data[NINPUTS * (NHORIZON - 1)] = {-2, -3, -2, -3};
+    tinytype u_max_data[NINPUTS * (NHORIZON - 1)] = {2, 3, 2, 3};
+    
+    tinyMatrix Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
+    tinyMatrix Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS, RowMajor>>(Bdyn_data);
+    tinyVector Q = Map<Matrix<tinytype, NSTATES, 1>>(Q_data);
+    tinyVector R = Map<Matrix<tinytype, NINPUTS, 1>>(R_data);
+
+    tinyMatrix x_min = Map<tiny_MatrixNxNh>(x_min_data);
+    tinyMatrix x_max = Map<tiny_MatrixNxNh>(x_max_data);
+    tinyMatrix u_min = Map<tiny_MatrixNuNhm1>(u_min_data);
+    tinyMatrix u_max = Map<tiny_MatrixNuNhm1>(u_max_data);
+
+    int verbose = 0;
+    int status = tiny_setup(&solver,
+                            Adyn, Bdyn, Q.asDiagonal(), R.asDiagonal(),
+                            rho_value, NSTATES, NINPUTS, NHORIZON,
+                            x_min, x_max, u_min, u_max, verbose);
 
     // Solver options
-    tinytype abs_pri_tol = 1e-3;
-    tinytype abs_dual_tol = 1e-3;
-    int max_iter = 100;
-    int check_termination = 1; 
-    int gen_wrapper = 0;
+    solver->settings->abs_pri_tol = 1e-3;
+    solver->settings->abs_dua_tol = 1e-3;
+    solver->settings->max_iter = 100;
+    solver->settings->check_termination = 1; 
 
-    // char tinympc_dir[255] = "/your/absolute/path/to/TinyMPC"; // TODO: relative path
-    char tinympc_dir[255] = "/home/sam/Git/tinympc/TinyMPC"; 
-    char output_dir[255] = "/home/sam/Git/tinympc/TinyMPC/generated_code";
 
-    int main()
-    {
-        // We can also can this function from Python, Matlab, Julia (expected)
-        tiny_codegen(n, m, N, Adyn_data, Bdyn_data, Q_data, R_data,
-                     x_min_data, x_max_data, u_min_data, u_max_data,
-                     rho_value, abs_pri_tol, abs_dual_tol, max_iter, check_termination, gen_wrapper,
-                     tinympc_dir, output_dir);
+    tiny_codegen(solver, std::filesystem::absolute(output_dir_relative).string().c_str(), verbose);
 
-        // This function copies source code to `generated_code` directory, create workspace data, a tiny_main.cpp file
-
-        // generated_code/tinympc/types.hpp (fixed)
-        // generated_code/tinympc/admm.hpp (fixed)
-        // generated_code/tinympc/admm.cpp (fixed)
-        // generated_code/tinympc/tiny_data_workspace.hpp (fixed)
-
-        // generated_code/src/tiny_data_workspace.cpp (save all cache, settings, workspace data)
-        // generated_code/src/tiny_main.cpp (example main that setup and solve the problem)
-        // Maybe some CMakelists.txt files if needed
-
-        return 0;
-    }
+    return 0;
+}
 
 } /* extern "C" */
