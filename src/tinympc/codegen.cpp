@@ -48,10 +48,17 @@ int codegen_create_directories(const char* output_dir, int verbose) {
     if (mkdir(src_dir, S_IRWXU|S_IRWXG|S_IROTH)) {
         error(EXIT_FAILURE, errno, "Failed to create directory %s", src_dir);
     }
+
+    // Create tinympc folder
+    char tinympc_dir[PATH_LENGTH];
+    sprintf(tinympc_dir, "%s/tinympc/", output_dir);
+    if (mkdir(tinympc_dir, S_IRWXU|S_IRWXG|S_IROTH)) {
+        error(EXIT_FAILURE, errno, "Failed to create directory %s", tinympc_dir);
+    }
     
     // Create include folder
     char inc_dir[PATH_LENGTH];
-    sprintf(inc_dir, "%s/inc/", output_dir);
+    sprintf(inc_dir, "%s/include/", output_dir);
     if (mkdir(inc_dir, S_IRWXU|S_IRWXG|S_IROTH)) {
         error(EXIT_FAILURE, errno, "Failed to create directory %s", inc_dir);
     }
@@ -64,7 +71,7 @@ int codegen_data_header(const char* output_dir, int verbose) {
     char data_hpp_fname[PATH_LENGTH];
     FILE *data_hpp_f;
 
-    sprintf(data_hpp_fname, "%s/inc/tiny_data.hpp", output_dir);
+    sprintf(data_hpp_fname, "%s/tinympc/tiny_data.hpp", output_dir);
 
     // Open data header file
     data_hpp_f = fopen(data_hpp_fname, "w+");
@@ -86,7 +93,7 @@ int codegen_data_header(const char* output_dir, int verbose) {
     fprintf(data_hpp_f, "extern \"C\" {\n");
     fprintf(data_hpp_f, "#endif\n\n");
 
-    fprintf(data_hpp_f, "extern TinySolver tiny_data_solver;\n\n");
+    fprintf(data_hpp_f, "extern TinySolver tiny_solver;\n\n");
 
     fprintf(data_hpp_f, "#ifdef __cplusplus\n");
     fprintf(data_hpp_f, "}\n");
@@ -270,11 +277,11 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     fprintf(data_cpp_f, "\t(tinytype)%.16f,\t// input dual residual\n", 0.0);
     fprintf(data_cpp_f, "\t%d,\t// solve status\n", 0);
     fprintf(data_cpp_f, "\t%d,\t// solve iteration\n", 0);
-    
+
     fprintf(data_cpp_f, "};\n\n");
 
     // Write solver struct definition to workspace file
-    fprintf(data_cpp_f, "TinySolver tiny_data_solver = {&solution, &settings, &cache, &work};\n\n");
+    fprintf(data_cpp_f, "TinySolver tiny_solver = {&solution, &settings, &cache, &work};\n\n");
 
     // Close extern C
     fprintf(data_cpp_f, "#ifdef __cplusplus\n");
@@ -323,13 +330,13 @@ int codegen_example(const char* output_dir, int verbose) {
     fprintf(example_cpp_f, "{\n");
     fprintf(example_cpp_f, "\tint exitflag = 1;\n");
     fprintf(example_cpp_f, "\t// Double check some data\n");
-    fprintf(example_cpp_f, "\tstd::cout << tiny_data_solver.settings->max_iter << std::endl;\n");
-    fprintf(example_cpp_f, "\tstd::cout << tiny_data_solver.cache->AmBKt.format(TinyFmt) << std::endl;\n");
-    fprintf(example_cpp_f, "\tstd::cout << tiny_data_solver.work->Adyn.format(TinyFmt) << std::endl;\n\n");
+    fprintf(example_cpp_f, "\tstd::cout << tiny_solver.settings->max_iter << std::endl;\n");
+    fprintf(example_cpp_f, "\tstd::cout << tiny_solver.cache->AmBKt.format(TinyFmt) << std::endl;\n");
+    fprintf(example_cpp_f, "\tstd::cout << tiny_solver.work->Adyn.format(TinyFmt) << std::endl;\n\n");
 
     fprintf(example_cpp_f, "\t// Visit https://tinympc.org/ to see how to set the initial condition and update the reference trajectory.\n\n");
 
-    fprintf(example_cpp_f, "\texitflag = tiny_solve(&tiny_data_solver);\n\n");
+    fprintf(example_cpp_f, "\texitflag = tiny_solve(&tiny_solver);\n\n");
     fprintf(example_cpp_f, "\tif (exitflag == 0) printf(\"Hooray! Solved with no error!\\n\");\n");
     fprintf(example_cpp_f, "\telse printf(\"Oops! Something went wrong!\\n\");\n");
 
