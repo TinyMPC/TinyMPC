@@ -28,19 +28,13 @@
 extern "C"
 {
 
-// TinySolution solution;
-// TinyCache cache;
-// TinyWorkspace work;
-// TinySettings settings;
-// TinySolver solver{&solution, &settings, &cache, &work};
-TinySolver *solver;
-
 typedef Matrix<tinytype, NINPUTS, NHORIZON-1> tiny_MatrixNuNhm1;
 typedef Matrix<tinytype, NSTATES, NHORIZON> tiny_MatrixNxNh;
 typedef Matrix<tinytype, NSTATES, 1> tiny_VectorNx;
 
 int main()
 {
+    TinySolver *solver;
 
     tinyMatrix Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
     tinyMatrix Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS, RowMajor>>(Bdyn_data);
@@ -57,25 +51,26 @@ int main()
                             rho_value, NSTATES, NINPUTS, NHORIZON,
                             x_min, x_max, u_min, u_max, 1);
     
+    // Update whichever settings we'd like
+    solver->settings->max_iter = 100;
+    
+    // Alias solver->work for brevity
     TinyWorkspace *work = solver->work;
-
-    tiny_VectorNx x0, x1; // current and next simulation states
 
     // Map data from trajectory_data
     Matrix<tinytype, NSTATES, NTOTAL> Xref_total = Eigen::Map<Matrix<tinytype, NSTATES, NTOTAL>>(Xref_data);
     work->Xref = Xref_total.block<NSTATES, NHORIZON>(0, 0);
 
     // Initial state
+    tiny_VectorNx x0;
     x0 = work->Xref.col(0);
-
-    // std::cout << work->Xref << std::endl;
 
     for (int k = 0; k < NTOTAL - NHORIZON; ++k)
     {
         std::cout << "tracking error: " << (x0 - work->Xref.col(1)).norm() << std::endl;
 
         // 1. Update measurement
-        work->x.col(0) = x0;
+        tiny_set_x0(solver, x0);
 
         // 2. Update reference
         work->Xref = Xref_total.block<NSTATES, NHORIZON>(0, k);
@@ -84,17 +79,11 @@ int main()
         work->y = tiny_MatrixNuNhm1::Zero();
         work->g = tiny_MatrixNxNh::Zero();
 
-
         // 4. Solve MPC problem
         tiny_solve(solver);
 
-        // std::cout << work->iter << std::endl;
-        // std::cout << work->u.col(0).transpose().format(TinyFmt) << std::endl;
-
         // 5. Simulate forward
         x0 = work->Adyn * x0 + work->Bdyn * work->u.col(0);
-
-        // std::cout << x0.transpose().format(TinyFmt) << std::endl;
     }
 
     return 0;

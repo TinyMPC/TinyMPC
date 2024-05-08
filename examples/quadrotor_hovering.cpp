@@ -27,59 +27,56 @@
 extern "C"
 {
 
-TinySolution solution;
-TinyCache cache;
-TinyWorkspace work;
-TinySettings settings;
-TinySolver solver{&solution, &settings, &cache, &work};
-
 typedef Matrix<tinytype, NINPUTS, NHORIZON-1> tiny_MatrixNuNhm1;
 typedef Matrix<tinytype, NSTATES, NHORIZON> tiny_MatrixNxNh;
 typedef Matrix<tinytype, NSTATES, 1> tiny_VectorNx;
 
 int main()
 {
-    work.Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
-    work.Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS, RowMajor>>(Bdyn_data);
-    work.Q = Map<Matrix<tinytype, NSTATES, 1>>(Q_data);
-    work.R = Map<Matrix<tinytype, NINPUTS, 1>>(R_data);
-    
-    work.x_min = tiny_MatrixNxNh::Constant(-5);
-    work.x_max = tiny_MatrixNxNh::Constant(5);
-    work.u_min = tiny_MatrixNuNhm1::Constant(-0.5);
-    work.u_max = tiny_MatrixNuNhm1::Constant(0.5);
+    TinySolver *solver;
 
-    tiny_set_default_settings(&settings);
+    tinyMatrix Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
+    tinyMatrix Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS, RowMajor>>(Bdyn_data);
+    tinyVector Q = Map<Matrix<tinytype, NSTATES, 1>>(Q_data);
+    tinyVector R = Map<Matrix<tinytype, NINPUTS, 1>>(R_data);
 
-    int verbose = 0;
-    int status = tiny_setup(&cache, &work, &solution,
-                            work.Adyn, work.Bdyn, work.Q.asDiagonal(), work.R.asDiagonal(),
+    tinyMatrix x_min = tiny_MatrixNxNh::Constant(-5);
+    tinyMatrix x_max = tiny_MatrixNxNh::Constant(5);
+    tinyMatrix u_min = tiny_MatrixNuNhm1::Constant(-0.5);
+    tinyMatrix u_max = tiny_MatrixNuNhm1::Constant(0.5);
+
+    int status = tiny_setup(&solver,
+                            Adyn, Bdyn, Q.asDiagonal(), R.asDiagonal(),
                             rho_value, NSTATES, NINPUTS, NHORIZON,
-                            work.x_min, work.x_max, work.u_min, work.u_max,
-                            &settings, verbose);
-
-    tiny_VectorNx x0; // current and next simulation states
+                            x_min, x_max, u_min, u_max, 1);
+    
+    // Update whichever settings we'd like
+    solver->settings->max_iter = 100;
+    
+    // Alias solver->work for brevity
+    TinyWorkspace *work = solver->work;
 
     // Initial state
+    tiny_VectorNx x0;
     x0 << 0, 1, 0, 0.2, 0, 0, 0.1, 0, 0, 0, 0, 0;
 
     // Reference trajectory
     tiny_VectorNx Xref_origin;
     Xref_origin << 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-    work.Xref = Xref_origin.replicate<1, 10>();
+    work->Xref = Xref_origin.replicate<1, 10>();
 
     for (int k = 0; k < 70; ++k)
     {
-        printf("tracking error at step %2d: %.4f\n", k, (x0 - work.Xref.col(1)).norm());
+        printf("tracking error at step %2d: %.4f\n", k, (x0 - work->Xref.col(1)).norm());
 
         // 1. Update measurement
-        tiny_set_x0(&solver, x0);
+        tiny_set_x0(solver, x0);
 
-        // 4. Solve MPC problem
-        tiny_solve(&solver);
+        // 2. Solve MPC problem
+        tiny_solve(solver);
 
-        // 5. Simulate forward
-        x0 = work.Adyn * x0 + work.Bdyn * work.u.col(0);
+        // 3. Simulate forward
+        x0 = work->Adyn * x0 + work->Bdyn * work->u.col(0);
     }
 
     return 0;

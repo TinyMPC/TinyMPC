@@ -162,10 +162,6 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
         Ptp1 = Pinf;
     }
 
-    if (verbose) {
-        std::cout << "Precomputing finished" << std::endl;
-    }
-
     // Compute cached matrices
     tinyMatrix Quu_inv = (R1 + Bdyn.transpose() * Pinf * Bdyn).inverse();
     tinyMatrix AmBKt = (Adyn - Bdyn * Kinf).transpose();
@@ -175,6 +171,8 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
         std::cout << "Pinf = " << Pinf.format(TinyFmt) << std::endl;
         std::cout << "Quu_inv = " << Quu_inv.format(TinyFmt) << std::endl;
         std::cout << "AmBKt = " << AmBKt.format(TinyFmt) << std::endl;
+
+        std::cout << "\nPrecomputation finished!\n" << std::endl;
     }
 
     cache->rho = rho;
@@ -263,6 +261,7 @@ int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose) {
         return 1;
     }
     int status = 0;
+    status |= codegen_create_directories(output_dir, verbose);
     status |= codegen_data_header(output_dir, verbose);
     status |= codegen_data_source(solver, output_dir, verbose);
     status |= codegen_example(output_dir, verbose);

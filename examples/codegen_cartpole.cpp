@@ -1,67 +1,55 @@
-// Cartpole example with codegen, the code is generated in `generated_code` directory, build and run it to see the result.
-// You just need a discrete-time LTI model of upright cartpole.
+// Cartpole example with codegen, the code will be generated in the `tinympc_generated_code_cartpole_example` folder
+// Build and run the example main function after generation
 
 #include <iostream>
+#include <filesystem>
 
-#include <tinympc/admm.hpp>
-#include <tinympc/codegen.hpp>
+#include <tinympc/tiny_api.hpp>
+
+
+#define NSTATES 4   // state dimension: x (m), theta (rad), dx, dtheta
+#define NINPUTS 1   // input dimension: F (Newtons)
+#define NHORIZON 10 // horizon
 
 extern "C"
 {
 
-    // Model size
-    const int n = 4;  // state dimension: x (m), theta (rad), dx, dtheta
-    const int m = 1;  // input dimension: F (Newtons)
-    const int N = 10; // horizon
+typedef Matrix<tinytype, NINPUTS, NHORIZON-1> tiny_MatrixNuNhm1;
+typedef Matrix<tinytype, NSTATES, NHORIZON> tiny_MatrixNxNh;
 
-    // Model matrices (all matrices are col-major to be consistent with Eigen)
-    tinytype Adyn_data[n * n] = {1.0, 0.0, 0.0, 0.0, 0.01, 1.0, 0.0, 0.0, 2.2330083403300767e-5, 0.004466210576510177, 1.0002605176397052, 0.05210579005928538, 7.443037974683548e-8, 2.2330083403300767e-5, 0.01000086835443038, 1.0002605176397052};
-    tinytype Bdyn_data[n * m] = {7.468368562730335e-5, 0.014936765390161838, 3.79763323185387e-5, 0.007595596218554721};
+std::filesystem::path output_dir_relative = "tinympc_generated_code_cartpole_example/";
 
-    // Cost matrices
-    tinytype Q_data[n] = {10, 1, 10, 1};
-    tinytype R_data[m] = {1};
-    tinytype rho_value = 0.1;
+int main()
+{
+    TinySolver *solver;
 
-    // Constraints
-    tinytype x_min_data[n * N];
-    tinytype x_max_data[n * N];
-    tinytype u_min_data[m * (N - 1)];
-    tinytype u_max_data[m * (N - 1)];
+    tinytype rho_value = 1.0;
 
-    // Solver options
-    tinytype abs_pri_tol = 1e-3;
-    tinytype abs_dual_tol = 1e-3;
-    int max_iter = 100;
-    int check_termination = 1; 
-    int gen_wrapper = 1;
+    // Discrete, linear model of upright cartpole.
+    tinytype Adyn_data[NSTATES * NSTATES] = {1.0, 0.01, 0.0, 0.0, 0.0, 1.0, 0.039, 0.0, 0.0, 0.0, 1.002, 0.01, 0.0, 0.0, 0.458, 1.002};
+    tinytype Bdyn_data[NSTATES * NINPUTS] = {0.0, 0.02, 0.0, 0.067};
+    tinytype Q_data[NSTATES] = {10.0, 1.0, 10.0, 1.0};
+    tinytype R_data[NINPUTS] = {1.0};
 
-    // char tinympc_dir[255] = "/your/absolute/path/to/TinyMPC"; // TODO: relative path
-    char tinympc_dir[255] = "/home/sam/Git/tinympc/TinyMPC"; 
-    char output_dir[255] = "/home/sam/Git/tinympc/TinyMPC/generated_code";
+    tinyMatrix Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
+    tinyMatrix Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS>>(Bdyn_data);
+    tinyVector Q = Map<Matrix<tinytype, NSTATES, 1>>(Q_data);
+    tinyVector R = Map<Matrix<tinytype, NINPUTS, 1>>(R_data);
 
-    int main()
-    {
-        // Set up constraints 
-        int i = 0;
-        for (i = 0; i < n * N; i++)
-        {
-            x_min_data[i] = -5;
-            x_max_data[i] = 5;
-        }
-        for (i = 0; i < m * (N - 1); i++)
-        {
-            u_min_data[i] = -5;
-            u_max_data[i] = 5;
-        }
+    tinyMatrix x_min = tiny_MatrixNxNh::Constant(-1e17);
+    tinyMatrix x_max = tiny_MatrixNxNh::Constant(1e17);
+    tinyMatrix u_min = tiny_MatrixNuNhm1::Constant(-1e17);
+    tinyMatrix u_max = tiny_MatrixNuNhm1::Constant(1e17);
 
-        // TODO: change this to be like a normal example with the setup function so we can use the solver here
-        TinySolver* solver;
-        TinySettings* settings;
+    int verbose = 0;
+    int status = tiny_setup(&solver,
+                            Adyn, Bdyn, Q.asDiagonal(), R.asDiagonal(),
+                            rho_value, NSTATES, NINPUTS, NHORIZON,
+                            x_min, x_max, u_min, u_max, verbose);
 
-        tiny_codegen(solver, );
+    tiny_codegen(solver, std::filesystem::absolute(output_dir_relative).string().c_str(), verbose);
 
-        return 0;
-    }
+    return 0;
+}
 
 } /* extern "C" */

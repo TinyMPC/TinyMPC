@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <error.h>
 
 #include <iostream>
 #include <Eigen/Dense>
@@ -33,6 +34,31 @@ static void print_matrix(FILE *f, MatrixXd mat, int num_elements)
 }
 
 
+
+// Create code generation folder structure in whichever directory the executable calling tiny_codegen was called
+int codegen_create_directories(const char* output_dir, int verbose) {
+    // Create primary code generation folder
+    if (mkdir(output_dir, S_IRWXU|S_IRWXG|S_IROTH)) {
+        error(EXIT_FAILURE, errno, "Failed to create directory %s", output_dir);
+    }
+
+    // Create src folder
+    char src_dir[PATH_LENGTH];
+    sprintf(src_dir, "%s/src/", output_dir);
+    if (mkdir(src_dir, S_IRWXU|S_IRWXG|S_IROTH)) {
+        error(EXIT_FAILURE, errno, "Failed to create directory %s", src_dir);
+    }
+    
+    // Create include folder
+    char inc_dir[PATH_LENGTH];
+    sprintf(inc_dir, "%s/inc/", output_dir);
+    if (mkdir(inc_dir, S_IRWXU|S_IRWXG|S_IROTH)) {
+        error(EXIT_FAILURE, errno, "Failed to create directory %s", inc_dir);
+    }
+
+    return EXIT_SUCCESS;
+}
+
 // Create inc/tiny_data.hpp file
 int codegen_data_header(const char* output_dir, int verbose) {
     char data_hpp_fname[PATH_LENGTH];
@@ -40,10 +66,10 @@ int codegen_data_header(const char* output_dir, int verbose) {
 
     sprintf(data_hpp_fname, "%s/inc/tiny_data.hpp", output_dir);
 
-    // Open source file
+    // Open data header file
     data_hpp_f = fopen(data_hpp_fname, "w+");
     if (data_hpp_f == NULL)
-        printf("ERROR OPENING TINY DATA HEADER FILE\n");
+        error(EXIT_FAILURE, errno, "Failed to open file %s", data_hpp_fname);
 
     // Preamble
     time_t start_time;
@@ -86,10 +112,10 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
 
     sprintf(data_cpp_fname, "%s/src/tiny_data.cpp", output_dir);
 
-    // Open source file
+    // Open data source file
     data_cpp_f = fopen(data_cpp_fname, "w+");
     if (data_cpp_f == NULL)
-        printf("ERROR OPENING TINY DATA SOURCE FILE\n");
+        error(EXIT_FAILURE, errno, "Failed to open file %s", data_cpp_fname);
 
     // Preamble
     time_t start_time;
@@ -114,7 +140,7 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     print_matrix(data_cpp_f, MatrixXd::Zero(nx, N), nx * N);
     fprintf(data_cpp_f, ").finished(),\t// x\n"); // x solution
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, N-1);
-    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N-1), nu * N-1);
+    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N-1), nu * (N-1));
     fprintf(data_cpp_f, ").finished(),\t// x\n"); // u solution
 
     fprintf(data_cpp_f, "};\n\n");
@@ -164,21 +190,21 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     print_matrix(data_cpp_f, MatrixXd::Zero(nx, N), nx * N);
     fprintf(data_cpp_f, ").finished(),\t// x\n"); // x
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, N-1);
-    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
+    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N-1));
     fprintf(data_cpp_f, ").finished(),\t// u\n"); // u
 
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, N);
     print_matrix(data_cpp_f, MatrixXd::Zero(nx, N), nx * N);
     fprintf(data_cpp_f, ").finished(),\t// q\n"); // q
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, N-1);
-    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
+    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N-1));
     fprintf(data_cpp_f, ").finished(),\t// r\n"); // r
 
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, N);
     print_matrix(data_cpp_f, MatrixXd::Zero(nx, N), nx * N);
     fprintf(data_cpp_f, ").finished(),\t// p\n"); // p
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, N-1);
-    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
+    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N-1));
     fprintf(data_cpp_f, ").finished(),\t// d\n"); // d
 
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, N);
@@ -188,17 +214,17 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     print_matrix(data_cpp_f, MatrixXd::Zero(nx, N), nx * N);
     fprintf(data_cpp_f, ").finished(),\t// vnew\n"); // vnew
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, N-1);
-    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
+    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N-1));
     fprintf(data_cpp_f, ").finished(),\t// z\n"); // z
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, N-1);
-    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
+    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N-1));
     fprintf(data_cpp_f, ").finished(),\t// znew\n"); // znew
 
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, N);
     print_matrix(data_cpp_f, MatrixXd::Zero(nx, N), nx * N);
     fprintf(data_cpp_f, ").finished(),\t// g\n"); // g
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, N-1);
-    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
+    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N-1));
     fprintf(data_cpp_f, ").finished(),\t// y\n"); // y
 
     fprintf(data_cpp_f, "\t(tinyVector(%d) << ", nx);
@@ -221,17 +247,17 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     print_matrix(data_cpp_f, solver->work->x_max, nx * N);
     fprintf(data_cpp_f, ").finished(),\t// x_max\n"); // x_max
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, N-1);
-    print_matrix(data_cpp_f, solver->work->u_min, nu * (N - 1));
+    print_matrix(data_cpp_f, solver->work->u_min, nu * (N-1));
     fprintf(data_cpp_f, ").finished(),\t// u_min\n"); // u_min
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, N-1);
-    print_matrix(data_cpp_f, solver->work->u_max, nu * (N - 1));
+    print_matrix(data_cpp_f, solver->work->u_max, nu * (N-1));
     fprintf(data_cpp_f, ").finished(),\t// u_max\n"); // u_max
     
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, N);
     print_matrix(data_cpp_f, MatrixXd::Zero(nx, N), nx * N);
     fprintf(data_cpp_f, ").finished(),\t// Xref\n"); // Xref
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, N-1);
-    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N - 1));
+    print_matrix(data_cpp_f, MatrixXd::Zero(nu, N - 1), nu * (N-1));
     fprintf(data_cpp_f, ").finished(),\t// Uref\n"); // Uref
 
     fprintf(data_cpp_f, "\t(tinyVector(%d) << ", nu);
@@ -244,6 +270,7 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     fprintf(data_cpp_f, "\t(tinytype)%.16f,\t// input dual residual\n", 0.0);
     fprintf(data_cpp_f, "\t%d,\t// solve status\n", 0);
     fprintf(data_cpp_f, "\t%d,\t// solve iteration\n", 0);
+    
     fprintf(data_cpp_f, "};\n\n");
 
     // Write solver struct definition to workspace file
@@ -268,10 +295,10 @@ int codegen_example(const char* output_dir, int verbose) {
 
     sprintf(example_cpp_fname, "%s/src/tiny_main.cpp", output_dir);
 
-    // Open global options file
+    // Open example file
     example_cpp_f = fopen(example_cpp_fname, "w+");
     if (example_cpp_f == NULL)
-        printf("ERROR OPENING EXAMPLE MAIN FILE\n");
+        error(EXIT_FAILURE, errno, "Failed to open file %s", example_cpp_fname);
 
     // Preamble
     time_t start_time;
