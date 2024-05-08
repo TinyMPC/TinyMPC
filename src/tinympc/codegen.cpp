@@ -157,7 +157,7 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
 
     // Solution
     fprintf(data_cpp_f, "/* Solution */\n");
-    fprintf(data_cpp_f, "TinySettings settings = {\n");
+    fprintf(data_cpp_f, "TinySolution solution = {\n");
 
     fprintf(data_cpp_f, "\t%d,\t\t// iter\n", solver->solution->iter);
     fprintf(data_cpp_f, "\t%d,\t\t// solved\n", solver->solution->solved);
