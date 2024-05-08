@@ -348,9 +348,10 @@ int codegen_example(const char* output_dir, int verbose) {
     fprintf(example_cpp_f, "{\n");
     fprintf(example_cpp_f, "\tint exitflag = 1;\n");
     fprintf(example_cpp_f, "\t// Double check some data\n");
-    fprintf(example_cpp_f, "\tstd::cout << tiny_solver.settings->max_iter << std::endl;\n");
-    fprintf(example_cpp_f, "\tstd::cout << tiny_solver.cache->AmBKt.format(TinyFmt) << std::endl;\n");
-    fprintf(example_cpp_f, "\tstd::cout << tiny_solver.work->Adyn.format(TinyFmt) << std::endl;\n\n");
+    fprintf(example_cpp_f, "\tstd::cout << \"rho: \" << tiny_solver.cache->rho << std::endl;\n");
+    fprintf(example_cpp_f, "\tstd::cout << \"\\nmax iters: \" << tiny_solver.settings->max_iter << std::endl;\n");
+    fprintf(example_cpp_f, "\tstd::cout << \"\\nState transition matrix:\\n\" << tiny_solver.work->Adyn.format(TinyFmt) << std::endl;\n");
+    fprintf(example_cpp_f, "\tstd::cout << \"\\nInput/control matrix:\\n\" << tiny_solver.work->Bdyn.format(TinyFmt) << std::endl;\n\n");
 
     fprintf(example_cpp_f, "\t// Visit https://tinympc.org/ to see how to set the initial condition and update the reference trajectory.\n\n");
 
