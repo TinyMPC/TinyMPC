@@ -355,6 +355,7 @@ int codegen_example(const char* output_dir, int verbose) {
 
     fprintf(example_cpp_f, "\t// Visit https://tinympc.org/ to see how to set the initial condition and update the reference trajectory.\n\n");
 
+    fprintf(example_cpp_f, "\tstd::cout << \"\\nSolving...\\n\" << std::endl;\n\n");
     fprintf(example_cpp_f, "\texitflag = tiny_solve(&tiny_solver);\n\n");
     fprintf(example_cpp_f, "\tif (exitflag == 0) printf(\"Hooray! Solved with no error!\\n\");\n");
     fprintf(example_cpp_f, "\telse printf(\"Oops! Something went wrong!\\n\");\n");
