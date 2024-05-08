@@ -5,6 +5,7 @@
 #include <filesystem>
 
 #include <tinympc/tiny_api.hpp>
+#include <tinympc/codegen.hpp>
 
 #define NSTATES 2  // state dimension: x (m), theta (rad), dx, dtheta
 #define NINPUTS 2  // input dimension: F (Newtons)

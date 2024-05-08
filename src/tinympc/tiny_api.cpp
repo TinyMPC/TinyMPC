@@ -254,20 +254,6 @@ int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref) {
     return 0;
 }
 
-// TODO: Make this fail if tiny_setup has not already been called
-int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose) {
-    if (!solver) {
-        std::cout << "Error in tiny_codegen: solver is nullptr" << std::endl;
-        return 1;
-    }
-    int status = 0;
-    status |= codegen_create_directories(output_dir, verbose);
-    status |= codegen_data_header(output_dir, verbose);
-    status |= codegen_data_source(solver, output_dir, verbose);
-    status |= codegen_example(output_dir, verbose);
-
-    return status;
-}
 
 
 #ifdef __cplusplus

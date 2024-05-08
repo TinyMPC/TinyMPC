@@ -1,11 +1,6 @@
 #pragma once
 
-// #include <iostream>
-
 #include "admm.hpp"
-#include "codegen.hpp"
-// #include <tinympc/tiny_data_workspace.hpp>
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,8 +26,6 @@ int tiny_set_x0(TinySolver* solver, tinyVector x0);
 int tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref);
 int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref);
 
-
-int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose);
 
 #ifdef __cplusplus
 }
