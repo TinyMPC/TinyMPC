@@ -187,6 +187,10 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     return 0; // return success
 }
 
+int tiny_solve(TinySolver* solver) {
+    return solve(solver);
+}
+
 int tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype abs_dua_tol,
                     int max_iter, int check_termination, 
                     int en_state_bound, int en_input_bound) {
@@ -229,7 +233,7 @@ int tiny_set_x0(TinySolver* solver, tinyVector x0) {
     return 0;
 }
 
-int tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref){
+int tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref) {
     if (!solver) {
         std::cout << "Error in tiny_set_x_ref: solver is nullptr" << std::endl;
         return 1;
@@ -241,7 +245,7 @@ int tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref){
     return 0;
 }
 
-int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref){
+int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref) {
     if (!solver) {
         std::cout << "Error in tiny_set_u_ref: solver is nullptr" << std::endl;
         return 1;
@@ -252,6 +256,20 @@ int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref){
     solver->work->Uref = u_ref;
     return 0;
 }
+
+int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose) {
+    if (!solver) {
+        std::cout << "Error in tiny_codegen: solver is nullptr" << std::endl;
+        return 1;
+    }
+    int status = 0;
+    status |= codegen_data_header(output_dir, verbose);
+    status |= codegen_data_source(solver, output_dir, verbose);
+    status |= codegen_example(output_dir, verbose);
+
+    return status;
+}
+
 
 #ifdef __cplusplus
 }

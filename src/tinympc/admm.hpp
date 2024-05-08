@@ -6,8 +6,7 @@
 extern "C"
 {
 #endif
-
-    int tiny_solve(TinySolver *solver);
+    int solve(TinySolver *solver);
 
     void update_primal(TinySolver *solver);
     void backward_pass_grad(TinySolver *solver);
