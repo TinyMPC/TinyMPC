@@ -338,7 +338,6 @@ int codegen_example(const char* output_dir, int verbose) {
     fprintf(example_cpp_f, "#include <tinympc/tiny_data.hpp>\n\n");
 
     fprintf(example_cpp_f, "using namespace Eigen;\n");
-    fprintf(example_cpp_f, "IOFormat TinyFmt(4, 0, \", \", \"\\n\", \"[\", \"]\");\n\n");
 
     fprintf(example_cpp_f, "#ifdef __cplusplus\n");
     fprintf(example_cpp_f, "extern \"C\" {\n");
