@@ -34,16 +34,14 @@ static void print_matrix(FILE *f, MatrixXd mat, int num_elements)
 }
 
 static void create_directory(const char* dir, int verbose) {
-    // Check if dir exists
-    struct stat stats;
-    stat(dir, &stats);
-    if (!S_ISDIR(stats.st_mode)) {
-        // Create directory if dir does not exist
-        if (mkdir(dir, S_IRWXU|S_IRWXG|S_IROTH)) {
+    // Attempt to create directory
+    if (mkdir(dir, S_IRWXU|S_IRWXG|S_IROTH)) {
+        if (errno == EEXIST) { // Skip if directory already exists
+            if (verbose)
+                std::cout << dir << " already exists, skipping." << std::endl;
+        } else {
             error(EXIT_FAILURE, errno, "Failed to create directory %s", dir);
         }
-    } else if (verbose) {
-        std::cout << dir << " already exists, skipping." << std::endl;
     }
 }
 
@@ -63,10 +61,10 @@ int codegen_create_directories(const char* output_dir, int verbose) {
     sprintf(tinympc_dir, "%s/tinympc/", output_dir);
     create_directory(tinympc_dir, verbose);
 
-    // Create include folder
-    char inc_dir[PATH_LENGTH];
-    sprintf(inc_dir, "%s/include/", output_dir);
-    create_directory(inc_dir, verbose);
+    // // Create include folder
+    // char inc_dir[PATH_LENGTH];
+    // sprintf(inc_dir, "%s/include/", output_dir);
+    // create_directory(inc_dir, verbose);
 
     return EXIT_SUCCESS;
 }
