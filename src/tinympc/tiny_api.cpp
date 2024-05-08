@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 using namespace Eigen;
-IOFormat TinyFmt(4, 0, ", ", "\n", "[", "]");
+IOFormat TinyApiFmt(4, 0, ", ", "\n", "[", "]");
 
 static int check_dimension(std::string matrix_name, std::string rows_or_columns, int actual, int expected) {
     if (actual != expected) {
@@ -133,10 +133,10 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
 
     // Printing
     if (verbose) {
-        std::cout << "A = " << Adyn.format(TinyFmt) << std::endl;
-        std::cout << "B = " << Bdyn.format(TinyFmt) << std::endl;
-        std::cout << "Q = " << Q1.format(TinyFmt) << std::endl;
-        std::cout << "R = " << R1.format(TinyFmt) << std::endl;
+        std::cout << "A = " << Adyn.format(TinyApiFmt) << std::endl;
+        std::cout << "B = " << Bdyn.format(TinyApiFmt) << std::endl;
+        std::cout << "Q = " << Q1.format(TinyApiFmt) << std::endl;
+        std::cout << "R = " << R1.format(TinyApiFmt) << std::endl;
         std::cout << "rho = " << rho << std::endl;
     }
 
@@ -167,10 +167,10 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     tinyMatrix AmBKt = (Adyn - Bdyn * Kinf).transpose();
 
     if (verbose) {
-        std::cout << "Kinf = " << Kinf.format(TinyFmt) << std::endl;
-        std::cout << "Pinf = " << Pinf.format(TinyFmt) << std::endl;
-        std::cout << "Quu_inv = " << Quu_inv.format(TinyFmt) << std::endl;
-        std::cout << "AmBKt = " << AmBKt.format(TinyFmt) << std::endl;
+        std::cout << "Kinf = " << Kinf.format(TinyApiFmt) << std::endl;
+        std::cout << "Pinf = " << Pinf.format(TinyApiFmt) << std::endl;
+        std::cout << "Quu_inv = " << Quu_inv.format(TinyApiFmt) << std::endl;
+        std::cout << "AmBKt = " << AmBKt.format(TinyApiFmt) << std::endl;
 
         std::cout << "\nPrecomputation finished!\n" << std::endl;
     }

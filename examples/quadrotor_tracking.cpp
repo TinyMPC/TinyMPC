@@ -20,13 +20,14 @@
 #define NTOTAL 301
 
 #include <iostream>
-
 #include <tinympc/tiny_api.hpp>
-#include "problem_data/quadrotor_20hz_params.hpp"
-#include "trajectory_data/quadrotor_20hz_y_axis_line.hpp"
 
 extern "C"
 {
+
+
+#include "problem_data/quadrotor_20hz_params.hpp"
+#include "trajectory_data/quadrotor_20hz_y_axis_line.hpp"
 
 typedef Matrix<tinytype, NINPUTS, NHORIZON-1> tiny_MatrixNuNhm1;
 typedef Matrix<tinytype, NSTATES, NHORIZON> tiny_MatrixNxNh;
