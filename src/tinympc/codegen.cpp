@@ -55,17 +55,17 @@ int codegen_create_directories(const char* output_dir, int verbose) {
 
     // Create src folder
     char src_dir[PATH_LENGTH];
-    sprintf(src_dir, "%s/src/", output_dir);
+    sprintf(src_dir, "%ssrc/", output_dir);
     create_directory(src_dir, verbose);
 
     // Create tinympc folder
     char tinympc_dir[PATH_LENGTH];
-    sprintf(tinympc_dir, "%s/tinympc/", output_dir);
+    sprintf(tinympc_dir, "%stinympc/", output_dir);
     create_directory(tinympc_dir, verbose);
 
     // Create include folder
     char inc_dir[PATH_LENGTH];
-    sprintf(inc_dir, "%s/include/", output_dir);
+    sprintf(inc_dir, "%sinclude/", output_dir);
     create_directory(inc_dir, verbose);
 
     return EXIT_SUCCESS;
