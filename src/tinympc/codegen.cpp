@@ -33,35 +33,40 @@ static void print_matrix(FILE *f, MatrixXd mat, int num_elements)
     }
 }
 
-
+static void create_directory(const char* dir, int verbose) {
+    // Check if dir exists
+    struct stat stats;
+    stat(dir, &stats);
+    if (!S_ISDIR(stats.st_mode)) {
+        // Create directory if dir does not exist
+        if (mkdir(dir, S_IRWXU|S_IRWXG|S_IROTH)) {
+            error(EXIT_FAILURE, errno, "Failed to create directory %s", dir);
+        }
+    } else if (verbose) {
+        std::cout << dir << " already exists, skipping." << std::endl;
+    }
+}
 
 // Create code generation folder structure in whichever directory the executable calling tiny_codegen was called
 int codegen_create_directories(const char* output_dir, int verbose) {
-    // Create primary code generation folder
-    if (mkdir(output_dir, S_IRWXU|S_IRWXG|S_IROTH)) {
-        error(EXIT_FAILURE, errno, "Failed to create directory %s", output_dir);
-    }
+
+    // Create output folder (root folder for code generation)
+    create_directory(output_dir, verbose);
 
     // Create src folder
     char src_dir[PATH_LENGTH];
     sprintf(src_dir, "%s/src/", output_dir);
-    if (mkdir(src_dir, S_IRWXU|S_IRWXG|S_IROTH)) {
-        error(EXIT_FAILURE, errno, "Failed to create directory %s", src_dir);
-    }
+    create_directory(src_dir, verbose);
 
     // Create tinympc folder
     char tinympc_dir[PATH_LENGTH];
     sprintf(tinympc_dir, "%s/tinympc/", output_dir);
-    if (mkdir(tinympc_dir, S_IRWXU|S_IRWXG|S_IROTH)) {
-        error(EXIT_FAILURE, errno, "Failed to create directory %s", tinympc_dir);
-    }
-    
+    create_directory(tinympc_dir, verbose);
+
     // Create include folder
     char inc_dir[PATH_LENGTH];
     sprintf(inc_dir, "%s/include/", output_dir);
-    if (mkdir(inc_dir, S_IRWXU|S_IRWXG|S_IROTH)) {
-        error(EXIT_FAILURE, errno, "Failed to create directory %s", inc_dir);
-    }
+    create_directory(inc_dir, verbose);
 
     return EXIT_SUCCESS;
 }
