@@ -11,11 +11,11 @@
 extern "C" {
 #endif
 
-int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
+int tiny_setup(TinySolver** solverp,
                 tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 
                 tinytype rho, int nx, int nu, int N,
                 tinyMatrix x_min, tinyMatrix x_max, tinyMatrix u_min, tinyMatrix u_max,
-                TinySettings* settings, int verbose);
+                int verbose);
 int tiny_precompute_and_set_cache(TinyCache *cache, 
                                     tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R,
                                     int nx, int nu, tinytype rho, int verbose);
@@ -33,12 +33,6 @@ int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref);
 
 
 int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose);
-    // int nx, int nu, int N,
-    //              double *Adyn, double *Bdyn, double *Q, double *R,
-    //              double *x_min, double *x_max, double *u_min, double *u_max,
-    //              double rho, double abs_pri_tol, double abs_dua_tol, 
-    //              int max_iters, int check_termination, int gen_wrapper,
-    //              const char *tinympc_dir, const char *output_dir);
 
 #ifdef __cplusplus
 }

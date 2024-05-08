@@ -18,34 +18,33 @@ static int check_dimension(std::string matrix_name, std::string rows_or_columns,
     return 0;
 }
 
-int tiny_setup(TinyCache* cache, TinyWorkspace* work, TinySolution* solution,
+int tiny_setup(TinySolver** solverp,
                 tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 
                 tinytype rho, int nx, int nu, int N,
                 tinyMatrix x_min, tinyMatrix x_max, tinyMatrix u_min, tinyMatrix u_max,
-                TinySettings* settings, int verbose) {
+                int verbose) {
 
-    if (!cache) {
-        std::cout << "Error in tiny_setup: cache is nullptr" << std::endl;
-        return 1;
-    }
-    if (!work) {
-        std::cout << "Error in tiny_setup: work is nullptr" << std::endl;
-        return 1;
-    }
-    if (!solution) {
-        std::cout << "Error in tiny_setup: solution is nullptr" << std::endl;
-        return 1;
-    }
-    if (!settings) {
-        std::cout << "Error in tiny_setup: settings is nullptr" << std::endl;
-        return 1;
-    }
+    TinySolution *solution = new TinySolution();
+    TinyCache *cache = new TinyCache();
+    TinySettings *settings = new TinySettings();
+    TinyWorkspace *work = new TinyWorkspace();
+    TinySolver *solver = new TinySolver();
+
+    solver->solution = solution;
+    solver->cache = cache;
+    solver->settings = settings;
+    solver->work = work;
+
+    *solverp = solver;
 
     // Initialize solution
     solution->iter = 0;
     solution->solved = 0;
     solution->x = tinyMatrix::Zero(nx, N);
     solution->u = tinyMatrix::Zero(nu, N-1);
+
+    // Initialize settings
+    tiny_set_default_settings(settings);
 
     // Initialize workspace
     work->nx = nx;
@@ -257,6 +256,7 @@ int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref) {
     return 0;
 }
 
+// TODO: Make this fail if tiny_setup has not already been called
 int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose) {
     if (!solver) {
         std::cout << "Error in tiny_codegen: solver is nullptr" << std::endl;

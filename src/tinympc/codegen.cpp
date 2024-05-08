@@ -20,16 +20,7 @@ extern "C"
 /* Define the maximum allowed length of the path (directory + filename + extension) */
 #define PATH_LENGTH 2048
 
-/* Define the maximum allowed length of the dirname */
-#define DIR_NAME_LENGTH 100
-
-/* Define the maximum allowed length of the filename (no extension)*/
-#define FILE_NAME_LENGTH 100
-
-#define BUF_SIZE 65536
-
 using namespace Eigen;
-IOFormat TinyFmt(4, 0, ", ", "\n", "[", "]");
 
 static void print_matrix(FILE *f, MatrixXd mat, int num_elements)
 {
@@ -44,7 +35,7 @@ static void print_matrix(FILE *f, MatrixXd mat, int num_elements)
 
 // Create inc/tiny_data.hpp file
 int codegen_data_header(const char* output_dir, int verbose) {
-    char data_hpp_fname[PATH_LENGTH + DIR_NAME_LENGTH + FILE_NAME_LENGTH];
+    char data_hpp_fname[PATH_LENGTH];
     FILE *data_hpp_f;
 
     sprintf(data_hpp_fname, "%s/inc/tiny_data.hpp", output_dir);
@@ -79,14 +70,14 @@ int codegen_data_header(const char* output_dir, int verbose) {
     fclose(data_hpp_f);
 
     if (verbose) {
-        printf("Data header generated in %s\n", workspace_hpp_fname);
+        printf("Data header generated in %s\n", data_hpp_fname);
     }
     return 0;
 }
 
 // Create src/tiny_data.cpp file
 int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose) {
-    char data_cpp_fname[PATH_LENGTH + DIR_NAME_LENGTH + FILE_NAME_LENGTH];
+    char data_cpp_fname[PATH_LENGTH];
     FILE *data_cpp_f;
 
     int nx = solver->work->nx;
@@ -154,7 +145,7 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
 
     fprintf(data_cpp_f, "\t(tinytype)%.16f,\t// primal tolerance\n", solver->settings->abs_pri_tol);
     fprintf(data_cpp_f, "\t(tinytype)%.16f,\t// dual tolerance\n", solver->settings->abs_dua_tol);
-    fprintf(data_cpp_f, "\t%d,\t\t// max iterations\n", solver->settings->max_iters);
+    fprintf(data_cpp_f, "\t%d,\t\t// max iterations\n", solver->settings->max_iter);
     fprintf(data_cpp_f, "\t%d,\t\t// iterations per termination check\n", solver->settings->check_termination);
     fprintf(data_cpp_f, "\t%d,\t\t// enable state constraints\n", solver->settings->en_state_bound);
     fprintf(data_cpp_f, "\t%d\t\t// enable input constraints\n", solver->settings->en_input_bound);
@@ -211,29 +202,29 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     fprintf(data_cpp_f, ").finished(),\t// y\n"); // y
 
     fprintf(data_cpp_f, "\t(tinyVector(%d) << ", nx);
-    print_matrix(data_cpp_f, Q, nx);
+    print_matrix(data_cpp_f, solver->work->Q, nx);
     fprintf(data_cpp_f, ").finished(),\t// Q\n"); // Q
     fprintf(data_cpp_f, "\t(tinyVector(%d) << ", nu);
-    print_matrix(data_cpp_f, R, nu);
+    print_matrix(data_cpp_f, solver->work->R, nu);
     fprintf(data_cpp_f, ").finished(),\t// R\n"); // R
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, nx);
-    print_matrix(data_cpp_f, Adyn, nx * nx);
+    print_matrix(data_cpp_f, solver->work->Adyn, nx * nx);
     fprintf(data_cpp_f, ").finished(),\t// Adyn\n"); // Adyn
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, nu);
-    print_matrix(data_cpp_f, Bdyn, nx * nu);
+    print_matrix(data_cpp_f, solver->work->Bdyn, nx * nu);
     fprintf(data_cpp_f, ").finished(),\t// Bdyn\n"); // Bdyn
 
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, N);
-    print_matrix(data_cpp_f, x_min, nx * N);
+    print_matrix(data_cpp_f, solver->work->x_min, nx * N);
     fprintf(data_cpp_f, ").finished(),\t// x_min\n"); // x_min
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, N);
-    print_matrix(data_cpp_f, x_max, nx * N);
+    print_matrix(data_cpp_f, solver->work->x_max, nx * N);
     fprintf(data_cpp_f, ").finished(),\t// x_max\n"); // x_max
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, N-1);
-    print_matrix(data_cpp_f, u_min, nu * (N - 1));
+    print_matrix(data_cpp_f, solver->work->u_min, nu * (N - 1));
     fprintf(data_cpp_f, ").finished(),\t// u_min\n"); // u_min
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, N-1);
-    print_matrix(data_cpp_f, u_max, nu * (N - 1));
+    print_matrix(data_cpp_f, solver->work->u_max, nu * (N - 1));
     fprintf(data_cpp_f, ").finished(),\t// u_max\n"); // u_max
     
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, N);
@@ -272,7 +263,7 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
 }
 
 int codegen_example(const char* output_dir, int verbose) {
-    char example_cpp_fname[PATH_LENGTH + DIR_NAME_LENGTH + FILE_NAME_LENGTH];
+    char example_cpp_fname[PATH_LENGTH];
     FILE *example_cpp_f;
 
     sprintf(example_cpp_fname, "%s/src/tiny_main.cpp", output_dir);
@@ -283,6 +274,7 @@ int codegen_example(const char* output_dir, int verbose) {
         printf("ERROR OPENING EXAMPLE MAIN FILE\n");
 
     // Preamble
+    time_t start_time;
     time(&start_time);
     fprintf(example_cpp_f, "/*\n");
     fprintf(example_cpp_f, " * This file was autogenerated by TinyMPC on %s", ctime(&start_time));
