@@ -39,6 +39,7 @@ int main()
 
     tinyMatrix Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
     tinyMatrix Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS, RowMajor>>(Bdyn_data);
+    tinyVector fdyn = tiny_VectorNx::Zero();
     tinyVector Q = Map<Matrix<tinytype, NSTATES, 1>>(Q_data);
     tinyVector R = Map<Matrix<tinytype, NINPUTS, 1>>(R_data);
 
@@ -48,7 +49,7 @@ int main()
     tinyMatrix u_max = tiny_MatrixNuNhm1::Constant(0.5);
 
     int status = tiny_setup(&solver,
-                            Adyn, Bdyn, Q.asDiagonal(), R.asDiagonal(),
+                            Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
                             rho_value, NSTATES, NINPUTS, NHORIZON,
                             x_min, x_max, u_min, u_max, 1);
     
