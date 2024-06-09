@@ -195,7 +195,8 @@ int tiny_solve(TinySolver* solver) {
 
 int tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype abs_dua_tol,
                     int max_iter, int check_termination, 
-                    int en_state_bound, int en_input_bound) {
+                    int en_state_bound, int en_input_bound,
+                    int en_state_soc, int en_input_soc) {
     if (!settings) {
         std::cout << "Error in tiny_update_settings: settings is nullptr" << std::endl;
         return 1;
@@ -220,6 +221,8 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->check_termination = TINY_DEFAULT_CHECK_TERMINATION;
     settings->en_state_bound = TINY_DEFAULT_EN_STATE_BOUND;
     settings->en_input_bound = TINY_DEFAULT_EN_INPUT_BOUND;
+    settings->en_state_soc = TINY_DEFAULT_EN_STATE_SOC;
+    settings->en_input_soc = TINY_DEFAULT_EN_INPUT_SOC;
     return 0;
 }
 

@@ -20,7 +20,8 @@ int tiny_solve(TinySolver *solver);
 int tiny_update_settings(TinySettings* settings,
                             tinytype abs_pri_tol, tinytype abs_dua_tol, 
                             int max_iter, int check_termination, 
-                            int en_state_bound, int en_input_bound);
+                            int en_state_bound, int en_input_bound,
+                            int en_state_soc, int en_input_soc);
 int tiny_set_default_settings(TinySettings* settings);
 
 int tiny_set_x0(TinySolver* solver, tinyVector x0);

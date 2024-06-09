@@ -60,6 +60,8 @@ extern "C"
         int check_termination;
         int en_state_bound;
         int en_input_bound;
+        int en_state_soc;
+        int en_input_soc;
     } TinySettings;
 
     /**

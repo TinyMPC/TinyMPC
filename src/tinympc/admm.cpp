@@ -27,9 +27,6 @@ void forward_pass(TinySolver *solver)
     for (int i = 0; i < solver->work->N - 1; i++)
     {
         (solver->work->u.col(i)).noalias() = -solver->cache->Kinf.lazyProduct(solver->work->x.col(i)) - solver->work->d.col(i);
-        // solver->work->u.col(i) << .001, .02, .3, 4;
-        // DEBUG_PRINT("u(0): %f\n", solver->work->u.col(0)(0));
-        // multAdyn(solver->Ax->cache.Adyn, solver->work->x.col(i));
         (solver->work->x.col(i + 1)).noalias() = solver->work->Adyn.lazyProduct(solver->work->x.col(i)) + solver->work->Bdyn.lazyProduct(solver->work->u.col(i)) + solver->work->fdyn;
     }
 }
