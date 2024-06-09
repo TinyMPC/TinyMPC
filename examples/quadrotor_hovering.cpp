@@ -52,7 +52,7 @@ int main()
     // Update whichever settings we'd like
     solver->settings->max_iter = 100;
     
-    // Alias solver->work for brevity
+    // Create new pointer to solver->work for brevity
     TinyWorkspace *work = solver->work;
 
     // Initial state
@@ -62,7 +62,7 @@ int main()
     // Reference trajectory
     tiny_VectorNx Xref_origin;
     Xref_origin << 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-    work->Xref = Xref_origin.replicate<1, 10>();
+    work->Xref = Xref_origin.replicate<1, NHORIZON>();
 
     for (int k = 0; k < 70; ++k)
     {
@@ -75,7 +75,7 @@ int main()
         tiny_solve(solver);
 
         // 3. Simulate forward
-        x0 = work->Adyn * x0 + work->Bdyn * work->u.col(0);
+        x0 = work->Adyn*x0 + work->Bdyn*work->u.col(0);
     }
 
     return 0;
