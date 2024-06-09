@@ -8,20 +8,20 @@ extern "C"
 {
 
 /**
-    * Update linear terms from Riccati backward pass
-    */
+ * Update linear terms from Riccati backward pass
+*/
 void backward_pass_grad(TinySolver *solver)
 {
     for (int i = solver->work->N - 2; i >= 0; i--)
     {
-        (solver->work->d.col(i)).noalias() = solver->cache->Quu_inv * (solver->work->Bdyn.transpose() * solver->work->p.col(i + 1) + solver->work->r.col(i));
-        (solver->work->p.col(i)).noalias() = solver->work->q.col(i) + solver->cache->AmBKt.lazyProduct(solver->work->p.col(i + 1)) - (solver->cache->Kinf.transpose()).lazyProduct(solver->work->r.col(i)); 
+        (solver->work->d.col(i)).noalias() = solver->cache->Quu_inv * (solver->work->Bdyn.transpose() * solver->work->p.col(i + 1) + solver->work->r.col(i) + solver->cache->BPf);
+        (solver->work->p.col(i)).noalias() = solver->work->q.col(i) + solver->cache->AmBKt.lazyProduct(solver->work->p.col(i + 1)) - (solver->cache->Kinf.transpose()).lazyProduct(solver->work->r.col(i)) + solver->cache->APf; 
     }
 }
 
 /**
-    * Use LQR feedback policy to roll out trajectory
-    */
+ * Use LQR feedback policy to roll out trajectory
+*/
 void forward_pass(TinySolver *solver)
 {
     for (int i = 0; i < solver->work->N - 1; i++)
@@ -30,16 +30,44 @@ void forward_pass(TinySolver *solver)
         // solver->work->u.col(i) << .001, .02, .3, 4;
         // DEBUG_PRINT("u(0): %f\n", solver->work->u.col(0)(0));
         // multAdyn(solver->Ax->cache.Adyn, solver->work->x.col(i));
-        (solver->work->x.col(i + 1)).noalias() = solver->work->Adyn.lazyProduct(solver->work->x.col(i)) + solver->work->Bdyn.lazyProduct(solver->work->u.col(i));
+        (solver->work->x.col(i + 1)).noalias() = solver->work->Adyn.lazyProduct(solver->work->x.col(i)) + solver->work->Bdyn.lazyProduct(solver->work->u.col(i)) + solver->work->fdyn;
     }
 }
 
 /**
-    * Project slack (auxiliary) variables into their feasible domain, defined by
-    * projection functions related to each constraint
-    * TODO: pass in meta information with each constraint assigning it to a
-    * projection function
-    */
+ * Project a vector s onto the second order cone defined by mu
+ * @param s, mu
+ * @return projection onto cone if s is outside cone. Return s if s is inside cone.
+*/
+Matrix<tinytype, 3, 1> project_soc(Matrix<tinytype, 3, 1> s, float mu) {
+    tinytype u0 = s(Eigen::placeholders::last) * mu;
+    Matrix<tinytype, 2, 1> u1 = s.head(2);
+    float a = u1.norm();
+    Matrix<tinytype, 3, 1> cone_origin;
+    cone_origin.setZero();
+
+    if (a <= -u0) { // below cone
+        return cone_origin;
+    }
+    else if (a <= u0) { // in cone
+        return s;
+    }
+    else if (a >= abs(u0)) { // outside cone
+        Matrix<tinytype, 3, 1> u2(u1.size() + 1);
+        u2 << u1, a/mu;
+        return 0.5 * (1 + u0/a) * u2;
+    }
+    else {
+        return cone_origin;
+    }
+}
+
+/**
+ * Project slack (auxiliary) variables into their feasible domain, defined by
+ * projection functions related to each constraint
+ * TODO: pass in meta information with each constraint assigning it to a
+ * projection function
+*/
 void update_slack(TinySolver *solver)
 {
     solver->work->znew = solver->work->u + solver->work->y;
@@ -59,9 +87,9 @@ void update_slack(TinySolver *solver)
 }
 
 /**
-    * Update next iteration of dual variables by performing the augmented
-    * lagrangian multiplier update
-    */
+ * Update next iteration of dual variables by performing the augmented
+ * lagrangian multiplier update
+*/
 void update_dual(TinySolver *solver)
 {
     solver->work->y = solver->work->y + solver->work->u - solver->work->znew;
@@ -69,9 +97,9 @@ void update_dual(TinySolver *solver)
 }
 
 /**
-    * Update linear control cost terms in the Riccati feedback using the changing
-    * slack and dual variables from ADMM
-    */
+ * Update linear control cost terms in the Riccati feedback using the changing
+ * slack and dual variables from ADMM
+*/
 void update_linear_cost(TinySolver *solver)
 {
     solver->work->r = -(solver->work->Uref.array().colwise() * solver->work->R.array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
@@ -83,9 +111,9 @@ void update_linear_cost(TinySolver *solver)
 }
 
 /**
-    * Check for termination condition by evaluating whether the largest absolute
-    * primal and dual residuals for states and inputs are below threhold.
-    */
+ * Check for termination condition by evaluating whether the largest absolute
+ * primal and dual residuals for states and inputs are below threhold.
+*/
 bool termination_condition(TinySolver *solver)
 {
     if (solver->work->iter % solver->settings->check_termination == 0)

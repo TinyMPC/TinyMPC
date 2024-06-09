@@ -46,6 +46,8 @@ extern "C"
         tinyMatrix Pinf;       // nx x nx
         tinyMatrix Quu_inv;    // nu x nu
         tinyMatrix AmBKt;      // nx x nx
+        tinyVector APf;        // nx x 1
+        tinyVector BPf;        // nu x 1
     } TinyCache;
 
     /**
@@ -95,8 +97,9 @@ extern "C"
         // Q, R, A, B given by user
         tinyVector Q;       // nx x 1
         tinyVector R;       // nu x 1
-        tinyMatrix Adyn;    // nx x nx
-        tinyMatrix Bdyn;    // nx x nu
+        tinyMatrix Adyn;    // nx x nx (state transition matrix)
+        tinyMatrix Bdyn;    // nx x nu (control matrix)
+        tinyVector fdyn;    // nx x 1 (affine vector)
 
         // State and input bounds
         tinyMatrix x_min;   // nx x N
@@ -112,7 +115,7 @@ extern "C"
         tinyVector Qu;      // nu x 1
 
 
-        
+
         // Variables for keeping track of solve status
         tinytype primal_residual_state;
         tinytype primal_residual_input;
