@@ -8,12 +8,12 @@ extern "C" {
 #endif
 
 int tiny_setup(TinySolver** solverp,
-                tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 
+                tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix fdyn, tinyMatrix Q, tinyMatrix R, 
                 tinytype rho, int nx, int nu, int N,
                 tinyMatrix x_min, tinyMatrix x_max, tinyMatrix u_min, tinyMatrix u_max,
                 int verbose);
 int tiny_precompute_and_set_cache(TinyCache *cache, 
-                                    tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R,
+                                    tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix fdyn, tinyMatrix Q, tinyMatrix R,
                                     int nx, int nu, tinytype rho, int verbose);
 int tiny_solve(TinySolver *solver);
 

@@ -19,7 +19,7 @@ static int check_dimension(std::string matrix_name, std::string rows_or_columns,
 }
 
 int tiny_setup(TinySolver** solverp,
-                tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R, 
+                tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix fdyn, tinyMatrix Q, tinyMatrix R, 
                 tinytype rho, int nx, int nu, int N,
                 tinyMatrix x_min, tinyMatrix x_max, tinyMatrix u_min, tinyMatrix u_max,
                 int verbose) {
@@ -57,6 +57,8 @@ int tiny_setup(TinySolver** solverp,
     status |= check_dimension("State transition matrix (A)", "columns", Adyn.cols(), nx);
     status |= check_dimension("Input matrix (B)", "rows",  Bdyn.rows(), nx);
     status |= check_dimension("Input matrix (B)", "columns",  Bdyn.cols(), nu);
+    status |= check_dimension("Affine vector (f)", "rows", fdyn.rows(), nx);
+    status |= check_dimension("Affine vector (f)", "columns", fdyn.cols(), 1);
     status |= check_dimension("State stage cost (Q)", "rows",  Q.rows(), nx);
     status |= check_dimension("State stage cost (Q)", "columns",  Q.cols(), nx);
     status |= check_dimension("State input cost (R)", "rows",  R.rows(), nu);
@@ -89,8 +91,9 @@ int tiny_setup(TinySolver** solverp,
 
     work->Q = (Q + rho * tinyMatrix::Identity(nx, nx)).diagonal();
     work->R = (R + rho * tinyMatrix::Identity(nu, nu)).diagonal();
-    work->Adyn = Adyn;
-    work->Bdyn = Bdyn;
+    work->Adyn = Adyn; // State transition matrix
+    work->Bdyn = Bdyn; // Input matrix
+    work->fdyn = fdyn; // Affine offset vector
 
     work->x_min = x_min;
     work->x_max = x_max;
@@ -110,7 +113,7 @@ int tiny_setup(TinySolver** solverp,
     work->iter = 0;
 
     // Initialize cache
-    status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, work->Q.asDiagonal(), work->R.asDiagonal(), nx, nu, rho, verbose);
+    status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, fdyn, work->Q.asDiagonal(), work->R.asDiagonal(), nx, nu, rho, verbose);
     if (status) {
         return status;
     }
@@ -119,7 +122,7 @@ int tiny_setup(TinySolver** solverp,
 }
 
 int tiny_precompute_and_set_cache(TinyCache *cache,
-                                  tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R,
+                                  tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix fdyn, tinyMatrix Q, tinyMatrix R,
                                   int nx, int nu, tinytype rho, int verbose) {
 
     if (!cache) {
@@ -180,6 +183,8 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     cache->Pinf = Pinf;
     cache->Quu_inv = Quu_inv;
     cache->AmBKt = AmBKt;
+    cache->APf = AmBKt*Pinf*fdyn; // Precomputation for affine term
+    cache->BPf = Bdyn.transpose()*Pinf*fdyn; // Precomputation for affine term
 
     return 0; // return success
 }
