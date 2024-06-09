@@ -19,8 +19,6 @@
 
 
 #include <iostream>
-
-#include <tinympc/admm.hpp>
 #include <tinympc/tiny_api.hpp>
 #include "problem_data/quadrotor_20hz_params.hpp"
 
