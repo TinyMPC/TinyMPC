@@ -64,22 +64,34 @@ int main()
     tinyMatrix u_max = tiny_MatrixNuNhm1::Constant(105);
 
     // SOC constraints
-    solver->work->socs->cu[0] = 0.25; // coefficients for input cones (mu)
-    solver->work->socs->cx[0] = 0.5; // coefficients for state cones (mu)
-    // // Number of contiguous input variables to constrain with each cone
-    // // For example if all inputs are [thrust_x, thrust_y, thrust_z, thrust_2x, thrust_2y, thrust_2z]
-    // // and we want to put a thrust cone on [thrust_y, thrust_z] we need to set socs->Acu to 1 and socs->qcu to 2
-    // // which corresponds to a subvector of all input variables starting at index 1 with length 2.
-    // // Support for arbitrary input constraints will be added in the future.
-    solver->work->socs->Acu[0] = 0; // start indices for input cones
-    solver->work->socs->Acx[0] = 0; // start indices for state cones
-    solver->work->socs->qcu[0] = 3; // dimensions for input cones
-    solver->work->socs->qcx[0] = 3; // dimensions for state cones
+    int num_cone_state_constraints = 1;
+    int num_cone_input_constraints = 1;
+    tinyVector cx(num_cone_state_constraints); // coefficients for state cones (mu)
+    cx << 0.5;
+    tinyVector cu(num_cone_input_constraints); // coefficients for input cones (mu)
+    cu << 0.25;
+    // Number of contiguous input variables to constrain with each cone
+    // For example if all inputs are [thrust_x, thrust_y, thrust_z, thrust_2x, thrust_2y, thrust_2z]
+    // and we want to put a thrust cone on [thrust_y, thrust_z] we need to set socs->Acu to 1 and socs->qcu to 2
+    // which corresponds to a subvector of all input variables starting at index 1 with length 2.
+    // Support for arbitrary input constraints will be added in the future.
+    VectorXi Acx(num_cone_state_constraints); // start indices for state cones
+    Acx << 0;
+    VectorXi Acu(num_cone_input_constraints); // start indices for input cones
+    Acu << 0;
+    VectorXi qcx(num_cone_state_constraints); // dimensions for state cones
+    qcx << 3;
+    VectorXi qcu(num_cone_input_constraints); // dimensions for input cones
+    qcu << 3;
 
+    // Set up problem
     int status = tiny_setup(&solver,
                             Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
-                            rho_value, NSTATES, NINPUTS, NHORIZON,
-                            x_min, x_max, u_min, u_max, 1);
+                            rho_value, NSTATES, NINPUTS, NHORIZON, 1);
+    // Set bound constraints
+    status = tiny_set_bounds(solver, x_min, x_max, u_min, u_max);
+    // Set cone constraints
+    status = tiny_set_cone_constraints(solver, Acu, qcu, cu, Acx, qcx, cx);
     
     // Update any settings we want to change
     solver->settings->max_iter = 100;
