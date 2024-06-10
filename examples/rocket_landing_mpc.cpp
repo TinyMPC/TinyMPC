@@ -89,7 +89,7 @@ int main()
                             Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
                             rho_value, NSTATES, NINPUTS, NHORIZON, 1);
     // Set bound constraints
-    status = tiny_set_bounds(solver, x_min, x_max, u_min, u_max);
+    status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
     // Set cone constraints
     status = tiny_set_cone_constraints(solver, Acu, qcu, cu, Acx, qcx, cx);
     

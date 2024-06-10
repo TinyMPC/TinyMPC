@@ -53,7 +53,7 @@ int main()
                             Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
                             rho_value, NSTATES, NINPUTS, NHORIZON, verbose);
     // Set bound constraints
-    status = tiny_set_bounds(solver, x_min, x_max, u_min, u_max);
+    status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
 
     // Solver options
     solver->settings->abs_pri_tol = 1e-3;

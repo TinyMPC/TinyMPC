@@ -117,11 +117,11 @@ int tiny_setup(TinySolver** solverp,
     return status;
 }
 
-int tiny_set_bounds(TinySolver* solver,
+int tiny_set_bound_constraints(TinySolver* solver,
                     tinyMatrix x_min, tinyMatrix x_max,
                     tinyMatrix u_min, tinyMatrix u_max) {
     if (!solver) {
-        std::cout << "Error in tiny_set_bounds: solver is nullptr" << std::endl;
+        std::cout << "Error in tiny_set_bound_constraints: solver is nullptr" << std::endl;
         return 1;
     }
 
@@ -291,7 +291,7 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->max_iter = TINY_DEFAULT_MAX_ITER;
     settings->check_termination = TINY_DEFAULT_CHECK_TERMINATION;
 
-    // Turn off constraints until they are set by tiny_set_bounds or tiny_set_cone_constraints
+    // Turn off constraints until they are set by tiny_set_bound_constraints or tiny_set_cone_constraints
     settings->en_state_bound = TINY_DEFAULT_EN_STATE_BOUND;
     settings->en_input_bound = TINY_DEFAULT_EN_INPUT_BOUND;
     settings->en_state_soc = TINY_DEFAULT_EN_STATE_SOC;

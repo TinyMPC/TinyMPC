@@ -49,7 +49,7 @@ int main()
                             Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
                             rho_value, NSTATES, NINPUTS, NHORIZON, verbose);
     // Set bound constraints
-    status = tiny_set_bounds(solver, x_min, x_max, u_min, u_max);
+    status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
 
     tiny_codegen(solver, std::filesystem::absolute(output_dir_relative).string().c_str(), verbose);
 
