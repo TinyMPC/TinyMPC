@@ -20,9 +20,7 @@ static int check_dimension(std::string matrix_name, std::string rows_or_columns,
 
 int tiny_setup(TinySolver** solverp,
                 tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix fdyn, tinyMatrix Q, tinyMatrix R, 
-                tinytype rho, int nx, int nu, int N,
-                tinyMatrix x_min, tinyMatrix x_max, tinyMatrix u_min, tinyMatrix u_max,
-                int verbose) {
+                tinytype rho, int nx, int nu, int N, int verbose) {
 
     TinySolution *solution = new TinySolution();
     TinyCache *cache = new TinyCache();
@@ -63,14 +61,9 @@ int tiny_setup(TinySolver** solverp,
     status |= check_dimension("State stage cost (Q)", "columns",  Q.cols(), nx);
     status |= check_dimension("State input cost (R)", "rows",  R.rows(), nu);
     status |= check_dimension("State input cost (R)", "columns",  R.cols(), nu);
-    status |= check_dimension("Lower state bounds (x_min)", "rows", x_min.rows(), nx);
-    status |= check_dimension("Lower state bounds (x_min)", "cols", x_min.cols(), N);
-    status |= check_dimension("Lower state bounds (x_max)", "rows", x_max.rows(), nx);
-    status |= check_dimension("Lower state bounds (x_max)", "cols", x_max.cols(), N);
-    status |= check_dimension("Lower input bounds (u_min)", "rows", u_min.rows(), nu);
-    status |= check_dimension("Lower input bounds (u_min)", "cols", u_min.cols(), N-1);
-    status |= check_dimension("Lower input bounds (u_max)", "rows", u_max.rows(), nu);
-    status |= check_dimension("Lower input bounds (u_max)", "cols", u_max.cols(), N-1);
+    if (status) {
+        return status;
+    }
     
     work->x = tinyMatrix::Zero(nx, N);
     work->u = tinyMatrix::Zero(nu, N-1);
@@ -81,24 +74,31 @@ int tiny_setup(TinySolver** solverp,
     work->p = tinyMatrix::Zero(nx, N);
     work->d = tinyMatrix::Zero(nu, N-1);
 
+    // Bound constraint slack variables
     work->v = tinyMatrix::Zero(nx, N);
     work->vnew = tinyMatrix::Zero(nx, N);
     work->z = tinyMatrix::Zero(nu, N-1);
     work->znew = tinyMatrix::Zero(nu, N-1);
     
+    // Bound constraint dual variables
     work->g = tinyMatrix::Zero(nx, N);
     work->y = tinyMatrix::Zero(nu, N-1);
+    
+    // Cone constraint slack variables
+    work->vc = tinyMatrix::Zero(nx, N);
+    work->vcnew = tinyMatrix::Zero(nx, N);
+    work->zc = tinyMatrix::Zero(nu, N-1);
+    work->zcnew = tinyMatrix::Zero(nu, N-1);
+    
+    // Cone constraint dual variables
+    work->gc = tinyMatrix::Zero(nx, N);
+    work->yc = tinyMatrix::Zero(nu, N-1);
 
     work->Q = (Q + rho * tinyMatrix::Identity(nx, nx)).diagonal();
     work->R = (R + rho * tinyMatrix::Identity(nu, nu)).diagonal();
     work->Adyn = Adyn; // State transition matrix
     work->Bdyn = Bdyn; // Input matrix
     work->fdyn = fdyn; // Affine offset vector
-
-    work->x_min = x_min;
-    work->x_max = x_max;
-    work->u_min = u_min;
-    work->u_max = u_max;
 
     work->Xref = tinyMatrix::Zero(nx, N);
     work->Uref = tinyMatrix::Zero(nu, N-1);
@@ -114,9 +114,74 @@ int tiny_setup(TinySolver** solverp,
 
     // Initialize cache
     status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, fdyn, work->Q.asDiagonal(), work->R.asDiagonal(), nx, nu, rho, verbose);
+    return status;
+}
+
+int tiny_set_bounds(TinySolver* solver,
+                    tinyMatrix x_min, tinyMatrix x_max,
+                    tinyMatrix u_min, tinyMatrix u_max) {
+    if (!solver) {
+        std::cout << "Error in tiny_set_bounds: solver is nullptr" << std::endl;
+        return 1;
+    }
+
+    // Make sure all bound constraint matrix sizes are self-consistent
+    int status = 0;
+    status |= check_dimension("Lower state bounds (x_min)", "rows", x_min.rows(), solver->work->nx);
+    status |= check_dimension("Lower state bounds (x_min)", "cols", x_min.cols(), solver->work->N);
+    status |= check_dimension("Lower state bounds (x_max)", "rows", x_max.rows(), solver->work->nx);
+    status |= check_dimension("Lower state bounds (x_max)", "cols", x_max.cols(), solver->work->N);
+    status |= check_dimension("Lower input bounds (u_min)", "rows", u_min.rows(), solver->work->nu);
+    status |= check_dimension("Lower input bounds (u_min)", "cols", u_min.cols(), solver->work->N-1);
+    status |= check_dimension("Lower input bounds (u_max)", "rows", u_max.rows(), solver->work->nu);
+    status |= check_dimension("Lower input bounds (u_max)", "cols", u_max.cols(), solver->work->N-1);
+
+    solver->work->x_min = x_min;
+    solver->work->x_max = x_max;
+    solver->work->u_min = u_min;
+    solver->work->u_max = u_max;
+
+    // Enable constraints
+    solver->settings->en_state_bound = 1;
+    solver->settings->en_input_bound = 1;
+
+    return 0;
+}
+
+int tiny_set_cone_constraints(TinySolver* solver,
+                              VectorXi Acx, VectorXi qcx, tinyVector cx,
+                              VectorXi Acu, VectorXi qcu, tinyVector cu) {
+    if (!solver) {
+        std::cout << "Error in tiny_set_cone_constraints: solver is nullptr" << std::endl;
+        return 1;
+    }
+
+    // Make sure all cone constraint vector sizes are self-consistent
+    int num_state_cones = Acx.rows();
+    int num_input_cones = Acu.rows();
+    int status = 0;
+    status |= check_dimension("Cone state size (qcx)", "rows", qcx.rows(), num_state_cones);
+    status |= check_dimension("Cone mu value for state (cx)", "rows", cx.rows(), num_state_cones);
+    status |= check_dimension("Cone input size (qcu)", "rows", qcu.rows(), num_input_cones);
+    status |= check_dimension("Cone mu value for input (cu)", "rows", cu.rows(), num_input_cones);
     if (status) {
         return status;
     }
+
+    solver->work->numStateCones = num_state_cones;
+    solver->work->numInputCones = num_input_cones;
+
+    solver->work->Acx = Acx;
+    solver->work->qcx = qcx;
+    solver->work->cx = cx;
+    
+    solver->work->Acu = Acu;
+    solver->work->qcu = qcu;
+    solver->work->cu = cu;
+
+    // Enable constraints
+    solver->settings->en_state_soc = 1;
+    solver->settings->en_input_soc = 1;
 
     return 0;
 }
@@ -169,11 +234,17 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     tinyMatrix Quu_inv = (R1 + Bdyn.transpose() * Pinf * Bdyn).inverse();
     tinyMatrix AmBKt = (Adyn - Bdyn * Kinf).transpose();
 
+    // Precomputation for affine term
+    tinyVector APf = AmBKt*Pinf*fdyn;
+    tinyVector BPf = Bdyn.transpose()*Pinf*fdyn;
+
     if (verbose) {
         std::cout << "Kinf = " << Kinf.format(TinyApiFmt) << std::endl;
         std::cout << "Pinf = " << Pinf.format(TinyApiFmt) << std::endl;
         std::cout << "Quu_inv = " << Quu_inv.format(TinyApiFmt) << std::endl;
         std::cout << "AmBKt = " << AmBKt.format(TinyApiFmt) << std::endl;
+        std::cout << "APf = " << APf.format(TinyApiFmt) << std::endl;
+        std::cout << "BPf = " << BPf.format(TinyApiFmt) << std::endl;
 
         std::cout << "\nPrecomputation finished!\n" << std::endl;
     }
@@ -183,8 +254,8 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     cache->Pinf = Pinf;
     cache->Quu_inv = Quu_inv;
     cache->AmBKt = AmBKt;
-    cache->APf = AmBKt*Pinf*fdyn; // Precomputation for affine term
-    cache->BPf = Bdyn.transpose()*Pinf*fdyn; // Precomputation for affine term
+    cache->APf = APf;
+    cache->BPf = BPf;
 
     return 0; // return success
 }
@@ -219,6 +290,8 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->abs_dua_tol = TINY_DEFAULT_ABS_DUA_TOL;
     settings->max_iter = TINY_DEFAULT_MAX_ITER;
     settings->check_termination = TINY_DEFAULT_CHECK_TERMINATION;
+
+    // Turn off constraints until they are set by tiny_set_bounds or tiny_set_cone_constraints
     settings->en_state_bound = TINY_DEFAULT_EN_STATE_BOUND;
     settings->en_input_bound = TINY_DEFAULT_EN_INPUT_BOUND;
     settings->en_state_soc = TINY_DEFAULT_EN_STATE_SOC;

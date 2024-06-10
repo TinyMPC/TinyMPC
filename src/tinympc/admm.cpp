@@ -36,11 +36,11 @@ void forward_pass(TinySolver *solver)
  * @param s, mu
  * @return projection onto cone if s is outside cone. Return s if s is inside cone.
 */
-Matrix<tinytype, 3, 1> project_soc(Matrix<tinytype, 3, 1> s, float mu) {
+tinyVector project_soc(tinyVector s, float mu) {
     tinytype u0 = s(Eigen::placeholders::last) * mu;
-    Matrix<tinytype, 2, 1> u1 = s.head(2);
+    tinyVector u1 = s.head(s.rows()-1);
     float a = u1.norm();
-    Matrix<tinytype, 3, 1> cone_origin;
+    tinyVector cone_origin(s.rows());
     cone_origin.setZero();
 
     if (a <= -u0) { // below cone
@@ -67,19 +67,57 @@ Matrix<tinytype, 3, 1> project_soc(Matrix<tinytype, 3, 1> s, float mu) {
 */
 void update_slack(TinySolver *solver)
 {
-    solver->work->znew = solver->work->u + solver->work->y;
+    // Update bound constraint slack variables for state
     solver->work->vnew = solver->work->x + solver->work->g;
+    
+    // Update bound constraint slack variables for input
+    solver->work->znew = solver->work->u + solver->work->y;
+
+    // Box constraints on state
+    if (solver->settings->en_state_bound) {
+        solver->work->vnew = solver->work->x_max.cwiseMin(solver->work->x_min.cwiseMax(solver->work->vnew));
+    }
 
     // Box constraints on input
-    if (solver->settings->en_input_bound)
-    {
+    if (solver->settings->en_input_bound) {
         solver->work->znew = solver->work->u_max.cwiseMin(solver->work->u_min.cwiseMax(solver->work->znew));
     }
 
-    // Box constraints on state
-    if (solver->settings->en_state_bound)
-    {
-        solver->work->vnew = solver->work->x_max.cwiseMin(solver->work->x_min.cwiseMax(solver->work->vnew));
+    
+    // Update second order cone slack variables for state
+    if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
+        solver->work->vcnew = solver->work->x + solver->work->gc;
+    }
+
+    // Update second order cone slack variables for input
+    if (solver->settings->en_input_soc && solver->work->numInputCones > 0) {
+        solver->work->zcnew = solver->work->u + solver->work->yc;
+    }
+
+    // Cone constraints on state
+    if (solver->settings->en_state_soc) {
+        for (int i=0; i<solver->work->N; i++) {
+            for (int k=0; k<solver->work->numStateCones; k++) {
+                int start = solver->work->Acx(k);
+                int num_xs = solver->work->qcx(k);
+                tinytype mu = solver->work->cx(k);
+                tinyVector col = solver->work->vcnew.block(start, i, num_xs, 1);
+                solver->work->vcnew.block(start, k, num_xs, 1) = project_soc(col, mu);
+            }
+        }
+    }
+
+    // Cone constraints on input
+    if (solver->settings->en_input_soc) {
+        for (int i=0; i<solver->work->N-1; i++) {
+            for (int k=0; k<solver->work->numInputCones; k++) {
+                int start = solver->work->Acu(k);
+                int num_us = solver->work->qcu(k);
+                tinytype mu = solver->work->cu(k);
+                tinyVector col = solver->work->zcnew.block(start, i, num_us, 1);
+                solver->work->zcnew.block(start, k, num_us, 1) = project_soc(col, mu);
+            }
+        }
     }
 }
 
@@ -89,8 +127,21 @@ void update_slack(TinySolver *solver)
 */
 void update_dual(TinySolver *solver)
 {
-    solver->work->y = solver->work->y + solver->work->u - solver->work->znew;
+    // Update bound constraint slack variables for state
     solver->work->g = solver->work->g + solver->work->x - solver->work->vnew;
+
+    // Update bound constraint slack variables for input
+    solver->work->y = solver->work->y + solver->work->u - solver->work->znew;
+    
+    // Update second order cone slack variables for state
+    if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
+        solver->work->gc = solver->work->gc + solver->work->x - solver->work->vcnew;
+    }
+
+    // Update second order cone slack variables for input
+    if (solver->settings->en_input_soc && solver->work->numInputCones > 0) {
+        solver->work->yc = solver->work->yc + solver->work->u - solver->work->zcnew;
+    }
 }
 
 /**
@@ -99,12 +150,23 @@ void update_dual(TinySolver *solver)
 */
 void update_linear_cost(TinySolver *solver)
 {
-    solver->work->r = -(solver->work->Uref.array().colwise() * solver->work->R.array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
-    (solver->work->r).noalias() -= solver->cache->rho * (solver->work->znew - solver->work->y);
     solver->work->q = -(solver->work->Xref.array().colwise() * solver->work->Q.array());
     (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vnew - solver->work->g);
+    if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
+        (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vcnew - solver->work->gc);
+    }
+
+    solver->work->r = -(solver->work->Uref.array().colwise() * solver->work->R.array());
+    (solver->work->r).noalias() -= solver->cache->rho * (solver->work->znew - solver->work->y);
+    if (solver->settings->en_input_soc && solver->work->numInputCones > 0) {
+        (solver->work->r).noalias() -= solver->cache->rho * (solver->work->zcnew - solver->work->yc);
+    }
+
     solver->work->p.col(solver->work->N - 1) = -(solver->work->Xref.col(solver->work->N - 1).transpose().lazyProduct(solver->cache->Pinf));
     (solver->work->p.col(solver->work->N - 1)).noalias() -= solver->cache->rho * (solver->work->vnew.col(solver->work->N - 1) - solver->work->g.col(solver->work->N - 1));
+    if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
+        solver->work->p.col(solver->work->N - 1) -= solver->cache->rho * (solver->work->vcnew.col(solver->work->N - 1) - solver->work->gc.col(solver->work->N - 1));
+    }
 }
 
 /**
