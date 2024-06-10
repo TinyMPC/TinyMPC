@@ -10,7 +10,6 @@ include_directories(include/Eigen)
 # include_directories(${EIGEN3_INCLUDE_DIR})
 # message("${EIGEN3_INCLUDE_DIR}")
 
-
 # Create codegen directories
 set( EMBEDDED_BUILD_ROOT_DIR "${CMAKE_BINARY_DIR}/codegen_src" )
 set( EMBEDDED_BUILD_TINYMPC_DIR "${EMBEDDED_BUILD_ROOT_DIR}/tinympc" )
@@ -42,14 +41,3 @@ add_subdirectory(src/tinympc)
 
 # Add example executables
 add_subdirectory(examples)
-
-
-# # Copy a sample makefile into the build tree
-# add_custom_command(OUTPUT "${EMBEDDED_BUILD_ROOT_DIR}/Makefile"
-#                     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/configure/Makefile.emosqp" "${EMBEDDED_BUILD_ROOT_DIR}/Makefile"
-#                     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/configure/Makefile.emosqp"
-#                     COMMENT "Copying codegen makefile" )
-
-# add_custom_target( copy_codegen_makefile DEPENDS "${EMBEDDED_BUILD_ROOT_DIR}/Makefile" )
-# add_dependencies( copy_codegen_files copy_codegen_makefile )
-
