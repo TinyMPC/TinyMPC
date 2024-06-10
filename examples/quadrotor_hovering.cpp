@@ -44,10 +44,12 @@ int main()
     tinyMatrix u_min = tiny_MatrixNuNhm1::Constant(-0.5);
     tinyMatrix u_max = tiny_MatrixNuNhm1::Constant(0.5);
 
+    // Set up problem
     int status = tiny_setup(&solver,
                             Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
-                            rho_value, NSTATES, NINPUTS, NHORIZON,
-                            x_min, x_max, u_min, u_max, 1);
+                            rho_value, NSTATES, NINPUTS, NHORIZON, 1);
+    // Set bound constraints
+    status = tiny_set_bounds(solver, x_min, x_max, u_min, u_max);
     
     // Update whichever settings we'd like
     solver->settings->max_iter = 100;

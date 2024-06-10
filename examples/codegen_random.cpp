@@ -47,11 +47,13 @@ int main()
     tinyMatrix u_min = Map<tiny_MatrixNuNhm1>(u_min_data);
     tinyMatrix u_max = Map<tiny_MatrixNuNhm1>(u_max_data);
 
+    // Set up problem
     int verbose = 0;
     int status = tiny_setup(&solver,
                             Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
-                            rho_value, NSTATES, NINPUTS, NHORIZON,
-                            x_min, x_max, u_min, u_max, verbose);
+                            rho_value, NSTATES, NINPUTS, NHORIZON, verbose);
+    // Set bound constraints
+    status = tiny_set_bounds(solver, x_min, x_max, u_min, u_max);
 
     // Solver options
     solver->settings->abs_pri_tol = 1e-3;
