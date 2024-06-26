@@ -11,6 +11,7 @@ The documentation is available at [tinympc.org](https://tinympc.org/)
 High-level language interfaces with detailed examples and code generation are available in [Python](https://github.com/TinyMPC/tinympc-python), [Julia](https://github.com/TinyMPC/tinympc-julia), and [MATLAB](https://github.com/TinyMPC/tinympc-matlab).
 
 ## Building
+For Windows - Enable ```wsl``` before following prompts below
 
 1. On terminal, clone this repo
 
