@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <error.h>
+// #include <error.h>
 
 #include <iostream>
 #include <Eigen/Dense>
@@ -40,7 +40,8 @@ static void create_directory(const char* dir, int verbose) {
             if (verbose)
                 std::cout << dir << " already exists, skipping." << std::endl;
         } else {
-            error(EXIT_FAILURE, errno, "Failed to create directory %s", dir);
+            // error(EXIT_FAILURE, errno, "Failed to create directory %s", dir);
+            std::cout << "Failed to create directory " << dir << std::endl;
         }
     }
 }
@@ -93,8 +94,10 @@ int codegen_data_header(const char* output_dir, int verbose) {
 
     // Open data header file
     data_hpp_f = fopen(data_hpp_fname, "w+");
-    if (data_hpp_f == NULL)
-        error(EXIT_FAILURE, errno, "Failed to open file %s", data_hpp_fname);
+    if (data_hpp_f == NULL) {
+        // error(EXIT_FAILURE, errno, "Failed to open file %s", data_hpp_fname);
+        std::cout << "Failed to open file " << data_hpp_fname << std::endl;
+    }
 
     // Preamble
     time_t start_time;
@@ -139,8 +142,10 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
 
     // Open data source file
     data_cpp_f = fopen(data_cpp_fname, "w+");
-    if (data_cpp_f == NULL)
-        error(EXIT_FAILURE, errno, "Failed to open file %s", data_cpp_fname);
+    if (data_cpp_f == NULL) {
+        // error(EXIT_FAILURE, errno, "Failed to open file %s", data_cpp_fname);
+        std::cout << "Failed to open file " << data_cpp_fname << std::endl;
+    }
 
     // Preamble
     time_t start_time;
@@ -322,8 +327,10 @@ int codegen_example(const char* output_dir, int verbose) {
 
     // Open example file
     example_cpp_f = fopen(example_cpp_fname, "w+");
-    if (example_cpp_f == NULL)
-        error(EXIT_FAILURE, errno, "Failed to open file %s", example_cpp_fname);
+    if (example_cpp_f == NULL) {
+        // error(EXIT_FAILURE, errno, "Failed to open file %s", example_cpp_fname);
+        std::cout << "Failed to open file " << example_cpp_fname << std::endl;
+    }
 
     // Preamble
     time_t start_time;
