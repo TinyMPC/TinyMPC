@@ -1,5 +1,5 @@
-#ifndef ERROR_HPP
-#define ERROR_HPP
+#pragma once
+
 #include <cstdio>   
 #include <cstdlib>  
 #include <cstring> 
@@ -19,5 +19,3 @@
 #else
 #error "Unsupported operating system"
 #endif
-
-#endif 
