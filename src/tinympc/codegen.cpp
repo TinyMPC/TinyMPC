@@ -40,7 +40,6 @@ static void create_directory(const char* dir, int verbose) {
             if (verbose)
                 std::cout << dir << " already exists, skipping." << std::endl;
         } else {
-            //error(EXIT_FAILURE, errno, "Failed to create directory %s", dir);
             ERROR_MSG(EXIT_FAILURE, "Failed to create directory %s", dir);
         }
     }
@@ -90,14 +89,13 @@ int codegen_data_header(const char* output_dir, int verbose) {
     char data_hpp_fname[PATH_LENGTH];
     FILE *data_hpp_f;
 
-    sprintf(data_hpp_fname, "%s/tinympc/tiny_data.hpp", output_dir);
+    sprintf(data_hpp_fname, "%s/tinympc1/tiny_data.hpp", output_dir);
 
     // Open data header file
     data_hpp_f = fopen(data_hpp_fname, "w+");
     if (data_hpp_f == NULL)
-        //error(EXIT_FAILURE, errno, "Failed to open file %s", data_hpp_fname);
         ERROR_MSG(EXIT_FAILURE, "Failed to open file %s", data_hpp_fname);
-
+    
     // Preamble
     time_t start_time;
     time(&start_time);
@@ -142,8 +140,8 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     // Open data source file
     data_cpp_f = fopen(data_cpp_fname, "w+");
     if (data_cpp_f == NULL)
-        //error(EXIT_FAILURE, errno, "Failed to open file %s", data_cpp_fname);
         ERROR_MSG(EXIT_FAILURE, "Failed to open file %s", data_cpp_fname);
+
     // Preamble
     time_t start_time;
     time(&start_time);
@@ -325,9 +323,7 @@ int codegen_example(const char* output_dir, int verbose) {
     // Open example file
     example_cpp_f = fopen(example_cpp_fname, "w+");
     if (example_cpp_f == NULL)
-        //error(EXIT_FAILURE, errno, "Failed to open file %s", example_cpp_fname);
         ERROR_MSG(EXIT_FAILURE, "Failed to open file %s", example_cpp_fname);
-        return EXIT_FAILURE;
 
     // Preamble
     time_t start_time;
