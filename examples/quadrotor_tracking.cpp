@@ -22,8 +22,7 @@
 #include <iostream>
 #include <tinympc/tiny_api.hpp>
 
-extern "C"
-{
+extern "C" {
 
 
 #include "problem_data/quadrotor_20hz_params.hpp"

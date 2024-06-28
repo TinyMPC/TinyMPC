@@ -24,8 +24,7 @@
 #include <tinympc/tiny_api.hpp>
 #include "problem_data/quadrotor_20hz_params.hpp"
 
-extern "C"
-{
+extern "C" {
 
 typedef Matrix<tinytype, NINPUTS, NHORIZON-1> tiny_MatrixNuNhm1;
 typedef Matrix<tinytype, NSTATES, NHORIZON> tiny_MatrixNxNh;

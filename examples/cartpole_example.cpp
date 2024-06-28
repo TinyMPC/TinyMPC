@@ -23,8 +23,7 @@
 #define NHORIZON 10
 #define NTOTAL 400
 
-extern "C"
-{
+extern "C" {
 
 typedef Matrix<tinytype, NINPUTS, NHORIZON-1> tiny_MatrixNuNhm1;
 typedef Matrix<tinytype, NSTATES, NHORIZON> tiny_MatrixNxNh;

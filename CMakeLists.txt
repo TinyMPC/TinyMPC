@@ -10,6 +10,9 @@ include_directories(include/Eigen)
 # include_directories(${EIGEN3_INCLUDE_DIR})
 # message("${EIGEN3_INCLUDE_DIR}")
 
+set(USING_CODEGEN OFF) # Turn this on when building Python wrapper
+
+if(USING_CODEGEN)
 
 # Create codegen directories
 set( EMBEDDED_BUILD_ROOT_DIR "${CMAKE_BINARY_DIR}/codegen_src" )
@@ -36,6 +39,8 @@ set(TINY_CODEGEN_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/tinympc/codegen_files
 install(DIRECTORY
         "${EMBEDDED_BUILD_ROOT_DIR}/"
         DESTINATION "${TINY_CODEGEN_INSTALL_DIR}" COMPONENT codegen)
+
+endif(USING_CODEGEN)
 
 # Add tinympcstatic library
 add_subdirectory(src/tinympc)

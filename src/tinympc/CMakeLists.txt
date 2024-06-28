@@ -12,6 +12,7 @@ target_include_directories(tinympcstatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../.
 
 
 
+if(USING_CODEGEN) # Defined in top-level CMakeLists.txt
 
 # Files that are needed for embedded code generation
 list( APPEND EMBEDDED_FILES
@@ -37,3 +38,5 @@ endforeach()
 
 add_custom_target( copy_codegen_tinympc_files DEPENDS ${EMBEDDED_BUILD_TINYMPC_FILES} )
 add_dependencies( copy_codegen_files copy_codegen_tinympc_files )
+
+endif(USING_CODEGEN)
