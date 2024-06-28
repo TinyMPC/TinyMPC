@@ -44,7 +44,7 @@ int main()
     tinyMatrix u_min = Map<tiny_MatrixNuNhm1>(u_min_data);
     tinyMatrix u_max = Map<tiny_MatrixNuNhm1>(u_max_data);
 
-    int verbose = 0;
+    int verbose = 1;
     int status = tiny_setup(&solver,
                             Adyn, Bdyn, Q.asDiagonal(), R.asDiagonal(),
                             rho_value, NSTATES, NINPUTS, NHORIZON,
