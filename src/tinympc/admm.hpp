@@ -3,8 +3,7 @@
 #include "types.hpp"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 int solve(TinySolver *solver);

@@ -4,8 +4,7 @@
 
 #define DEBUG_MODULE "TINYALG"
 
-extern "C"
-{
+extern "C" {
 
 /**
     * Update linear terms from Riccati backward pass

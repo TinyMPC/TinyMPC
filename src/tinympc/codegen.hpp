@@ -3,8 +3,7 @@
 #include "types.hpp"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
     int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose);

@@ -11,8 +11,7 @@
 #define NINPUTS 2  // input dimension: F (Newtons)
 #define NHORIZON 3 // horizon
 
-extern "C"
-{
+extern "C" {
 
 typedef Matrix<tinytype, NINPUTS, NHORIZON-1, ColMajor> tiny_MatrixNuNhm1;
 typedef Matrix<tinytype, NSTATES, NHORIZON, ColMajor> tiny_MatrixNxNh;

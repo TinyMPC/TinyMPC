@@ -15,8 +15,7 @@
 #include "codegen.hpp"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /* Define the maximum allowed length of the path (directory + filename + extension) */

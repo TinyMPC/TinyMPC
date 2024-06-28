@@ -9,8 +9,7 @@ using namespace Eigen;
 
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
     typedef double tinytype;  // should be double if you want to generate code
