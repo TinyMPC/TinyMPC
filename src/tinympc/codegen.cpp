@@ -89,7 +89,7 @@ int codegen_data_header(const char* output_dir, int verbose) {
     char data_hpp_fname[PATH_LENGTH];
     FILE *data_hpp_f;
 
-    sprintf(data_hpp_fname, "%s/tinympc1/tiny_data.hpp", output_dir);
+    sprintf(data_hpp_fname, "%s/tinympc/tiny_data.hpp", output_dir);
 
     // Open data header file
     data_hpp_f = fopen(data_hpp_fname, "w+");
