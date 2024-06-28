@@ -67,7 +67,7 @@ int main()
 
     // Reference trajectory
     tiny_VectorNx Xref_origin;
-    Xref_origin << 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    Xref_origin << 1.0, 0, 0, 0;
     work->Xref = Xref_origin.replicate<1, 10>();
 
     for (int k = 0; k < NTOTAL - NHORIZON; ++k)
