@@ -2,7 +2,13 @@
 // The code will be generated in the `tinympc_generated_code_random_example` folder
 
 #include <iostream>
+#ifdef __MINGW32__
+#include <experimental/filesystem>
+namespace std_fs = std::experimental::filesystem;
+#else
 #include <filesystem>
+namespace std_fs = std::filesystem;
+#endif
 
 #include <tinympc/tiny_api.hpp>
 #include <tinympc/codegen.hpp>
@@ -16,7 +22,7 @@ extern "C" {
 typedef Matrix<tinytype, NINPUTS, NHORIZON-1, ColMajor> tiny_MatrixNuNhm1;
 typedef Matrix<tinytype, NSTATES, NHORIZON, ColMajor> tiny_MatrixNxNh;
 
-std::filesystem::path output_dir_relative = "tinympc_generated_code_random_example/";
+std_fs::path output_dir_relative = "tinympc_generated_code_random_example/";
 
 int main()
 {
@@ -57,7 +63,7 @@ int main()
     solver->settings->check_termination = 1; 
 
 
-    tiny_codegen(solver, std::filesystem::absolute(output_dir_relative).string().c_str(), verbose);
+    tiny_codegen(solver, std_fs::absolute(output_dir_relative).string().c_str(), verbose);
 
     return 0;
 }
