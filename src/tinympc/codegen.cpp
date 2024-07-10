@@ -14,6 +14,13 @@
 // #include "types.hpp"
 #include "codegen.hpp"
 
+#ifdef __MINGW32__
+#include <direct.h>
+inline int mkdir(const char *pathname, int flags) {
+    return _mkdir(pathname);
+}
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
