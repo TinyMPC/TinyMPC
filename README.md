@@ -72,7 +72,6 @@ If you are using TinyMPC, we encourage you to
       eprint={2403.18149},
       archivePrefix={arXiv},
 }
-
 ```
 * Put a star ⭐ on this repository.
 
