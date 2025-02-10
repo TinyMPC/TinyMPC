@@ -1,0 +1,3 @@
+obj-y += admm.o
+obj-y += codegen.o
+obj-y += tiny_api.o
