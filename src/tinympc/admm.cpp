@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "admm.hpp"
+#include "rho_benchmark.hpp"    
 
 #define DEBUG_MODULE "TINYALG"
 
@@ -113,6 +114,18 @@ int solve(TinySolver *solver)
     solver->work->status = 11; // TINY_UNSOLVED
     solver->work->iter = 0;
 
+    // Setup for adaptive rho
+    RhoAdapter adapter;
+    adapter.rho_min = solver->settings->adaptive_rho_min;
+    adapter.rho_max = solver->settings->adaptive_rho_max;
+    adapter.clip = solver->settings->adaptive_rho_enable_clipping;
+    
+    RhoBenchmarkResult rho_result;
+
+    // Store previous values for residuals
+    tinyMatrix v_prev = solver->work->vnew;
+    tinyMatrix z_prev = solver->work->znew;
+
     for (int i = 0; i < solver->settings->max_iter; i++)
     {
         // Solve linear system with Riccati and roll out to get new trajectory
@@ -128,6 +141,33 @@ int solve(TinySolver *solver)
         update_linear_cost(solver);
 
         solver->work->iter += 1;
+
+        // Calculate residuals for adaptive rho
+        tinytype pri_res_input = (solver->work->u - solver->work->znew).cwiseAbs().maxCoeff();
+        tinytype pri_res_state = (solver->work->x - solver->work->vnew).cwiseAbs().maxCoeff();
+        tinytype dua_res_input = solver->cache->rho * (solver->work->znew - z_prev).cwiseAbs().maxCoeff();
+        tinytype dua_res_state = solver->cache->rho * (solver->work->vnew - v_prev).cwiseAbs().maxCoeff();
+
+        // Update rho every 5 iterations
+        if (i > 0 && i % 5 == 0) {
+            benchmark_rho_adaptation(
+                solver->work->x.col(0).data(),
+                solver->work->u.col(0).data(),
+                solver->work->vnew.col(0).data(),
+                std::max(pri_res_input, pri_res_state),
+                std::max(dua_res_input, dua_res_state),
+                &rho_result,
+                &adapter,
+                solver->cache->rho
+            );
+            
+            // Just update the rho value without recomputing cache
+            solver->cache->rho = rho_result.final_rho;
+        }
+        
+        // Store previous values for next iteration
+        z_prev = solver->work->znew;
+        v_prev = solver->work->vnew;
 
         // Check for whether cost is minimized by calculating residuals
         if (termination_condition(solver)) {
@@ -146,8 +186,8 @@ int solve(TinySolver *solver)
         solver->work->z = solver->work->znew;
 
         backward_pass_grad(solver);
-
     }
+    
     solver->solution->iter = solver->work->iter;
     solver->solution->solved = 0;
     solver->solution->x = solver->work->vnew;

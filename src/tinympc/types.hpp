@@ -57,6 +57,11 @@ extern "C" {
         int check_termination;
         int en_state_bound;
         int en_input_bound;
+
+        // Adaptive rho settings
+        tinytype adaptive_rho_min;
+        tinytype adaptive_rho_max;
+        int adaptive_rho_enable_clipping;
     } TinySettings;
 
     /**

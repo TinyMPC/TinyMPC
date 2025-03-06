@@ -215,6 +215,12 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->check_termination = TINY_DEFAULT_CHECK_TERMINATION;
     settings->en_state_bound = TINY_DEFAULT_EN_STATE_BOUND;
     settings->en_input_bound = TINY_DEFAULT_EN_INPUT_BOUND;
+    
+    // Default adaptive rho settings
+    settings->adaptive_rho_min = 0.1;
+    settings->adaptive_rho_max = 100.0;
+    settings->adaptive_rho_enable_clipping = 1;
+    
     return 0;
 }
 
