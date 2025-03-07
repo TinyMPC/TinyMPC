@@ -27,6 +27,12 @@ int tiny_set_x0(TinySolver* solver, tinyVector x0);
 int tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref);
 int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref);
 
+/**
+ * Initialize sensitivity matrices for adaptive rho
+ * 
+ * @param solver Pointer to solver
+ */
+void tiny_initialize_sensitivity_matrices(TinySolver *solver);
 
 #ifdef __cplusplus
 }

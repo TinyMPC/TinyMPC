@@ -149,20 +149,23 @@ int solve(TinySolver *solver)
         tinytype dua_res_state = solver->cache->rho * (solver->work->vnew - v_prev).cwiseAbs().maxCoeff();
 
         // Update rho every 5 iterations
-        if (i > 0 && i % 5 == 0) {
+        if (i > 0 && i % 5 == 0 && solver->settings->adaptive_rho) {
             benchmark_rho_adaptation(
-                solver->work->x.col(0).data(),
-                solver->work->u.col(0).data(),
-                solver->work->vnew.col(0).data(),
-                std::max(pri_res_input, pri_res_state),
-                std::max(dua_res_input, dua_res_state),
-                &rho_result,
                 &adapter,
-                solver->cache->rho
+                solver->work->x,
+                solver->work->u,
+                solver->work->vnew,
+                solver->work->znew,
+                solver->work->g,
+                solver->work->y,
+                solver->cache,
+                solver->work,
+                solver->work->N,
+                &rho_result
             );
             
-            // Just update the rho value without recomputing cache
-            solver->cache->rho = rho_result.final_rho;
+            // Update matrices using Taylor expansion
+           // update_matrices_with_derivatives(solver->cache, rho_result.final_rho);
         }
         
         // Store previous values for next iteration
