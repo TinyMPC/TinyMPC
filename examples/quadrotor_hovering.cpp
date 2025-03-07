@@ -50,7 +50,7 @@ int main()
                             x_min, x_max, u_min, u_max, 1);
     
     // Update whichever settings we'd like
-    solver->settings->max_iter = 100;
+    solver->settings->max_iter = 500;
     
     // Alias solver->work for brevity
     TinyWorkspace *work = solver->work;
@@ -64,7 +64,10 @@ int main()
     Xref_origin << 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0;
     work->Xref = Xref_origin.replicate<1, 10>();
 
-    for (int k = 0; k < 70; ++k)
+    // Track total iterations across all MPC solves
+    int total_iterations = 0;
+
+    for (int k = 0; k < solver->settings->max_iter; ++k)
     {
         printf("tracking error at step %2d: %.4f\n", k, (x0 - work->Xref.col(1)).norm());
 
@@ -73,11 +76,17 @@ int main()
 
         // 2. Solve MPC problem
         tiny_solve(solver);
+        
+        // 3. Track iterations
+        total_iterations += solver->solution->iter;
+        printf("Iterations for step %2d: %d (cumulative: %d)\n", 
+               k, solver->solution->iter, total_iterations);
 
-        // 3. Simulate forward
+        // 4. Simulate forward
         x0 = work->Adyn * x0 + work->Bdyn * work->u.col(0);
     }
 
+    printf("\nTotal iterations across all MPC solves: %d\n", total_iterations);
     return 0;
 }
 

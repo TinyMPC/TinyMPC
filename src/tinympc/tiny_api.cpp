@@ -223,8 +223,8 @@ int tiny_set_default_settings(TinySettings* settings) {
     
     // Default adaptive rho settings
     settings->adaptive_rho = 1;                // Disabled by default
-    settings->adaptive_rho_min = 1.0;
-    settings->adaptive_rho_max = 10.0;
+    settings->adaptive_rho_min = 60.0;
+    settings->adaptive_rho_max = 100.0;
     settings->adaptive_rho_enable_clipping = 1;
     
     return 0;
