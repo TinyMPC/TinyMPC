@@ -50,7 +50,7 @@ int main()
                             x_min, x_max, u_min, u_max, 1);
     
     // Update whichever settings we'd like
-    solver->settings->max_iter = 500;
+    solver->settings->max_iter = 100;
     
     // Alias solver->work for brevity
     TinyWorkspace *work = solver->work;
@@ -79,8 +79,8 @@ int main()
         
         // 3. Track iterations
         total_iterations += solver->solution->iter;
-        printf("Iterations for step %2d: %d (cumulative: %d)\n", 
-               k, solver->solution->iter, total_iterations);
+        // printf("Iterations for step %2d: %d (cumulative: %d)\n", 
+        //        k, solver->solution->iter, total_iterations);
 
         // 4. Simulate forward
         x0 = work->Adyn * x0 + work->Bdyn * work->u.col(0);

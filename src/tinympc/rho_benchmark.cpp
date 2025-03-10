@@ -199,62 +199,19 @@ tinytype predict_rho(
 void update_matrices_with_derivatives(TinyCache* cache, tinytype new_rho) {
     tinytype delta_rho = new_rho - cache->rho;
     
-    // // Print dimensions for debugging
-    // std::cout << "Matrix dimensions:" << std::endl;
-    // std::cout << "Kinf: " << cache->Kinf.rows() << "x" << cache->Kinf.cols() << std::endl;
-    // std::cout << "dKinf_drho: " << cache->dKinf_drho.rows() << "x" << cache->dKinf_drho.cols() << std::endl;
-    // std::cout << "Pinf: " << cache->Pinf.rows() << "x" << cache->Pinf.cols() << std::endl;
-    // std::cout << "dPinf_drho: " << cache->dPinf_drho.rows() << "x" << cache->dPinf_drho.cols() << std::endl;
-    // std::cout << "C1: " << cache->C1.rows() << "x" << cache->C1.cols() << std::endl;
-    // std::cout << "dC1_drho: " << cache->dC1_drho.rows() << "x" << cache->dC1_drho.cols() << std::endl;
-    // std::cout << "C2: " << cache->C2.rows() << "x" << cache->C2.cols() << std::endl;
-    // std::cout << "dC2_drho: " << cache->dC2_drho.rows() << "x" << cache->dC2_drho.cols() << std::endl;
-    
-    // Create temporary matrices with correct dimensions
-    tinyMatrix dKinf = tinyMatrix::Zero(cache->Kinf.rows(), cache->Kinf.cols());
-    tinyMatrix dPinf = tinyMatrix::Zero(cache->Pinf.rows(), cache->Pinf.cols());
-    tinyMatrix dC1 = tinyMatrix::Zero(cache->C1.rows(), cache->C1.cols());
-    tinyMatrix dC2 = tinyMatrix::Zero(cache->C2.rows(), cache->C2.cols());
-    
-    // Copy values from sensitivity matrices to temporary matrices
-    // Only copy values that fit within the dimensions
-    for (int i = 0; i < std::min(dKinf.rows(), cache->dKinf_drho.rows()); i++) {
-        for (int j = 0; j < std::min(dKinf.cols(), cache->dKinf_drho.cols()); j++) {
-            dKinf(i, j) = cache->dKinf_drho(i, j);
-        }
+    // Direct updates only when new rho is 5 times greater or less than current rho
+    if (new_rho > 5 * cache->rho || new_rho < cache->rho / 5) {
+        
+        cache->Kinf += delta_rho * cache->dKinf_drho;
+        cache->Pinf += delta_rho * cache->dPinf_drho;
+        cache->C1 += delta_rho * cache->dC1_drho;
+        cache->C2 += delta_rho * cache->dC2_drho;
     }
+
+    cache->rho = new_rho;
     
-    for (int i = 0; i < std::min(dPinf.rows(), cache->dPinf_drho.rows()); i++) {
-        for (int j = 0; j < std::min(dPinf.cols(), cache->dPinf_drho.cols()); j++) {
-            dPinf(i, j) = cache->dPinf_drho(i, j);
-        }
-    }
-    
-    for (int i = 0; i < std::min(dC1.rows(), cache->dC1_drho.rows()); i++) {
-        for (int j = 0; j < std::min(dC1.cols(), cache->dC1_drho.cols()); j++) {
-            dC1(i, j) = cache->dC1_drho(i, j);
-        }
-    }
-    
-    for (int i = 0; i < std::min(dC2.rows(), cache->dC2_drho.rows()); i++) {
-        for (int j = 0; j < std::min(dC2.cols(), cache->dC2_drho.cols()); j++) {
-            dC2(i, j) = cache->dC2_drho(i, j);
-        }
-    }
-    
-    // Update matrices using Taylor expansion with correctly sized matrices
-    cache->Kinf += delta_rho * dKinf;
-    cache->Pinf += delta_rho * dPinf;
-    cache->C1 += delta_rho * dC1;
-    cache->C2 += delta_rho * dC2;
-    
-    // Print rho update info
-    std::cout << "Rho updated: " << cache->rho << " -> " << new_rho << " (delta: " << delta_rho << ")" << std::endl;
-    
-    // Update rho only if new rho greater than or less by  factor of 5 
-    if (new_rho > cache->rho * 5 || new_rho < cache->rho / 5) {
-        cache->rho = new_rho;
-    }
+    // std::cout << "Rho updated: " << cache->rho << " -> " << new_rho 
+    //           << " (delta: " << delta_rho << ")" << std::endl;
 }
 
 void benchmark_rho_adaptation(

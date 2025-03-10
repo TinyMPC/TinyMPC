@@ -65,6 +65,9 @@ int main()
     tiny_VectorNx x0;
     x0 = work->Xref.col(0);
 
+    // Track total iterations across all MPC solves
+    int total_iterations = 0;
+
     for (int k = 0; k < NTOTAL - NHORIZON; ++k)
     {
         std::cout << "tracking error: " << (x0 - work->Xref.col(1)).norm() << std::endl;
@@ -82,10 +85,16 @@ int main()
         // 4. Solve MPC problem
         tiny_solve(solver);
 
+        // 5. Track iterations
+        total_iterations += solver->solution->iter;
+        printf("Iterations for step %2d: %d (cumulative: %d)\n", 
+               k, solver->solution->iter, total_iterations);
+
         // 5. Simulate forward
         x0 = work->Adyn * x0 + work->Bdyn * work->u.col(0);
     }
 
+    printf("\nTotal iterations across all MPC solves: %d\n", total_iterations);
     return 0;
 }
 

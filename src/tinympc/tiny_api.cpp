@@ -171,6 +171,8 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     tinyMatrix Quu_inv = (R1 + Bdyn.transpose() * Pinf * Bdyn).inverse();
     tinyMatrix AmBKt = (Adyn - Bdyn * Kinf).transpose();
 
+
+
     if (verbose) {
         std::cout << "Kinf = " << Kinf.format(TinyApiFmt) << std::endl;
         std::cout << "Pinf = " << Pinf.format(TinyApiFmt) << std::endl;
@@ -185,6 +187,8 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     cache->Pinf = Pinf;
     cache->Quu_inv = Quu_inv;
     cache->AmBKt = AmBKt;
+    cache->C1 = Quu_inv;
+    cache->C2 = AmBKt;
 
     return 0; // return success
 }
@@ -225,7 +229,7 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->adaptive_rho = 1;                // Disabled by default
     settings->adaptive_rho_min = 60.0;
     settings->adaptive_rho_max = 100.0;
-    settings->adaptive_rho_enable_clipping = 1;
+    settings->adaptive_rho_enable_clipping = 0;
     
     return 0;
 }
