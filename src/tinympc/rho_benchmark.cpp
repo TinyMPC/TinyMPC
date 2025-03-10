@@ -210,8 +210,8 @@ void update_matrices_with_derivatives(TinyCache* cache, tinytype new_rho) {
 
     cache->rho = new_rho;
     
-    // std::cout << "Rho updated: " << cache->rho << " -> " << new_rho 
-    //           << " (delta: " << delta_rho << ")" << std::endl;
+    std::cout << "Rho updated: " << cache->rho << " -> " << new_rho 
+              << " (delta: " << delta_rho << ")" << std::endl;
 }
 
 void benchmark_rho_adaptation(
