@@ -68,8 +68,14 @@ int main()
     // Track total iterations across all MPC solves
     int total_iterations = 0;
 
+    tinytype total_tracking_error = 0;
+
     for (int k = 0; k < NTOTAL - NHORIZON; ++k)
     {
+
+        tinytype current_error = (x0 - work->Xref.col(1)).norm();
+        total_tracking_error += current_error;
+        
         std::cout << "tracking error: " << (x0 - work->Xref.col(1)).norm() << std::endl;
 
         // 1. Update measurement
@@ -95,6 +101,7 @@ int main()
     }
 
     printf("\nTotal iterations across all MPC solves: %d\n", total_iterations);
+    printf("Average tracking error: %.4f\n", total_tracking_error / solver->settings->max_iter);
     return 0;
 }
 

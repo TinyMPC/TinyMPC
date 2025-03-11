@@ -2,7 +2,7 @@
 
 #include <tinympc/types.hpp>
 
-tinytype rho_value = 85.0;
+tinytype rho_value = 5.0;
 
 tinytype Adyn_data[NSTATES * NSTATES] = {
     1.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0245250, 0.0000000, 0.0500000, 0.0000000, 0.0000000, 0.0000000, 0.0002044, 0.0000000,

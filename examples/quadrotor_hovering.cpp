@@ -66,10 +66,14 @@ int main()
 
     // Track total iterations across all MPC solves
     int total_iterations = 0;
+    // Track sum of tracking errors for averaging
+    tinytype total_tracking_error = 0;
 
     for (int k = 0; k < solver->settings->max_iter; ++k)
     {
-        printf("tracking error at step %2d: %.4f\n", k, (x0 - work->Xref.col(1)).norm());
+        tinytype current_error = (x0 - work->Xref.col(1)).norm();
+        total_tracking_error += current_error;
+        printf("tracking error at step %2d: %.4f\n", k, current_error);
 
         // 1. Update measurement
         tiny_set_x0(solver, x0);
@@ -87,6 +91,7 @@ int main()
     }
 
     printf("\nTotal iterations across all MPC solves: %d\n", total_iterations);
+    printf("Average tracking error: %.4f\n", total_tracking_error / solver->settings->max_iter);
     return 0;
 }
 
