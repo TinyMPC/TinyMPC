@@ -115,10 +115,10 @@ int tiny_setup(TinySolver** solverp,
         return status;
     }
 
-    // Initialize sensitivity matrices for adaptive rho
-    if (solver->settings->adaptive_rho) {
-        tiny_initialize_sensitivity_matrices(solver);
-    }
+    // // Initialize sensitivity matrices for adaptive rho
+    // if (solver->settings->adaptive_rho) {
+    //     tiny_initialize_sensitivity_matrices(solver);
+    // }
 
     return 0;
 }
@@ -171,8 +171,6 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     tinyMatrix Quu_inv = (R1 + Bdyn.transpose() * Pinf * Bdyn).inverse();
     tinyMatrix AmBKt = (Adyn - Bdyn * Kinf).transpose();
 
-
-
     if (verbose) {
         std::cout << "Kinf = " << Kinf.format(TinyApiFmt) << std::endl;
         std::cout << "Pinf = " << Pinf.format(TinyApiFmt) << std::endl;
@@ -189,8 +187,87 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     cache->AmBKt = AmBKt;
     cache->C1 = Quu_inv;
     cache->C2 = AmBKt;
+    
+    // Compute sensitivity matrices
+   compute_sensitivity_matrices(cache, Adyn, Bdyn, Q, R, nx, nu, rho, verbose);
 
     return 0; // return success
+}
+
+// New function to compute sensitivity matrices
+void compute_sensitivity_matrices(TinyCache *cache,
+                                 tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix Q, tinyMatrix R,
+                                 int nx, int nu, tinytype rho, int verbose) {
+    
+    if (verbose) {
+        std::cout << "Starting compute_sensitivity_matrices with dimensions:" << std::endl;
+        std::cout << "nx = " << nx << ", nu = " << nu << std::endl;
+        std::cout << "Adyn: " << Adyn.rows() << "x" << Adyn.cols() << std::endl;
+        std::cout << "Bdyn: " << Bdyn.rows() << "x" << Bdyn.cols() << std::endl;
+        std::cout << "Kinf: " << cache->Kinf.rows() << "x" << cache->Kinf.cols() << std::endl;
+        std::cout << "Pinf: " << cache->Pinf.rows() << "x" << cache->Pinf.cols() << std::endl;
+    }
+    
+    // Get cached values
+    tinyMatrix Kinf = cache->Kinf;
+    tinyMatrix Pinf = cache->Pinf;
+    
+    // Identity matrices
+    tinyMatrix Inx = tinyMatrix::Identity(nx, nx);
+    tinyMatrix Inu = tinyMatrix::Identity(nu, nu);
+    
+    // Compute intermediate matrices
+    tinyMatrix BtP = Bdyn.transpose() * Pinf;
+    tinyMatrix BtPB = BtP * Bdyn;
+    tinyMatrix R_BtPB = R + rho * Inu + BtPB;
+    tinyMatrix R_BtPB_inv = R_BtPB.inverse();
+    tinyMatrix Acl = Adyn - Bdyn * Kinf;
+    tinyMatrix Acl_t = Acl.transpose();
+    
+    // Compute dK/drho (derivative of Kinf with respect to rho)
+    tinyMatrix temp1 = BtP * Bdyn;
+    tinyMatrix temp2 = temp1 * R_BtPB_inv;
+    tinyMatrix temp3 = Inu + temp2;
+    tinyMatrix temp4 = R_BtPB_inv * temp3;
+    tinyMatrix temp5 = BtP * Acl;
+    tinyMatrix dK_drho = -temp4 * temp5;
+    
+    // Compute dP/drho using Lyapunov equation approach
+    // The Lyapunov equation for dP/drho is:
+    // dP/drho = Inx + Acl_t * (dP/drho) * Acl + dL/drho
+    // where dL/drho contains terms related to dK/drho
+    
+    // First, compute dL/drho
+    tinyMatrix dL_drho = Kinf.transpose() * Inu * Kinf;
+    
+    // Now solve the Lyapunov equation iteratively
+    tinyMatrix dP_drho = Inx;  // Initial guess
+    
+    // Perform fixed-point iterations to solve the Lyapunov equation
+    for (int i = 0; i < 500; i++) {
+        dP_drho = dL_drho + Acl_t * dP_drho * Acl;
+    }
+    
+    // Compute dC1/drho (derivative of Quu_inv)
+    tinyMatrix dC1_drho = -R_BtPB_inv * temp3;
+    
+    // Compute dC2/drho (derivative of AmBKt)
+    tinyMatrix dC2_drho = -(Bdyn * dK_drho).transpose();
+    
+    // Scale the matrices to avoid too large updates
+    double scale_factor = 0.01;
+    dK_drho *= scale_factor;
+    dP_drho *= scale_factor;
+    dC1_drho *= scale_factor;
+    dC2_drho *= scale_factor;
+    
+    // Store the computed sensitivity matrices
+    cache->dKinf_drho = dK_drho;
+    cache->dPinf_drho = dP_drho;
+    cache->dC1_drho = dC1_drho;
+    cache->dC2_drho = dC2_drho;
+    
+    if (verbose) std::cout << "Sensitivity matrices computed successfully" << std::endl;
 }
 
 int tiny_solve(TinySolver* solver) {
@@ -279,7 +356,8 @@ void tiny_initialize_sensitivity_matrices(TinySolver *solver) {
     solver->cache->dPinf_drho = tinyMatrix::Zero(nx, nx);
     solver->cache->dC1_drho = tinyMatrix::Zero(nu, nu);
     solver->cache->dC2_drho = tinyMatrix::Zero(nx, nx);
-    
+
+  
     // Pre-computed sensitivity matrices
     const float dKinf_drho[4][12] = {
         { 0.0001, -0.0000, -0.0016,  0.0002,  0.0005,  0.0033,  0.0001, -0.0000, -0.0009,  0.0000,  0.0001,  0.0010},
@@ -324,7 +402,8 @@ void tiny_initialize_sensitivity_matrices(TinySolver *solver) {
         { 0.0002, -0.0000,  0.0000,  0.0001,  0.0007, -0.0002,  0.0002, -0.0000, -0.0000,  0.0000,  0.0001, -0.0001},
         { 0.0000, -0.0000, -0.0000,  0.0000,  0.0001,  0.0011,  0.0000, -0.0000, -0.0000,  0.0000,  0.0000,  0.0003}
     };
-    
+
+   
     // Map arrays to Eigen matrices
     solver->cache->dKinf_drho = Map<const Matrix<float, 4, 12>>(dKinf_drho[0]).cast<tinytype>();
     solver->cache->dPinf_drho = Map<const Matrix<float, 12, 12>>(dPinf_drho[0]).cast<tinytype>();

@@ -199,19 +199,25 @@ tinytype predict_rho(
 void update_matrices_with_derivatives(TinyCache* cache, tinytype new_rho) {
     tinytype delta_rho = new_rho - cache->rho;
     
-    // Direct updates only when new rho is 5 times greater or less than current rho
-    if (new_rho > 5 * cache->rho || new_rho < cache->rho / 5) {
+    // //Direct updates only when new rho is 5 times greater or less than current rho
+    // if (new_rho > 2 * cache->rho || new_rho < cache->rho / 2) {
         
-        cache->Kinf += delta_rho * cache->dKinf_drho;
-        cache->Pinf += delta_rho * cache->dPinf_drho;
-        cache->C1 += delta_rho * cache->dC1_drho;
-        cache->C2 += delta_rho * cache->dC2_drho;
-    }
+    //     cache->Kinf += delta_rho * cache->dKinf_drho;
+    //     cache->Pinf += delta_rho * cache->dPinf_drho;
+    //     cache->C1 += delta_rho * cache->dC1_drho;
+    //     cache->C2 += delta_rho * cache->dC2_drho;
+    //     std::cout << "Rho updated: " << cache->rho << " -> " << new_rho 
+    //           << " (delta: " << delta_rho << ")" << std::endl;
+    // }
+
+    cache->Kinf += delta_rho * cache->dKinf_drho;
+    cache->Pinf += delta_rho * cache->dPinf_drho;
+    cache->C1 += delta_rho * cache->dC1_drho;
+    cache->C2 += delta_rho * cache->dC2_drho;
 
     cache->rho = new_rho;
     
-    std::cout << "Rho updated: " << cache->rho << " -> " << new_rho 
-              << " (delta: " << delta_rho << ")" << std::endl;
+
 }
 
 void benchmark_rho_adaptation(

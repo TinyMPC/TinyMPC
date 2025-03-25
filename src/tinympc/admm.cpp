@@ -149,7 +149,7 @@ int solve(TinySolver *solver)
         tinytype dua_res_state = solver->cache->rho * (solver->work->vnew - v_prev).cwiseAbs().maxCoeff();
 
         // Update rho every 5 iterations
-        if (i % 5 == 0 || i > 0.4 * solver->settings->max_iter) {
+        if (i % 5 == 0 ) {
             benchmark_rho_adaptation(
                 &adapter,
                 solver->work->x,
