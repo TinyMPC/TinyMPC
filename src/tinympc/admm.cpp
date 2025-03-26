@@ -149,7 +149,7 @@ int solve(TinySolver *solver)
         tinytype dua_res_state = solver->cache->rho * (solver->work->vnew - v_prev).cwiseAbs().maxCoeff();
 
         // Update rho every 5 iterations
-        if (i % 5 == 0) {
+        if (i> 0 && i % 5 == 0) {
             benchmark_rho_adaptation(
                 &adapter,
                 solver->work->x,
@@ -165,7 +165,7 @@ int solve(TinySolver *solver)
             );
             
             // Update matrices using Taylor expansion
-           //update_matrices_with_derivatives(solver->cache, rho_result.final_rho);
+           update_matrices_with_derivatives(solver->cache, rho_result.final_rho);
         }
         
         // Store previous values for next iteration
