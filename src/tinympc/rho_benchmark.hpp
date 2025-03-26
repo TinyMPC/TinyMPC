@@ -75,6 +75,9 @@ tinytype predict_rho(
     tinytype current_rho
 );
 
+// Update matrices using derivatives
+void update_matrices_with_derivatives(TinyCache* cache, tinytype new_rho);
+
 
 // Main benchmark function
 void benchmark_rho_adaptation(

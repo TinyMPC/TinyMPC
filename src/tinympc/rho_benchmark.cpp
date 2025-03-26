@@ -196,6 +196,20 @@ tinytype predict_rho(
     return new_rho;
 }
 
+void update_matrices_with_derivatives(TinyCache* cache, tinytype new_rho) {
+    tinytype delta_rho = new_rho - cache->rho;
+    
+
+
+    cache->Kinf = cache->Kinf + delta_rho * cache->dKinf_drho;
+    cache->Pinf = cache->Pinf + delta_rho * cache->dPinf_drho;
+    cache->C1 = cache->C1 + delta_rho * cache->dC1_drho;
+    cache->C2 = cache->C2 + delta_rho * cache->dC2_drho;
+
+    cache->rho = new_rho;
+    
+
+}
 
 void benchmark_rho_adaptation(
     RhoAdapter* adapter,
