@@ -2,6 +2,7 @@ add_library(tinympcstatic STATIC
     admm.cpp
     tiny_api.cpp
     codegen.cpp
+    rho_benchmark.cpp
 )
 
 set_property(TARGET tinympcstatic PROPERTY POSITION_INDEPENDENT_CODE ON)
