@@ -67,6 +67,48 @@ int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose) {
     return status;
 }
 
+
+int tiny_codegen_with_sensitivity(TinySolver* solver, 
+                const char* output_dir,
+                const tinyMatrix* dK,
+                const tinyMatrix* dP,
+                const tinyMatrix* dC1,
+                const tinyMatrix* dC2,
+                int verbose) {
+    if (!solver) {
+        std::cout << "Error in tiny_codegen: solver is nullptr" << std::endl;
+        return 1;
+    }
+
+    // Store sensitivity matrices in solver cache
+    if (dK && dP && dC1 && dC2) {
+        solver->cache->dKinf_drho = *dK;
+        solver->cache->dPinf_drho = *dP;
+        solver->cache->dC1_drho = *dC1;
+        solver->cache->dC2_drho = *dC2;
+    } else {
+        std::cout << "Warning: Some sensitivity matrices are nullptr, using default values" << std::endl;
+        // Initialize with zeros if not provided
+        int nx = solver->work->nx;
+        int nu = solver->work->nu;
+        solver->cache->dKinf_drho = tinyMatrix::Zero(nu, nx);
+        solver->cache->dPinf_drho = tinyMatrix::Zero(nx, nx);
+        solver->cache->dC1_drho = tinyMatrix::Zero(nu, nu);
+        solver->cache->dC2_drho = tinyMatrix::Zero(nx, nx);
+    }
+
+    // Call the standard codegen functions
+    int status = 0;
+    status |= codegen_create_directories(output_dir, verbose);
+    status |= codegen_data_header(output_dir, verbose);
+    status |= codegen_data_source(solver, output_dir, verbose);
+    status |= codegen_example(output_dir, verbose);
+
+    return status;
+}
+
+
+
 // Create code generation folder structure in whichever directory the executable calling tiny_codegen was called
 int codegen_create_directories(const char* output_dir, int verbose) {
 
@@ -194,6 +236,26 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, nx);
     print_matrix(data_cpp_f, solver->cache->AmBKt, nx * nx);
     fprintf(data_cpp_f, ").finished(),\t// AmBKt\n"); // AmBKt
+
+
+    fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, nx);
+    print_matrix(data_cpp_f, solver->cache->dKinf_drho, nu * nx);
+    fprintf(data_cpp_f, ").finished(),\t// dKinf_drho\n"); // dKinf_drho
+
+    fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, nx);
+    print_matrix(data_cpp_f, solver->cache->dPinf_drho, nx * nx);
+    fprintf(data_cpp_f, ").finished(),\t// dPinf_drho\n"); // dPinf_drho
+
+    fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, nu);
+    print_matrix(data_cpp_f, solver->cache->dC1_drho, nu * nu);
+    fprintf(data_cpp_f, ").finished(),\t// dC1_drho\n"); // dC1_drho
+
+    fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, nx);
+    print_matrix(data_cpp_f, solver->cache->dC2_drho, nx * nx);
+    fprintf(data_cpp_f, ").finished(),\t// dC2_drho\n"); // dC2_drho
+
+
+
 
     fprintf(data_cpp_f, "};\n\n");
 
