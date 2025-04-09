@@ -142,13 +142,16 @@ int solve(TinySolver *solver)
 
         solver->work->iter += 1;
 
-        // Calculate residuals for adaptive rho
-        tinytype pri_res_input = (solver->work->u - solver->work->znew).cwiseAbs().maxCoeff();
-        tinytype pri_res_state = (solver->work->x - solver->work->vnew).cwiseAbs().maxCoeff();
-        tinytype dua_res_input = solver->cache->rho * (solver->work->znew - z_prev).cwiseAbs().maxCoeff();
-        tinytype dua_res_state = solver->cache->rho * (solver->work->vnew - v_prev).cwiseAbs().maxCoeff();
+        
 
         if (solver->settings->adaptive_rho) {
+
+            // Calculate residuals for adaptive rho
+            tinytype pri_res_input = (solver->work->u - solver->work->znew).cwiseAbs().maxCoeff();
+            tinytype pri_res_state = (solver->work->x - solver->work->vnew).cwiseAbs().maxCoeff();
+            tinytype dua_res_input = solver->cache->rho * (solver->work->znew - z_prev).cwiseAbs().maxCoeff();
+            tinytype dua_res_state = solver->cache->rho * (solver->work->vnew - v_prev).cwiseAbs().maxCoeff();
+
             // Update rho every 5 iterations
             if (i> 0 && i % 5 == 0) {
                 benchmark_rho_adaptation(
