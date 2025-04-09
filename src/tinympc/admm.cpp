@@ -148,26 +148,28 @@ int solve(TinySolver *solver)
         tinytype dua_res_input = solver->cache->rho * (solver->work->znew - z_prev).cwiseAbs().maxCoeff();
         tinytype dua_res_state = solver->cache->rho * (solver->work->vnew - v_prev).cwiseAbs().maxCoeff();
 
-        // Update rho every 5 iterations
-        if (i> 0 && i % 5 == 0) {
-            benchmark_rho_adaptation(
-                &adapter,
-                solver->work->x,
-                solver->work->u,
-                solver->work->vnew,
-                solver->work->znew,
-                solver->work->g,
-                solver->work->y,
-                solver->cache,
-                solver->work,
-                solver->work->N,
-                &rho_result
-            );
-            
-            // Update matrices using Taylor expansion
-           update_matrices_with_derivatives(solver->cache, rho_result.final_rho);
+        if (solver->settings->adaptive_rho) {
+            // Update rho every 5 iterations
+            if (i> 0 && i % 5 == 0) {
+                benchmark_rho_adaptation(
+                    &adapter,
+                    solver->work->x,
+                    solver->work->u,
+                    solver->work->vnew,
+                    solver->work->znew,
+                    solver->work->g,
+                    solver->work->y,
+                    solver->cache,
+                    solver->work,
+                    solver->work->N,
+                    &rho_result
+                );
+                
+                // Update matrices using Taylor expansion
+                update_matrices_with_derivatives(solver->cache, rho_result.final_rho);
+            }
         }
-        
+            
         // Store previous values for next iteration
         z_prev = solver->work->znew;
         v_prev = solver->work->vnew;
