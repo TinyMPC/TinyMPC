@@ -67,6 +67,85 @@ int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose) {
     return status;
 }
 
+int tiny_codegen_with_sensitivity(TinySolver* solver, const char* output_dir,
+                                 tinyMatrix* dK, tinyMatrix* dP,
+                                 tinyMatrix* dC1, tinyMatrix* dC2, int verbose) {
+    // First, call the regular codegen function to create the basic files
+    int status = tiny_codegen(solver, output_dir, verbose);
+    if (status != 0) {
+        return status;
+    }
+
+    // Add sensitivity matrices to tiny_data.hpp
+    char data_hpp_fname[PATH_LENGTH];
+    FILE *data_hpp_f;
+
+    sprintf(data_hpp_fname, "%s/tinympc/tiny_data.hpp", output_dir);
+    data_hpp_f = fopen(data_hpp_fname, "a");  // Append mode
+    if (data_hpp_f == NULL)
+        ERROR_MSG(EXIT_FAILURE, "Failed to open file %s", data_hpp_fname);
+
+    // Add sensitivity matrices declarations
+    fprintf(data_hpp_f, "\n/* Sensitivity matrices */\n");
+    fprintf(data_hpp_f, "extern tinyMatrix dK;\n");
+    fprintf(data_hpp_f, "extern tinyMatrix dP;\n");
+    fprintf(data_hpp_f, "extern tinyMatrix dC1;\n");
+    fprintf(data_hpp_f, "extern tinyMatrix dC2;\n");
+    fclose(data_hpp_f);
+
+    // Add sensitivity matrices to tiny_data.cpp
+    char data_cpp_fname[PATH_LENGTH];
+    FILE *data_cpp_f;
+
+    sprintf(data_cpp_fname, "%s/src/tiny_data.cpp", output_dir);
+    data_cpp_f = fopen(data_cpp_fname, "a");  // Append mode
+    if (data_cpp_f == NULL)
+        ERROR_MSG(EXIT_FAILURE, "Failed to open file %s", data_cpp_fname);
+
+    // Add sensitivity matrices definitions
+    fprintf(data_cpp_f, "\n/* Sensitivity matrices */\n");
+    
+    // dK matrix
+    fprintf(data_cpp_f, "tinyMatrix dK(%d, %d);\n", (int)dK->rows(), (int)dK->cols());
+    for (int i = 0; i < dK->rows(); i++) {
+        for (int j = 0; j < dK->cols(); j++) {
+            fprintf(data_cpp_f, "dK(%d, %d) = (tinytype)%.16f;\n", i, j, (*dK)(i,j));
+        }
+    }
+
+    // dP matrix
+    fprintf(data_cpp_f, "\ntinyMatrix dP(%d, %d);\n", (int)dP->rows(), (int)dP->cols());
+    for (int i = 0; i < dP->rows(); i++) {
+        for (int j = 0; j < dP->cols(); j++) {
+            fprintf(data_cpp_f, "dP(%d, %d) = (tinytype)%.16f;\n", i, j, (*dP)(i,j));
+        }
+    }
+
+    // dC1 matrix
+    fprintf(data_cpp_f, "\ntinyMatrix dC1(%d, %d);\n", (int)dC1->rows(), (int)dC1->cols());
+    for (int i = 0; i < dC1->rows(); i++) {
+        for (int j = 0; j < dC1->cols(); j++) {
+            fprintf(data_cpp_f, "dC1(%d, %d) = (tinytype)%.16f;\n", i, j, (*dC1)(i,j));
+        }
+    }
+
+    // dC2 matrix
+    fprintf(data_cpp_f, "\ntinyMatrix dC2(%d, %d);\n", (int)dC2->rows(), (int)dC2->cols());
+    for (int i = 0; i < dC2->rows(); i++) {
+        for (int j = 0; j < dC2->cols(); j++) {
+            fprintf(data_cpp_f, "dC2(%d, %d) = (tinytype)%.16f;\n", i, j, (*dC2)(i,j));
+        }
+    }
+
+    fclose(data_cpp_f);
+
+    if (verbose) {
+        printf("Code generation with sensitivity matrices completed successfully.\n");
+    }
+
+    return 0;
+}
+
 // Create code generation folder structure in whichever directory the executable calling tiny_codegen was called
 int codegen_create_directories(const char* output_dir, int verbose) {
 
