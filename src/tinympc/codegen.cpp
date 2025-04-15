@@ -68,82 +68,24 @@ int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose) {
 }
 
 int tiny_codegen_with_sensitivity(TinySolver* solver, const char* output_dir,
-                                 tinyMatrix* dK, tinyMatrix* dP,
-                                 tinyMatrix* dC1, tinyMatrix* dC2, int verbose) {
-    // First, call the regular codegen function to create the basic files
-    int status = tiny_codegen(solver, output_dir, verbose);
-    if (status != 0) {
-        return status;
+                                tinyMatrix* dK, tinyMatrix* dP,
+                                tinyMatrix* dC1, tinyMatrix* dC2, int verbose) {
+    if (!solver) {
+        std::cout << "Error in tiny_codegen_with_sensitivity: solver is nullptr" << std::endl;
+        return 1;
     }
 
-    // Add sensitivity matrices to tiny_data.hpp
-    char data_hpp_fname[PATH_LENGTH];
-    FILE *data_hpp_f;
-
-    sprintf(data_hpp_fname, "%s/tinympc/tiny_data.hpp", output_dir);
-    data_hpp_f = fopen(data_hpp_fname, "a");  // Append mode
-    if (data_hpp_f == NULL)
-        ERROR_MSG(EXIT_FAILURE, "Failed to open file %s", data_hpp_fname);
-
-    // Add sensitivity matrices declarations
-    fprintf(data_hpp_f, "\n/* Sensitivity matrices */\n");
-    fprintf(data_hpp_f, "extern tinyMatrix dK;\n");
-    fprintf(data_hpp_f, "extern tinyMatrix dP;\n");
-    fprintf(data_hpp_f, "extern tinyMatrix dC1;\n");
-    fprintf(data_hpp_f, "extern tinyMatrix dC2;\n");
-    fclose(data_hpp_f);
-
-    // Add sensitivity matrices to tiny_data.cpp
-    char data_cpp_fname[PATH_LENGTH];
-    FILE *data_cpp_f;
-
-    sprintf(data_cpp_fname, "%s/src/tiny_data.cpp", output_dir);
-    data_cpp_f = fopen(data_cpp_fname, "a");  // Append mode
-    if (data_cpp_f == NULL)
-        ERROR_MSG(EXIT_FAILURE, "Failed to open file %s", data_cpp_fname);
-
-    // Add sensitivity matrices definitions
-    fprintf(data_cpp_f, "\n/* Sensitivity matrices */\n");
-    
-    // dK matrix
-    fprintf(data_cpp_f, "tinyMatrix dK(%d, %d);\n", (int)dK->rows(), (int)dK->cols());
-    for (int i = 0; i < dK->rows(); i++) {
-        for (int j = 0; j < dK->cols(); j++) {
-            fprintf(data_cpp_f, "dK(%d, %d) = (tinytype)%.16f;\n", i, j, (*dK)(i,j));
-        }
+    // Only store sensitivity matrices if adaptive rho is enabled
+    if (solver->settings->adaptive_rho) {
+        // Store the sensitivity matrices in the solver's cache
+        solver->cache->dKinf_drho = *dK;
+        solver->cache->dPinf_drho = *dP;
+        solver->cache->dC1_drho = *dC1;
+        solver->cache->dC2_drho = *dC2;
     }
 
-    // dP matrix
-    fprintf(data_cpp_f, "\ntinyMatrix dP(%d, %d);\n", (int)dP->rows(), (int)dP->cols());
-    for (int i = 0; i < dP->rows(); i++) {
-        for (int j = 0; j < dP->cols(); j++) {
-            fprintf(data_cpp_f, "dP(%d, %d) = (tinytype)%.16f;\n", i, j, (*dP)(i,j));
-        }
-    }
-
-    // dC1 matrix
-    fprintf(data_cpp_f, "\ntinyMatrix dC1(%d, %d);\n", (int)dC1->rows(), (int)dC1->cols());
-    for (int i = 0; i < dC1->rows(); i++) {
-        for (int j = 0; j < dC1->cols(); j++) {
-            fprintf(data_cpp_f, "dC1(%d, %d) = (tinytype)%.16f;\n", i, j, (*dC1)(i,j));
-        }
-    }
-
-    // dC2 matrix
-    fprintf(data_cpp_f, "\ntinyMatrix dC2(%d, %d);\n", (int)dC2->rows(), (int)dC2->cols());
-    for (int i = 0; i < dC2->rows(); i++) {
-        for (int j = 0; j < dC2->cols(); j++) {
-            fprintf(data_cpp_f, "dC2(%d, %d) = (tinytype)%.16f;\n", i, j, (*dC2)(i,j));
-        }
-    }
-
-    fclose(data_cpp_f);
-
-    if (verbose) {
-        printf("Code generation with sensitivity matrices completed successfully.\n");
-    }
-
-    return 0;
+    // Call the regular codegen function which will now include the sensitivity matrices if adaptive_rho is enabled
+    return tiny_codegen(solver, output_dir, verbose);
 }
 
 // Create code generation folder structure in whichever directory the executable calling tiny_codegen was called
@@ -273,6 +215,33 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, nx);
     print_matrix(data_cpp_f, solver->cache->AmBKt, nx * nx);
     fprintf(data_cpp_f, ").finished(),\t// AmBKt\n"); // AmBKt
+    fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, nx);
+    print_matrix(data_cpp_f, solver->cache->C1, nx * nx);
+    fprintf(data_cpp_f, ").finished(),\t// C1\n"); // C1
+    fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, nx);
+    print_matrix(data_cpp_f, solver->cache->C2, nx * nx);
+    fprintf(data_cpp_f, ").finished()"); // C2, no comma if no sensitivity matrices
+
+    // Only print sensitivity matrices if adaptive rho is enabled
+    if (solver->settings->adaptive_rho) {
+        fprintf(data_cpp_f, ",\t// C2\n"); // Add comma and comment for C2 if we have more matrices
+        
+        // Add sensitivity matrices within the struct initialization
+        fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nu, nx);
+        print_matrix(data_cpp_f, solver->cache->dKinf_drho, nu * nx);
+        fprintf(data_cpp_f, ").finished(),\t// dKinf_drho\n"); // dKinf_drho
+        fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, nx);
+        print_matrix(data_cpp_f, solver->cache->dPinf_drho, nx * nx);
+        fprintf(data_cpp_f, ").finished(),\t// dPinf_drho\n"); // dPinf_drho
+        fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, nx);
+        print_matrix(data_cpp_f, solver->cache->dC1_drho, nx * nx);
+        fprintf(data_cpp_f, ").finished(),\t// dC1_drho\n"); // dC1_drho
+        fprintf(data_cpp_f, "\t(tinyMatrix(%d, %d) << ", nx, nx);
+        print_matrix(data_cpp_f, solver->cache->dC2_drho, nx * nx);
+        fprintf(data_cpp_f, ").finished()\t// dC2_drho\n"); // dC2_drho
+    } else {
+        fprintf(data_cpp_f, "\t// C2\n"); // Just add comment for C2
+    }
 
     fprintf(data_cpp_f, "};\n\n");
 
