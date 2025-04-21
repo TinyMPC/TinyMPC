@@ -142,7 +142,6 @@ int solve(TinySolver *solver)
 
         solver->work->iter += 1;
 
-        
 
         if (solver->settings->adaptive_rho) {
 

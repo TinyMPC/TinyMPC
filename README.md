@@ -72,7 +72,6 @@ If you are using TinyMPC, we encourage you to
       eprint={2403.18149},
       archivePrefix={arXiv},
 }
-
 ```
 * Put a star ⭐ on this repository.
 
@@ -85,5 +84,13 @@ Please report any issues via the [Github issue tracker](https://github.com/TinyM
 ## Running on MCUs
 
 Numerical benchmarks against other solvers on MCUs are available [here](https://github.com/RoboticExplorationLab/mcu-solver-benchmarks).
+
+## TinyMPC on the Crazyflie
+
+TinyMPC-integrated firmware on the Crazyflie nano-quadrotor is available [here](https://github.com/RoboticExplorationLab/tinympc-crazyflie-firmware).
+
+## TinyMPC-AL
+
+An earlier version (not optimized) which can deal with nonlinear dynamics (e.g., bicycle models) is available [here](https://github.com/RoboticExplorationLab/TinyMPC-AL).
 
 ## Notes
