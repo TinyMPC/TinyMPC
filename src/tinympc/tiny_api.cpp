@@ -225,7 +225,7 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->en_input_bound = TINY_DEFAULT_EN_INPUT_BOUND;
     
     // Default adaptive rho settings
-    settings->adaptive_rho = 1;                // 1 - Enabled, 0 - Disabled
+    settings->adaptive_rho = 0;                // 1 - Enabled, 0 - Disabled
     settings->adaptive_rho_min = 1.0;          // Minimum rho value
     settings->adaptive_rho_max = 100.0;        // Maximum rho value
     settings->adaptive_rho_enable_clipping = 1; // 1 - Enable clipping, 0 - Disable clipping
