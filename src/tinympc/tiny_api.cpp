@@ -224,11 +224,16 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->en_state_bound = TINY_DEFAULT_EN_STATE_BOUND;
     settings->en_input_bound = TINY_DEFAULT_EN_INPUT_BOUND;
     
-    // Default adaptive rho settings
-    settings->adaptive_rho = 0;                // 1 - Enabled, 0 - Disabled
-    settings->adaptive_rho_min = 1.0;          // Minimum rho value
-    settings->adaptive_rho_max = 100.0;        // Maximum rho value
-    settings->adaptive_rho_enable_clipping = 1; // 1 - Enable clipping, 0 - Disable clipping
+    // Initialize adaptive rho settings
+    settings->adaptive_rho = 0;  // Disabled by default
+    settings->adaptive_rho_min = 1.0;
+    settings->adaptive_rho_max = 100.0;
+    settings->adaptive_rho_enable_clipping = 1;
+    
+    // Initialize SOC constraint flags
+    settings->en_state_soc = 0;  // Disabled by default
+    settings->en_input_soc = 0;  // Disabled by default
+    
     return 0;
 }
 
@@ -329,6 +334,52 @@ void tiny_initialize_sensitivity_matrices(TinySolver *solver) {
     solver->cache->dPinf_drho = Map<const Matrix<float, 12, 12>>(dPinf_drho[0]).cast<tinytype>();
     solver->cache->dC1_drho = Map<const Matrix<float, 4, 4>>(dC1_drho[0]).cast<tinytype>();
     solver->cache->dC2_drho = Map<const Matrix<float, 12, 12>>(dC2_drho[0]).cast<tinytype>();
+}
+
+int tiny_setup_state_soc_constraints(TinySolver *solver, 
+                                    tinyVector Acx, tinyVector qcx, tinyVector cx, 
+                                    int numStateCones) {
+    // Enable SOC constraints on states
+    solver->settings->en_state_soc = 1;
+    
+    // Set the number of state cones
+    solver->work->numStateCones = numStateCones;
+    
+    // Set the cone parameters
+    solver->work->Acx = Acx;
+    solver->work->qcx = qcx;
+    solver->work->cx = cx;
+    
+    // Initialize the SOC slack and dual variables
+    solver->work->vcnew.resize(solver->work->nx, solver->work->N);
+    solver->work->gc.resize(solver->work->nx, solver->work->N);
+    solver->work->vcnew.setZero();
+    solver->work->gc.setZero();
+    
+    return 0;
+}
+
+int tiny_setup_input_soc_constraints(TinySolver *solver, 
+                                    tinyVector Acu, tinyVector qcu, tinyVector cu, 
+                                    int numInputCones) {
+    // Enable SOC constraints on inputs
+    solver->settings->en_input_soc = 1;
+    
+    // Set the number of input cones
+    solver->work->numInputCones = numInputCones;
+    
+    // Set the cone parameters
+    solver->work->Acu = Acu;
+    solver->work->qcu = qcu;
+    solver->work->cu = cu;
+    
+    // Initialize the SOC slack and dual variables
+    solver->work->zcnew.resize(solver->work->nu, solver->work->N-1);
+    solver->work->yc.resize(solver->work->nu, solver->work->N-1);
+    solver->work->zcnew.setZero();
+    solver->work->yc.setZero();
+    
+    return 0;
 }
 
 #ifdef __cplusplus

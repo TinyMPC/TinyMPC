@@ -40,6 +40,14 @@ int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref);
  */
 void tiny_initialize_sensitivity_matrices(TinySolver *solver);
 
+int tiny_setup_state_soc_constraints(TinySolver *solver, 
+                                    tinyVector Acx, tinyVector qcx, tinyVector cx, 
+                                    int numStateCones);
+                                    
+int tiny_setup_input_soc_constraints(TinySolver *solver, 
+                                    tinyVector Acu, tinyVector qcu, tinyVector cu, 
+                                    int numInputCones);
+
 #ifdef __cplusplus
 }
 #endif

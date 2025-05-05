@@ -71,6 +71,10 @@ extern "C" {
         tinytype adaptive_rho_min;         // Minimum value for rho
         tinytype adaptive_rho_max;         // Maximum value for rho
         int adaptive_rho_enable_clipping;  // Enable/disable clipping of rho (1/0)
+        
+        // Add conic constraint flags
+        bool en_state_soc;                 // Enable second-order cone constraints on states
+        bool en_input_soc;                 // Enable second-order cone constraints on inputs
     } TinySettings;
 
     /**
@@ -133,6 +137,22 @@ extern "C" {
         tinytype dual_residual_input;
         int status;
         int iter;
+
+        // SOC constraint variables
+        tinyMatrix vcnew;          // State SOC slack variables
+        tinyMatrix zcnew;          // Input SOC slack variables
+        tinyMatrix gc;             // State SOC dual variables
+        tinyMatrix yc;             // Input SOC dual variables
+        
+        // SOC constraint parameters
+        int numStateCones;         // Number of state cones
+        int numInputCones;         // Number of input cones
+        tinyVector Acx;            // Starting indices for state cones
+        tinyVector qcx;            // Dimensions for state cones
+        tinyVector cx;             // Mu values for state cones
+        tinyVector Acu;            // Starting indices for input cones
+        tinyVector qcu;            // Dimensions for input cones
+        tinyVector cu;             // Mu values for input cones
     } TinyWorkspace;
 
     /**
