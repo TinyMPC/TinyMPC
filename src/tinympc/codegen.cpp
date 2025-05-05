@@ -32,8 +32,19 @@ using namespace Eigen;
 
 static void print_matrix(FILE *f, MatrixXd mat, int num_elements)
 {
-    for (int i = 0; i < num_elements; i++)
-    {
+    // Check if matrix is uninitialized or too small
+    if (mat.size() == 0 || mat.size() < num_elements) {
+        // Print zeros for all elements
+        for (int i = 0; i < num_elements; i++) {
+            fprintf(f, "(tinytype)0.0000000000000000");
+            if (i < num_elements - 1)
+                fprintf(f, ",");
+        }
+        return;
+    }
+    
+    // Matrix is properly initialized and has enough elements
+    for (int i = 0; i < num_elements; i++) {
         fprintf(f, "(tinytype)%.16f", mat.reshaped<RowMajor>()[i]);
         if (i < num_elements - 1)
             fprintf(f, ",");
