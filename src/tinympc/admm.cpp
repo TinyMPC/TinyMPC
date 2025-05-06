@@ -103,7 +103,7 @@ void update_slack(TinySolver *solver)
                 int num_xs = solver->work->qcx(k);
                 tinytype mu = solver->work->cx(k);
                 tinyVector col = solver->work->vcnew.block(start, i, num_xs, 1);
-                solver->work->vcnew.block(start, k, num_xs, 1) = project_soc(col, mu);
+                solver->work->vcnew.block(start, i, num_xs, 1) = project_soc(col, mu);
             }
         }
     }
@@ -116,7 +116,7 @@ void update_slack(TinySolver *solver)
                 int num_us = solver->work->qcu(k);
                 tinytype mu = solver->work->cu(k);
                 tinyVector col = solver->work->zcnew.block(start, i, num_us, 1);
-                solver->work->zcnew.block(start, k, num_us, 1) = project_soc(col, mu);
+                solver->work->zcnew.block(start, i, num_us, 1) = project_soc(col, mu);
             }
         }
     }

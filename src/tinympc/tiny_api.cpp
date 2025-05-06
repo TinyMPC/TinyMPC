@@ -145,6 +145,7 @@ int tiny_set_bound_constraints(TinySolver* solver,
     solver->settings->en_state_bound = 1;
     solver->settings->en_input_bound = 1;
 
+
     return 0;
 }
 
