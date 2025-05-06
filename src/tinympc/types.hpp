@@ -36,51 +36,10 @@ typedef struct {
     tinyMatrix u; // nu x N-1
 } TinySolution;
 
-<<<<<<< HEAD
-    /**
-     * Matrices that must be recomputed with changes in time step, rho
-     */
-    typedef struct {
-        tinytype rho;
-        tinyMatrix Kinf;       // nu x nx
-        tinyMatrix Pinf;       // nx x nx
-        tinyMatrix Quu_inv;    // nu x nu
-        tinyMatrix AmBKt;      // nx x nx
-        tinyMatrix C1;
-        tinyMatrix C2;
-        
-        // Add sensitivity matrices for Taylor updates
-        tinyMatrix dKinf_drho;
-        tinyMatrix dPinf_drho;
-        tinyMatrix dC1_drho;
-        tinyMatrix dC2_drho;
-    } TinyCache;
 
-    /**
-     * User settings
-     */
-    typedef struct {
-        tinytype abs_pri_tol;
-        tinytype abs_dua_tol;
-        int max_iter;
-        int check_termination;
-        int en_state_bound;
-        int en_input_bound;
-        
-        // Add adaptive rho parameters
-        int adaptive_rho;                  // Enable/disable adaptive rho (1/0)
-        tinytype adaptive_rho_min;         // Minimum value for rho
-        tinytype adaptive_rho_max;         // Maximum value for rho
-        int adaptive_rho_enable_clipping;  // Enable/disable clipping of rho (1/0)
-        
-        // Add conic constraint flags
-        bool en_state_soc;                 // Enable second-order cone constraints on states
-        bool en_input_soc;                 // Enable second-order cone constraints on inputs
-    } TinySettings;
-=======
 /**
- * Matrices that must be recomputed with changes in time step, rho
- */
+* Matrices that must be recomputed with changes in time step, rho
+*/
 typedef struct {
     tinytype rho;
     tinyMatrix Kinf;       // nu x nx
@@ -89,11 +48,18 @@ typedef struct {
     tinyMatrix AmBKt;      // nx x nx
     tinyVector APf;        // nx x 1
     tinyVector BPf;        // nu x 1
+    tinyMatrix C1;         // From adaptive rho
+    tinyMatrix C2;         // From adaptive rho
+    
+    // Sensitivity matrices for adaptive rho
+    tinyMatrix dKinf_drho;
+    tinyMatrix dPinf_drho;
+    tinyMatrix dC1_drho;
+    tinyMatrix dC2_drho;
 } TinyCache;
-
 /**
- * User settings
- */
+* User settings
+*/
 typedef struct {
     tinytype abs_pri_tol;
     tinytype abs_dua_tol;
@@ -103,8 +69,14 @@ typedef struct {
     int en_input_bound;
     int en_state_soc;
     int en_input_soc;
+        
+    // Add adaptive rho parameters
+    int adaptive_rho;                  // Enable/disable adaptive rho (1/0)
+    tinytype adaptive_rho_min;         // Minimum value for rho
+    tinytype adaptive_rho_max;         // Maximum value for rho
+    int adaptive_rho_enable_clipping;  // Enable/disable clipping of rho (1/0)
 } TinySettings;
->>>>>>> feature/conic-constraints
+
 
 /**
  * Problem variables
@@ -192,57 +164,6 @@ typedef struct {
     int iter;
 } TinyWorkspace;
 
-<<<<<<< HEAD
-        // State and input bounds
-        tinyMatrix x_min;   // nx x N
-        tinyMatrix x_max;   // nx x N
-        tinyMatrix u_min;   // nu x N-1
-        tinyMatrix u_max;   // nu x N-1
-
-        // Reference trajectory to track for one horizon
-        tinyMatrix Xref;    // nx x N
-        tinyMatrix Uref;    // nu x N-1
-
-        // Temporaries
-        tinyVector Qu;      // nu x 1
-
-
-        
-        // Variables for keeping track of solve status
-        tinytype primal_residual_state;
-        tinytype primal_residual_input;
-        tinytype dual_residual_state;
-        tinytype dual_residual_input;
-        int status;
-        int iter;
-
-        // SOC constraint variables
-        tinyMatrix vcnew;          // State SOC slack variables
-        tinyMatrix zcnew;          // Input SOC slack variables
-        tinyMatrix gc;             // State SOC dual variables
-        tinyMatrix yc;             // Input SOC dual variables
-        
-        // SOC constraint parameters
-        int numStateCones;         // Number of state cones
-        int numInputCones;         // Number of input cones
-        tinyVector Acx;            // Starting indices for state cones
-        tinyVector qcx;            // Dimensions for state cones
-        tinyVector cx;             // Mu values for state cones
-        tinyVector Acu;            // Starting indices for input cones
-        tinyVector qcu;            // Dimensions for input cones
-        tinyVector cu;             // Mu values for input cones
-    } TinyWorkspace;
-
-    /**
-     * Main TinyMPC solver structure that holds all information.
-     */
-    typedef struct {
-        TinySolution *solution; // Solution
-        TinySettings *settings; // Problem settings
-        TinyCache *cache;       // Problem cache
-        TinyWorkspace *work;    // Solver workspace
-    } TinySolver;
-=======
 /**
  * Main TinyMPC solver structure that holds all information.
  */
@@ -252,11 +173,11 @@ typedef struct {
     TinyCache *cache;       // Problem cache
     TinyWorkspace *work;    // Solver workspace
 } TinySolver;
->>>>>>> feature/conic-constraints
 
-    // Add at the top with other definitions
-    #define BENCH_NX 12
-    #define BENCH_NU 4
+
+// Add at the top with other definitions
+#define BENCH_NX 12
+#define BENCH_NU 4
 
 #ifdef __cplusplus
 }

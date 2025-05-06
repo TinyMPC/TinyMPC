@@ -6,17 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(include/Eigen)
 
-# find_package(Eigen3 REQUIRED)
-# include_directories(${EIGEN3_INCLUDE_DIR})
-# message("${EIGEN3_INCLUDE_DIR}")
 
-<<<<<<< HEAD
 set(USING_CODEGEN OFF) # Turn this on when building Python wrapper
 
 if(USING_CODEGEN)
 
-=======
->>>>>>> feature/conic-constraints
+
 # Create codegen directories
 set( EMBEDDED_BUILD_ROOT_DIR "${CMAKE_BINARY_DIR}/codegen_src" )
 set( EMBEDDED_BUILD_TINYMPC_DIR "${EMBEDDED_BUILD_ROOT_DIR}/tinympc" )
