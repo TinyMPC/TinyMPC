@@ -89,6 +89,7 @@ int main()
 
         // 4. Simulate forward
         x0 = work->Adyn * x0 + work->Bdyn * work->u.col(0);
+    }
 
 
     printf("\nTotal iterations across all MPC solves: %d\n", total_iterations);
