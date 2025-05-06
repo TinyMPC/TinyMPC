@@ -19,8 +19,6 @@
 
 
 #include <iostream>
-
-#include <tinympc/admm.hpp>
 #include <tinympc/tiny_api.hpp>
 #include "problem_data/quadrotor_20hz_params.hpp"
 
@@ -36,6 +34,7 @@ int main()
 
     tinyMatrix Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
     tinyMatrix Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS, RowMajor>>(Bdyn_data);
+    tinyVector fdyn = tiny_VectorNx::Zero();
     tinyVector Q = Map<Matrix<tinytype, NSTATES, 1>>(Q_data);
     tinyVector R = Map<Matrix<tinytype, NINPUTS, 1>>(R_data);
 
@@ -44,15 +43,17 @@ int main()
     tinyMatrix u_min = tiny_MatrixNuNhm1::Constant(-0.5);
     tinyMatrix u_max = tiny_MatrixNuNhm1::Constant(0.5);
 
+    // Set up problem
     int status = tiny_setup(&solver,
-                            Adyn, Bdyn, Q.asDiagonal(), R.asDiagonal(),
-                            rho_value, NSTATES, NINPUTS, NHORIZON,
-                            x_min, x_max, u_min, u_max, 1);
+                            Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
+                            rho_value, NSTATES, NINPUTS, NHORIZON, 1);
+    // Set bound constraints
+    status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
     
     // Update whichever settings we'd like
     solver->settings->max_iter = 100;
     
-    // Alias solver->work for brevity
+    // Create new pointer to solver->work for brevity
     TinyWorkspace *work = solver->work;
 
     // Initial state
@@ -62,7 +63,7 @@ int main()
     // Reference trajectory
     tiny_VectorNx Xref_origin;
     Xref_origin << 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-    work->Xref = Xref_origin.replicate<1, 10>();
+    work->Xref = Xref_origin.replicate<1, NHORIZON>();
 
     // Track total iterations across all MPC solves
     int total_iterations = 0;
@@ -88,7 +89,7 @@ int main()
 
         // 4. Simulate forward
         x0 = work->Adyn * x0 + work->Bdyn * work->u.col(0);
-    }
+
 
     printf("\nTotal iterations across all MPC solves: %d\n", total_iterations);
     printf("Average tracking error: %.4f\n", total_tracking_error / solver->settings->max_iter);
