@@ -21,6 +21,7 @@ extern "C" {
 
 typedef Matrix<tinytype, NINPUTS, NHORIZON-1, ColMajor> tiny_MatrixNuNhm1;
 typedef Matrix<tinytype, NSTATES, NHORIZON, ColMajor> tiny_MatrixNxNh;
+typedef Matrix<tinytype, NSTATES, 1> tiny_VectorNx;
 
 std_fs::path output_dir_relative = "tinympc_generated_code_random_example/";
 
@@ -42,6 +43,7 @@ int main()
     
     tinyMatrix Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
     tinyMatrix Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS, RowMajor>>(Bdyn_data);
+    tinyVector fdyn = tiny_VectorNx::Zero();
     tinyVector Q = Map<Matrix<tinytype, NSTATES, 1>>(Q_data);
     tinyVector R = Map<Matrix<tinytype, NINPUTS, 1>>(R_data);
 
@@ -50,11 +52,13 @@ int main()
     tinyMatrix u_min = Map<tiny_MatrixNuNhm1>(u_min_data);
     tinyMatrix u_max = Map<tiny_MatrixNuNhm1>(u_max_data);
 
+    // Set up problem
     int verbose = 0;
     int status = tiny_setup(&solver,
-                            Adyn, Bdyn, Q.asDiagonal(), R.asDiagonal(),
-                            rho_value, NSTATES, NINPUTS, NHORIZON,
-                            x_min, x_max, u_min, u_max, verbose);
+                            Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
+                            rho_value, NSTATES, NINPUTS, NHORIZON, verbose);
+    // Set bound constraints
+    status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
 
     // Solver options
     solver->settings->abs_pri_tol = 1e-3;

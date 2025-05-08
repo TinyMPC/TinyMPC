@@ -51,6 +51,7 @@ static void print_matrix(FILE *f, MatrixXd mat, int num_elements)
     }
 }
 
+
 static void create_directory(const char* dir, int verbose) {
     // Attempt to create directory
     if (mkdir(dir, S_IRWXU|S_IRWXG|S_IROTH)) {

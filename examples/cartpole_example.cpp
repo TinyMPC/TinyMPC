@@ -2,15 +2,12 @@
 
 // This script is just to show how to use the library, the data for this example is not tuned for our Crazyflie demo. Check the firmware code for more details.
 
-// - NSTATES = 12
-// - NINPUTS = 4
-// - NHORIZON = anything you want
-// - NTOTAL = 301 if using reference trajectory from trajectory_data/
-// - tinytype = float if you want to run on microcontrollers
-// States: x (m), y, z, phi, theta, psi, dx, dy, dz, dphi, dtheta, dpsi
-// phi, theta, psi are NOT Euler angles, they are Rodiguez parameters
-// check this paper for more details: https://ieeexplore.ieee.org/document/9326337
-// Inputs: u1, u2, u3, u4 (motor thrust 0-1, order from Crazyflie)
+// - NSTATES = 4
+// - NINPUTS = 1
+// - NHORIZON = anything
+// - NTOTAL = anything greater than NHORIZON
+// States: x, theta, dx, dtheta
+// Inputs: F (force on cart)
 
 #include <iostream>
 
@@ -19,7 +16,6 @@
 
 #define NSTATES 4
 #define NINPUTS 1
-
 #define NHORIZON 10
 #define NTOTAL 400
 
@@ -42,6 +38,7 @@ int main()
 
     tinyMatrix Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
     tinyMatrix Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS>>(Bdyn_data);
+    tinyVector fdyn = tiny_VectorNx::Zero();
     tinyVector Q = Map<Matrix<tinytype, NSTATES, 1>>(Q_data);
     tinyVector R = Map<Matrix<tinytype, NINPUTS, 1>>(R_data);
 
@@ -50,10 +47,12 @@ int main()
     tinyMatrix u_min = tiny_MatrixNuNhm1::Constant(-1e17);
     tinyMatrix u_max = tiny_MatrixNuNhm1::Constant(1e17);
 
+    // Set up problem
     int status = tiny_setup(&solver,
-                            Adyn, Bdyn, Q.asDiagonal(), R.asDiagonal(),
-                            rho_value, NSTATES, NINPUTS, NHORIZON,
-                            x_min, x_max, u_min, u_max, 1);
+                            Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
+                            rho_value, NSTATES, NINPUTS, NHORIZON, 1);
+    // Set bound constraints
+    status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
     
     // Update whichever settings we'd like
     solver->settings->max_iter = 100;
