@@ -114,7 +114,16 @@ int tiny_setup(TinySolver** solverp,
 
     // Initialize cache
     status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, fdyn, work->Q.asDiagonal(), work->R.asDiagonal(), nx, nu, rho, verbose);
-    return status;
+    if (status) {
+        return status;
+    }
+
+    // Initialize sensitivity matrices for adaptive rho
+    if (solver->settings->adaptive_rho) {
+        tiny_initialize_sensitivity_matrices(solver);
+    }
+
+    return 0;
 }
 
 int tiny_set_bound_constraints(TinySolver* solver,
@@ -142,8 +151,8 @@ int tiny_set_bound_constraints(TinySolver* solver,
     solver->work->u_max = u_max;
 
     // Enable constraints
-    solver->settings->en_state_bound = 1;
-    solver->settings->en_input_bound = 1;
+    solver->settings->en_state_bound = 0; // disabled by default
+    solver->settings->en_input_bound = 0; // disabled by default
 
 
     return 0;
@@ -181,14 +190,8 @@ int tiny_set_cone_constraints(TinySolver* solver,
     solver->work->cu = cu;
 
     // Enable constraints
-    solver->settings->en_state_soc = 1;
-    solver->settings->en_input_soc = 1;
-
-     // Initialize sensitivity matrices for adaptive rho
-    if (solver->settings->adaptive_rho) {
-        tiny_initialize_sensitivity_matrices(solver);
-    }
-
+    solver->settings->en_state_soc = 0; // disabled by default
+    solver->settings->en_input_soc = 0; // disabled by default
 
     return 0;
 }

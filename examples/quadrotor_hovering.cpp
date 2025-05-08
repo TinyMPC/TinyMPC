@@ -80,6 +80,7 @@ int main()
         tiny_set_x0(solver, x0);
 
         // 2. Solve MPC problem
+        printf("Solving MPC problem\n");
         tiny_solve(solver);
         
         // 3. Track iterations

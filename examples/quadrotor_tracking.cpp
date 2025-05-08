@@ -93,6 +93,7 @@ int main()
         work->g = tiny_MatrixNxNh::Zero();
 
         // 4. Solve MPC problem
+        printf("Solving MPC problem\n");
         tiny_solve(solver);
 
         // 5. Track iterations
