@@ -8,84 +8,178 @@
 extern "C" {
 
 /**
-    * Update linear terms from Riccati backward pass
-    */
+ * Update linear terms from Riccati backward pass
+*/
 void backward_pass_grad(TinySolver *solver)
 {
     for (int i = solver->work->N - 2; i >= 0; i--)
     {
-        (solver->work->d.col(i)).noalias() = solver->cache->Quu_inv * (solver->work->Bdyn.transpose() * solver->work->p.col(i + 1) + solver->work->r.col(i));
-        (solver->work->p.col(i)).noalias() = solver->work->q.col(i) + solver->cache->AmBKt.lazyProduct(solver->work->p.col(i + 1)) - (solver->cache->Kinf.transpose()).lazyProduct(solver->work->r.col(i)); 
+        (solver->work->d.col(i)).noalias() = solver->cache->Quu_inv * (solver->work->Bdyn.transpose() * solver->work->p.col(i + 1) + solver->work->r.col(i) + solver->cache->BPf);
+        (solver->work->p.col(i)).noalias() = solver->work->q.col(i) + solver->cache->AmBKt.lazyProduct(solver->work->p.col(i + 1)) - (solver->cache->Kinf.transpose()).lazyProduct(solver->work->r.col(i)) + solver->cache->APf; 
     }
 }
 
 /**
-    * Use LQR feedback policy to roll out trajectory
-    */
+ * Use LQR feedback policy to roll out trajectory
+*/
 void forward_pass(TinySolver *solver)
 {
     for (int i = 0; i < solver->work->N - 1; i++)
     {
         (solver->work->u.col(i)).noalias() = -solver->cache->Kinf.lazyProduct(solver->work->x.col(i)) - solver->work->d.col(i);
-        // solver->work->u.col(i) << .001, .02, .3, 4;
-        // DEBUG_PRINT("u(0): %f\n", solver->work->u.col(0)(0));
-        // multAdyn(solver->Ax->cache.Adyn, solver->work->x.col(i));
-        (solver->work->x.col(i + 1)).noalias() = solver->work->Adyn.lazyProduct(solver->work->x.col(i)) + solver->work->Bdyn.lazyProduct(solver->work->u.col(i));
+        (solver->work->x.col(i + 1)).noalias() = solver->work->Adyn.lazyProduct(solver->work->x.col(i)) + solver->work->Bdyn.lazyProduct(solver->work->u.col(i)) + solver->work->fdyn;
     }
 }
 
 /**
-    * Project slack (auxiliary) variables into their feasible domain, defined by
-    * projection functions related to each constraint
-    * TODO: pass in meta information with each constraint assigning it to a
-    * projection function
-    */
+ * Project a vector s onto the second order cone defined by mu
+ * @param s, mu
+ * @return projection onto cone if s is outside cone. Return s if s is inside cone.
+*/
+tinyVector project_soc(tinyVector s, float mu) {
+    tinytype u0 = s(Eigen::placeholders::last) * mu;
+    tinyVector u1 = s.head(s.rows()-1);
+    float a = u1.norm();
+    tinyVector cone_origin(s.rows());
+    cone_origin.setZero();
+
+    if (a <= -u0) { // below cone
+        return cone_origin;
+    }
+    else if (a <= u0) { // in cone
+        return s;
+    }
+    else if (a >= abs(u0)) { // outside cone
+        Matrix<tinytype, 3, 1> u2(u1.size() + 1);
+        u2 << u1, a/mu;
+        return 0.5 * (1 + u0/a) * u2;
+    }
+    else {
+        return cone_origin;
+    }
+}
+
+/**
+ * Project slack (auxiliary) variables into their feasible domain, defined by
+ * projection functions related to each constraint
+ * TODO: pass in meta information with each constraint assigning it to a
+ * projection function
+*/
 void update_slack(TinySolver *solver)
 {
-    solver->work->znew = solver->work->u + solver->work->y;
+
+    // Update bound constraint slack variables for state
     solver->work->vnew = solver->work->x + solver->work->g;
+    
+    // Update bound constraint slack variables for input
+    solver->work->znew = solver->work->u + solver->work->y;
+
+    // Box constraints on state
+    if (solver->settings->en_state_bound) {
+        solver->work->vnew = solver->work->x_max.cwiseMin(solver->work->x_min.cwiseMax(solver->work->vnew));
+    }
 
     // Box constraints on input
-    if (solver->settings->en_input_bound)
-    {
+    if (solver->settings->en_input_bound) {
         solver->work->znew = solver->work->u_max.cwiseMin(solver->work->u_min.cwiseMax(solver->work->znew));
     }
 
-    // Box constraints on state
-    if (solver->settings->en_state_bound)
-    {
-        solver->work->vnew = solver->work->x_max.cwiseMin(solver->work->x_min.cwiseMax(solver->work->vnew));
+    
+    // Update second order cone slack variables for state
+    if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
+        solver->work->vcnew = solver->work->x + solver->work->gc;
+    }
+
+    // Update second order cone slack variables for input
+    if (solver->settings->en_input_soc && solver->work->numInputCones > 0) {
+        solver->work->zcnew = solver->work->u + solver->work->yc;
+    }
+
+    // Cone constraints on state
+    if (solver->settings->en_state_soc) {
+        for (int i=0; i<solver->work->N; i++) {
+            for (int k=0; k<solver->work->numStateCones; k++) {
+                int start = solver->work->Acx(k);
+                int num_xs = solver->work->qcx(k);
+                tinytype mu = solver->work->cx(k);
+                tinyVector col = solver->work->vcnew.block(start, i, num_xs, 1);
+                solver->work->vcnew.block(start, i, num_xs, 1) = project_soc(col, mu);
+            }
+        }
+    }
+
+    // Cone constraints on input
+    if (solver->settings->en_input_soc) {
+        for (int i=0; i<solver->work->N-1; i++) {
+            for (int k=0; k<solver->work->numInputCones; k++) {
+                int start = solver->work->Acu(k);
+                int num_us = solver->work->qcu(k);
+                tinytype mu = solver->work->cu(k);
+                tinyVector col = solver->work->zcnew.block(start, i, num_us, 1);
+                solver->work->zcnew.block(start, i, num_us, 1) = project_soc(col, mu);
+            }
+        }
+    }
+    
+}
+
+/**
+ * Update next iteration of dual variables by performing the augmented
+ * lagrangian multiplier update
+*/
+void update_dual(TinySolver *solver)
+{
+    // Update bound constraint dual variables for state
+    solver->work->g = solver->work->g + solver->work->x - solver->work->vnew;
+
+    // Update bound constraint dual variables for input
+    solver->work->y = solver->work->y + solver->work->u - solver->work->znew;
+    
+    // Update second order cone dual variables for state
+    if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
+        solver->work->gc = solver->work->gc + solver->work->x - solver->work->vcnew;
+    }
+
+    // Update second order cone dual variables for input
+    if (solver->settings->en_input_soc && solver->work->numInputCones > 0) {
+        solver->work->yc = solver->work->yc + solver->work->u - solver->work->zcnew;
     }
 }
 
 /**
-    * Update next iteration of dual variables by performing the augmented
-    * lagrangian multiplier update
-    */
-void update_dual(TinySolver *solver)
-{
-    solver->work->y = solver->work->y + solver->work->u - solver->work->znew;
-    solver->work->g = solver->work->g + solver->work->x - solver->work->vnew;
-}
-
-/**
-    * Update linear control cost terms in the Riccati feedback using the changing
-    * slack and dual variables from ADMM
-    */
+ * Update linear control cost terms in the Riccati feedback using the changing
+ * slack and dual variables from ADMM
+*/
 void update_linear_cost(TinySolver *solver)
 {
-    solver->work->r = -(solver->work->Uref.array().colwise() * solver->work->R.array()); // Uref = 0 so commented out for speed up. Need to uncomment if using Uref
-    (solver->work->r).noalias() -= solver->cache->rho * (solver->work->znew - solver->work->y);
+
+    // Update state cost terms
     solver->work->q = -(solver->work->Xref.array().colwise() * solver->work->Q.array());
     (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vnew - solver->work->g);
+    if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
+        (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vcnew - solver->work->gc);
+    }
+
+    // Update input cost terms
+    solver->work->r = -(solver->work->Uref.array().colwise() * solver->work->R.array());
+    (solver->work->r).noalias() -= solver->cache->rho * (solver->work->znew - solver->work->y);
+    if (solver->settings->en_input_soc && solver->work->numInputCones > 0) {
+        (solver->work->r).noalias() -= solver->cache->rho * (solver->work->zcnew - solver->work->yc);
+    }
+
+    // Update terminal cost
     solver->work->p.col(solver->work->N - 1) = -(solver->work->Xref.col(solver->work->N - 1).transpose().lazyProduct(solver->cache->Pinf));
     (solver->work->p.col(solver->work->N - 1)).noalias() -= solver->cache->rho * (solver->work->vnew.col(solver->work->N - 1) - solver->work->g.col(solver->work->N - 1));
+
+    if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
+        solver->work->p.col(solver->work->N - 1) -= solver->cache->rho * (solver->work->vcnew.col(solver->work->N - 1) - solver->work->gc.col(solver->work->N - 1));
+    }
 }
 
 /**
-    * Check for termination condition by evaluating whether the largest absolute
-    * primal and dual residuals for states and inputs are below threhold.
-    */
+ * Check for termination condition by evaluating whether the largest absolute
+ * primal and dual residuals for states and inputs are below threhold.
+*/
 bool termination_condition(TinySolver *solver)
 {
     if (solver->work->iter % solver->settings->check_termination == 0)
@@ -106,6 +200,7 @@ bool termination_condition(TinySolver *solver)
     return false;
 }
 
+
 int solve(TinySolver *solver)
 {
     // Initialize variables
@@ -125,6 +220,15 @@ int solve(TinySolver *solver)
     // Store previous values for residuals
     tinyMatrix v_prev = solver->work->vnew;
     tinyMatrix z_prev = solver->work->znew;
+    
+    // Initialize SOC slack variables if needed
+    if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
+        solver->work->vcnew = solver->work->x;
+    }
+    
+    if (solver->settings->en_input_soc && solver->work->numInputCones > 0) {
+        solver->work->zcnew = solver->work->u;
+    }
 
     for (int i = 0; i < solver->settings->max_iter; i++)
     {
@@ -142,9 +246,8 @@ int solve(TinySolver *solver)
 
         solver->work->iter += 1;
 
-
+        // Handle adaptive rho if enabled
         if (solver->settings->adaptive_rho) {
-
             // Calculate residuals for adaptive rho
             tinytype pri_res_input = (solver->work->u - solver->work->znew).cwiseAbs().maxCoeff();
             tinytype pri_res_state = (solver->work->x - solver->work->vnew).cwiseAbs().maxCoeff();
@@ -152,7 +255,7 @@ int solve(TinySolver *solver)
             tinytype dua_res_state = solver->cache->rho * (solver->work->vnew - v_prev).cwiseAbs().maxCoeff();
 
             // Update rho every 5 iterations
-            if (i> 0 && i % 5 == 0) {
+            if (i > 0 && i % 5 == 0) {
                 benchmark_rho_adaptation(
                     &adapter,
                     solver->work->x,
