@@ -302,6 +302,7 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->en_input_soc = TINY_DEFAULT_EN_INPUT_SOC;
     
     // Initialize adaptive rho settings
+    // NOTE : Adaptive rho currently supports only quadrotor system
     settings->adaptive_rho = 0;  // Disabled by default
     settings->adaptive_rho_min = 1.0;
     settings->adaptive_rho_max = 100.0;
