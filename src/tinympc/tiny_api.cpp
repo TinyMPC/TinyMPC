@@ -150,11 +150,6 @@ int tiny_set_bound_constraints(TinySolver* solver,
     solver->work->u_min = u_min;
     solver->work->u_max = u_max;
 
-    // Enable constraints
-    solver->settings->en_state_bound = 0; // disabled by default
-    solver->settings->en_input_bound = 0; // disabled by default
-
-
     return 0;
 }
 
@@ -188,10 +183,6 @@ int tiny_set_cone_constraints(TinySolver* solver,
     solver->work->Acu = Acu;
     solver->work->qcu = qcu;
     solver->work->cu = cu;
-
-    // Enable constraints
-    solver->settings->en_state_soc = 0; // disabled by default
-    solver->settings->en_input_soc = 0; // disabled by default
 
     return 0;
 }
