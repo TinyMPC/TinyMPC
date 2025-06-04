@@ -60,6 +60,19 @@ tinyVector project_soc(tinyVector s, float mu) {
 }
 
 /**
+ * Project a vector z onto a hyperplane defined by a^T z = b
+ * Implements equation (21): ΠH(z) = z - (⟨z, a⟩ − b)/||a||² * a
+ * @param z Vector to project
+ * @param a Normal vector of the hyperplane
+ * @param b Offset of the hyperplane
+ * @return Projection of z onto the hyperplane
+ */
+tinyVector project_hyperplane(const tinyVector& z, const tinyVector& a, tinytype b) {
+    tinytype dist = (a.dot(z) - b) / a.squaredNorm();
+    return z - dist * a;
+}
+
+/**
  * Project slack (auxiliary) variables into their feasible domain, defined by
  * projection functions related to each constraint
  * TODO: pass in meta information with each constraint assigning it to a
@@ -121,6 +134,44 @@ void update_slack(TinySolver *solver)
         }
     }
     
+    // Update linear constraint slack variables for state
+    if (solver->settings->en_state_linear && solver->work->numStateLinear > 0) {
+        solver->work->vlnew = solver->work->x + solver->work->gl;
+    }
+
+    // Update linear constraint slack variables for input
+    if (solver->settings->en_input_linear && solver->work->numInputLinear > 0) {
+        solver->work->zlnew = solver->work->u + solver->work->yl;
+    }
+
+    // Linear constraints on state
+    if (solver->settings->en_state_linear) {
+        for (int i=0; i<solver->work->N; i++) {
+            for (int k=0; k<solver->work->numStateLinear; k++) {
+                tinyVector a = solver->work->Alin_x.row(k);
+                tinytype b = solver->work->blin_x(k);
+                tinytype constraint_value = a.dot(solver->work->vlnew.col(i));
+                if (constraint_value > b) {  // Only project if constraint is violated
+                    solver->work->vlnew.col(i) = project_hyperplane(solver->work->vlnew.col(i), a, b);
+                }
+            }
+        }
+    }
+
+    // Linear constraints on input
+    if (solver->settings->en_input_linear) {
+        for (int i=0; i<solver->work->N-1; i++) {
+            for (int k=0; k<solver->work->numInputLinear; k++) {
+                tinyVector a = solver->work->Alin_u.row(k);
+                tinytype b = solver->work->blin_u(k);
+                tinytype constraint_value = a.dot(solver->work->zlnew.col(i));
+                if (constraint_value > b) {  // Only project if constraint is violated
+                    solver->work->zlnew.col(i) = project_hyperplane(solver->work->zlnew.col(i), a, b);
+                }
+            }
+        }
+    }
+    
 }
 
 /**
@@ -144,6 +195,16 @@ void update_dual(TinySolver *solver)
     if (solver->settings->en_input_soc && solver->work->numInputCones > 0) {
         solver->work->yc = solver->work->yc + solver->work->u - solver->work->zcnew;
     }
+    
+    // Update linear constraint dual variables for state
+    if (solver->settings->en_state_linear && solver->work->numStateLinear > 0) {
+        solver->work->gl = solver->work->gl + solver->work->x - solver->work->vlnew;
+    }
+
+    // Update linear constraint dual variables for input
+    if (solver->settings->en_input_linear && solver->work->numInputLinear > 0) {
+        solver->work->yl = solver->work->yl + solver->work->u - solver->work->zlnew;
+    }
 }
 
 /**
@@ -159,12 +220,18 @@ void update_linear_cost(TinySolver *solver)
     if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
         (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vcnew - solver->work->gc);
     }
+    if (solver->settings->en_state_linear && solver->work->numStateLinear > 0) {
+        (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vlnew - solver->work->gl);
+    }
 
     // Update input cost terms
     solver->work->r = -(solver->work->Uref.array().colwise() * solver->work->R.array());
     (solver->work->r).noalias() -= solver->cache->rho * (solver->work->znew - solver->work->y);
     if (solver->settings->en_input_soc && solver->work->numInputCones > 0) {
         (solver->work->r).noalias() -= solver->cache->rho * (solver->work->zcnew - solver->work->yc);
+    }
+    if (solver->settings->en_input_linear && solver->work->numInputLinear > 0) {
+        (solver->work->r).noalias() -= solver->cache->rho * (solver->work->zlnew - solver->work->yl);
     }
 
     // Update terminal cost
@@ -173,6 +240,9 @@ void update_linear_cost(TinySolver *solver)
 
     if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
         solver->work->p.col(solver->work->N - 1) -= solver->cache->rho * (solver->work->vcnew.col(solver->work->N - 1) - solver->work->gc.col(solver->work->N - 1));
+    }
+    if (solver->settings->en_state_linear && solver->work->numStateLinear > 0) {
+        solver->work->p.col(solver->work->N - 1) -= solver->cache->rho * (solver->work->vlnew.col(solver->work->N - 1) - solver->work->gl.col(solver->work->N - 1));
     }
 }
 
@@ -228,6 +298,15 @@ int solve(TinySolver *solver)
     
     if (solver->settings->en_input_soc && solver->work->numInputCones > 0) {
         solver->work->zcnew = solver->work->u;
+    }
+
+    // Initialize linear constraint slack variables if needed
+    if (solver->settings->en_state_linear && solver->work->numStateLinear > 0) {
+        solver->work->vlnew = solver->work->x;
+    }
+    
+    if (solver->settings->en_input_linear && solver->work->numInputLinear > 0) {
+        solver->work->zlnew = solver->work->u;
     }
 
     for (int i = 0; i < solver->settings->max_iter; i++)

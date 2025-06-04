@@ -23,6 +23,16 @@ bool termination_condition(TinySolver *solver);
 */
 tinyVector project_soc(tinyVector s, float mu);
 
+/**
+ * Project a vector z onto a hyperplane defined by a^T z = b
+ * Implements equation (21): ΠH(z) = z - (⟨z, a⟩ − b)/||a||² * a
+ * @param z Vector to project
+ * @param a Normal vector of the hyperplane
+ * @param b Offset of the hyperplane
+ * @return Projection of z onto the hyperplane
+ */
+tinyVector project_hyperplane(const tinyVector& z, const tinyVector& a, tinytype b);
+
 #ifdef __cplusplus
 }
 #endif
