@@ -32,7 +32,6 @@ tinyVector project_soc(tinyVector s, float mu);
  * @return Projection of z onto the hyperplane
  */
 tinyVector project_hyperplane(const tinyVector& z, const tinyVector& a, tinytype b);
-
 #ifdef __cplusplus
 }
 #endif
