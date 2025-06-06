@@ -8,6 +8,10 @@ target_link_libraries(quadrotor_hovering LINK_PUBLIC tinympcstatic)
 add_executable(cartpole_example cartpole_example.cpp)
 target_link_libraries(cartpole_example LINK_PUBLIC tinympcstatic)
 
+# Linear constraint example
+add_executable(quadrotor_linear_constraints quadrotor_linear_constraints.cpp)
+target_link_libraries(quadrotor_linear_constraints LINK_PUBLIC tinympcstatic)
+
 # Conic example
 add_executable(rocket_landing_mpc rocket_landing_mpc.cpp)
 target_link_libraries(rocket_landing_mpc LINK_PUBLIC tinympcstatic)
