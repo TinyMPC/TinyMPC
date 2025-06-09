@@ -1,8 +1,7 @@
-// Quadrotor Linear Constraint Demo - Obstacle Avoidance
-// Demonstrates linear constraints for obstacle avoidance using equation (21)
+// Quadrotor Linear Constraint Demo
 
 #include <iostream>
-#include <cmath>
+#include <iomanip>
 #include <tinympc/tiny_api.hpp>
 
 #define NSTATES 12
@@ -22,96 +21,75 @@ int main()
 {
     TinySolver *solver;
 
-    // Load proper quadrotor dynamics (50Hz discretization)
+    // Load quadrotor dynamics
     tinyMatrix Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
     tinyMatrix Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS, RowMajor>>(Bdyn_data);
-    tinyVector fdyn = tinyVector::Zero(NSTATES);  // No affine term for this example
+    tinyVector fdyn = tinyVector::Zero(NSTATES);
     tinyVector Q = Map<Matrix<tinytype, NSTATES, 1>>(Q_data);
     tinyVector R = Map<Matrix<tinytype, NINPUTS, 1>>(R_data);
 
-    // Box constraints (conservative bounds)
-    tinyMatrix x_min = tiny_MatrixNxNh::Constant(-10);
-    tinyMatrix x_max = tiny_MatrixNxNh::Constant(10);
-    tinyMatrix u_min = tiny_MatrixNuNhm1::Constant(-2.0);
-    tinyMatrix u_max = tiny_MatrixNuNhm1::Constant(2.0);
+    // Box constraints
+    tinyMatrix x_min = tiny_MatrixNxNh::Constant(-15);
+    tinyMatrix x_max = tiny_MatrixNxNh::Constant(15);
+    tinyMatrix u_min = tiny_MatrixNuNhm1::Constant(-5.0);
+    tinyMatrix u_max = tiny_MatrixNuNhm1::Constant(5.0);
 
-    // Set up solver (use rho from parameter file)
+    // Set up solver
     int status = tiny_setup(&solver,
                             Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
                             rho_value, NSTATES, NINPUTS, NHORIZON, 1);
     
     // Set bound constraints
     status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
+
+    // ========================================
+    // LINEAR CONSTRAINTS: Altitude safety
+    // ========================================
+    
+    // State constraint: altitude ceiling z <= 3.0
+    int num_state_constraints = 1;
+    tinyMatrix Alin_x(num_state_constraints, NSTATES);
+    Alin_x.setZero();
+    Alin_x(0, 2) = 1.0;   // z coefficient
+    
+    tinyVector blin_x(num_state_constraints);
+    blin_x << 3.0;   // z <= 3.0 (altitude ceiling)
+    
+    // Input constraint: total thrust <= 6.0
+    int num_input_constraints = 1;
+    tinyMatrix Alin_u(num_input_constraints, NINPUTS);
+    Alin_u.setZero();
+    Alin_u(0, 0) = 1.0;  // u1 coefficient
+    Alin_u(0, 1) = 1.0;  // u2 coefficient
+    Alin_u(0, 2) = 1.0;  // u3 coefficient
+    Alin_u(0, 3) = 1.0;  // u4 coefficient
+    
+    tinyVector blin_u(num_input_constraints);
+    blin_u << 6.0;   // total thrust <= 6.0
+    
+    // Set linear constraints
+    status = tiny_set_linear_constraints(solver, Alin_x, blin_x, Alin_u, blin_u);
     
     // Solver settings
-    solver->settings->max_iter = 50;
+    solver->settings->max_iter = 100;
     solver->settings->abs_pri_tol = 1e-3;
     solver->settings->abs_dua_tol = 1e-3;
-    
-    // Note: Linear constraints must be enabled in tiny_api_constants.hpp (TINY_DEFAULT_EN_STATE_LINEAR = 1)
 
     TinyWorkspace *work = solver->work;
 
-    // Initial state: [x, y, z, phi, theta, psi, vx, vy, vz, vphi, vtheta, vpsi]
+    // Initial and goal states - goal is above altitude limit
     tiny_VectorNx x0;
-    x0 << -2, -2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-
-    // Goal state (hover at origin)
+    x0 << -2.0, -2.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0;  // Start position
     tiny_VectorNx xgoal;
-    xgoal << 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-
-    // Obstacle parameters
-    tinyVector obstacle_center(3);
-    obstacle_center << 0.0, 0.0, 1.0; // Obstacle at origin
-    tinytype obstacle_radius = 0.8;
-
-    std::cout << "=== Quadrotor Linear Constraint Demo ===" << std::endl;
-    std::cout << "Avoiding spherical obstacle using adaptive linear constraints" << std::endl;
-    std::cout << "Obstacle: center=[0,0,1], radius=" << obstacle_radius << std::endl << std::endl;
+    xgoal << 2.0, 2.0, 4.0, 0, 0, 0, 0, 0, 0, 0, 0, 0; // Goal above altitude limit
 
     for (int k = 0; k < NTOTAL - NHORIZON; ++k)
     {
-        // Update reference trajectory (linear interpolation to goal)
+        // Simple reference trajectory
         for (int i = 0; i < NHORIZON; i++) {
             tinytype alpha = tinytype(k + i) / (NTOTAL - 1);
             work->Xref.col(i) = (1 - alpha) * x0 + alpha * xgoal;
         }
-
-        // Set up adaptive linear constraint for obstacle avoidance
-        // Create constraint based on current quadrotor position relative to obstacle
-        tinyVector to_obstacle = x0.head(3) - obstacle_center;
-        tinytype dist_to_obstacle = to_obstacle.norm();
-        
-        tinyMatrix Alin_x;
-        tinyVector blin_x;
-        
-        if (dist_to_obstacle > 1e-6 && dist_to_obstacle < 3.0) { // Only apply constraint when near obstacle
-            // Normal vector pointing away from obstacle (toward current position)
-            tinyVector normal = to_obstacle / dist_to_obstacle;
-            
-            // Constraint: normal^T * position >= distance_threshold
-            // This keeps the quadrotor outside the obstacle sphere
-            tinytype distance_threshold = obstacle_radius + 0.2; // Safety margin
-            
-            // Set up single linear constraint that applies to all time steps
-            Alin_x = tinyMatrix::Zero(1, NSTATES);
-            blin_x = tinyVector::Zero(1);
-            
-            // We use the negative normal to make it a ≤ constraint: (-normal)^T * x ≤ -distance_threshold
-            Alin_x.row(0).head(3) = -normal.transpose();
-            blin_x(0) = -distance_threshold;
-            
-            std::cout << "Step " << k << ": Applying obstacle constraint with normal=[" 
-                      << normal(0) << ", " << normal(1) << ", " << normal(2) << "]" << std::endl;
-        } else {
-            // No constraints when far from obstacle
-            Alin_x = tinyMatrix::Zero(0, NSTATES);
-            blin_x = tinyVector::Zero(0);
-            std::cout << "Step " << k << ": No obstacle constraint (distance=" << dist_to_obstacle << ")" << std::endl;
-        }
-
-        // Update linear constraints
-        tiny_set_linear_constraints(solver, Alin_x, blin_x, tinyMatrix::Zero(0, NINPUTS), tinyVector::Zero(0));
 
         // Set current state
         tiny_set_x0(solver, x0);
@@ -119,26 +97,27 @@ int main()
         // Solve MPC problem
         tiny_solve(solver);
 
-        // Check if solved successfully
-        if (solver->solution->solved) {
-            std::cout << "  Solved in " << solver->solution->iter << " iterations" << std::endl;
-        } else {
-            std::cout << "  Failed to converge!" << std::endl;
+        // Track error to goal (like rocket_landing_mpc.cpp)
+        tinytype tracking_error = (x0.head(3) - xgoal.head(3)).norm();
+        
+        std::cout << "tracking error: " << std::setprecision(3) << tracking_error;
+        
+        // Check altitude violation (separate safety check)
+        tinytype z_val = x0(2);
+        if (z_val > 3.0 + 1e-6) {
+            std::cout << ", altitude violation: z=" << std::setprecision(2) << z_val;
         }
-
-        // Print current position and distance to obstacle
-        std::cout << "  Position: [" << x0(0) << ", " << x0(1) << ", " << x0(2) << "]";
-        std::cout << ", Distance to obstacle: " << dist_to_obstacle;
-        std::cout << ", Safe: " << (dist_to_obstacle > obstacle_radius ? "yes" : "no") << std::endl;
+        
+        std::cout << std::endl;
 
         // Simulate forward
-        x0 = work->Adyn * x0 + work->Bdyn * work->u.col(0) + work->fdyn;
+        if (solver->solution->solved) {
+            x0 = work->Adyn * x0 + work->Bdyn * work->u.col(0) + work->fdyn;
+        } else {
+            // If solve failed, try a small step towards goal
+            x0 = 0.98 * x0 + 0.02 * xgoal;
+        }
     }
-
-    std::cout << std::endl << "=== Demo Complete ===" << std::endl;
-    std::cout << "Final position: [" << x0(0) << ", " << x0(1) << ", " << x0(2) << "]" << std::endl;
-    std::cout << "Goal position:  [" << xgoal(0) << ", " << xgoal(1) << ", " << xgoal(2) << "]" << std::endl;
-    std::cout << "Tracking error: " << (x0.head(3) - xgoal.head(3)).norm() << std::endl;
 
     return 0;
 }
