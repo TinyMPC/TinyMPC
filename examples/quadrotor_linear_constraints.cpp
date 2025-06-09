@@ -33,8 +33,6 @@ int main()
                             Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
                             rho_value, NSTATES, NINPUTS, NHORIZON, 1);
     
-
-    
     // ========================================
     // LINEAR CONSTRAINTS: Altitude safety
     // ========================================
