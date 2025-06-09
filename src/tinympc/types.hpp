@@ -69,6 +69,8 @@ typedef struct {
     int en_input_bound;
     int en_state_soc;
     int en_input_soc;
+    int en_state_linear;
+    int en_input_linear;
         
     // Add adaptive rho parameters
     int adaptive_rho;                  // Enable/disable adaptive rho (1/0)
@@ -136,6 +138,26 @@ typedef struct {
     tinyMatrix gc; // nx x N
     tinyMatrix yc; // nu x N-1
 
+    // Linear constraint variables
+    // Variables to keep track of general linear constraint information
+    int numStateLinear; // Number of linear constraints on states at each time step
+    int numInputLinear; // Number of linear constraints on inputs at each time step
+    
+    // Constraint matrices and vectors
+    tinyMatrix Alin_x; // Normal vectors for state linear constraints (numStateLinear x nx)
+    tinyVector blin_x; // Offset values for state linear constraints (numStateLinear x 1)
+    tinyMatrix Alin_u; // Normal vectors for input linear constraints (numInputLinear x nu)
+    tinyVector blin_u; // Offset values for input linear constraints (numInputLinear x 1)
+
+    // Slack variables for linear constraints
+    tinyMatrix vl; // nx x N
+    tinyMatrix vlnew; // nx x N
+    tinyMatrix zl; // nu x N-1
+    tinyMatrix zlnew; // nu x N-1
+
+    // Dual variables for linear constraints
+    tinyMatrix gl; // nx x N
+    tinyMatrix yl; // nu x N-1
 
     
 

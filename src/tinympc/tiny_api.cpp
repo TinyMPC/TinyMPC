@@ -94,6 +94,16 @@ int tiny_setup(TinySolver** solverp,
     work->gc = tinyMatrix::Zero(nx, N);
     work->yc = tinyMatrix::Zero(nu, N-1);
 
+    // Linear constraint slack variables
+    work->vl = tinyMatrix::Zero(nx, N);
+    work->vlnew = tinyMatrix::Zero(nx, N);
+    work->zl = tinyMatrix::Zero(nu, N-1);
+    work->zlnew = tinyMatrix::Zero(nu, N-1);
+    
+    // Linear constraint dual variables
+    work->gl = tinyMatrix::Zero(nx, N);
+    work->yl = tinyMatrix::Zero(nu, N-1);
+
     work->Q = (Q + rho * tinyMatrix::Identity(nx, nx)).diagonal();
     work->R = (R + rho * tinyMatrix::Identity(nu, nu)).diagonal();
     work->Adyn = Adyn; // State transition matrix
@@ -187,6 +197,50 @@ int tiny_set_cone_constraints(TinySolver* solver,
     return 0;
 }
 
+int tiny_set_linear_constraints(TinySolver* solver,
+                               tinyMatrix Alin_x, tinyVector blin_x,
+                               tinyMatrix Alin_u, tinyVector blin_u) {
+    if (!solver) {
+        std::cout << "Error in tiny_set_linear_constraints: solver is nullptr" << std::endl;
+        return 1;
+    }
+
+    // Make sure all linear constraint matrix sizes are self-consistent
+    int num_state_linear = Alin_x.rows();
+    int num_input_linear = Alin_u.rows();
+    int status = 0;
+    
+    // Check state constraint dimensions
+    if (num_state_linear > 0) {
+        status |= check_dimension("State linear constraint matrix (Alin_x)", "rows", Alin_x.rows(), num_state_linear);
+        status |= check_dimension("State linear constraint matrix (Alin_x)", "columns", Alin_x.cols(), solver->work->nx);
+        status |= check_dimension("State linear constraint vector (blin_x)", "rows", blin_x.rows(), num_state_linear);
+        status |= check_dimension("State linear constraint vector (blin_x)", "columns", blin_x.cols(), 1);
+    }
+    
+    // Check input constraint dimensions
+    if (num_input_linear > 0) {
+        status |= check_dimension("Input linear constraint matrix (Alin_u)", "rows", Alin_u.rows(), num_input_linear);
+        status |= check_dimension("Input linear constraint matrix (Alin_u)", "columns", Alin_u.cols(), solver->work->nu);
+        status |= check_dimension("Input linear constraint vector (blin_u)", "rows", blin_u.rows(), num_input_linear);
+        status |= check_dimension("Input linear constraint vector (blin_u)", "columns", blin_u.cols(), 1);
+    }
+    
+    if (status) {
+        return status;
+    }
+
+    solver->work->numStateLinear = num_state_linear;
+    solver->work->numInputLinear = num_input_linear;
+
+    solver->work->Alin_x = Alin_x;
+    solver->work->blin_x = blin_x;
+    solver->work->Alin_u = Alin_u;
+    solver->work->blin_u = blin_u;
+
+    return 0;
+}
+
 int tiny_precompute_and_set_cache(TinyCache *cache,
                                   tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix fdyn, tinyMatrix Q, tinyMatrix R,
                                   int nx, int nu, tinytype rho, int verbose) {
@@ -271,7 +325,8 @@ int tiny_solve(TinySolver* solver) {
 int tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype abs_dua_tol,
                     int max_iter, int check_termination, 
                     int en_state_bound, int en_input_bound,
-                    int en_state_soc, int en_input_soc) {
+                    int en_state_soc, int en_input_soc,
+                    int en_state_linear, int en_input_linear) {
     if (!settings) {
         std::cout << "Error in tiny_update_settings: settings is nullptr" << std::endl;
         return 1;
@@ -282,6 +337,10 @@ int tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype 
     settings->check_termination = check_termination;
     settings->en_state_bound = en_state_bound;
     settings->en_input_bound = en_input_bound;
+    settings->en_state_soc = en_state_soc;
+    settings->en_input_soc = en_input_soc;
+    settings->en_state_linear = en_state_linear;
+    settings->en_input_linear = en_input_linear;
     return 0;
 }
 
@@ -300,6 +359,8 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->en_input_bound = TINY_DEFAULT_EN_INPUT_BOUND;
     settings->en_state_soc = TINY_DEFAULT_EN_STATE_SOC;
     settings->en_input_soc = TINY_DEFAULT_EN_INPUT_SOC;
+    settings->en_state_linear = TINY_DEFAULT_EN_STATE_LINEAR;
+    settings->en_input_linear = TINY_DEFAULT_EN_INPUT_LINEAR;
     
     // Initialize adaptive rho settings
     // NOTE : Adaptive rho currently supports only quadrotor system
