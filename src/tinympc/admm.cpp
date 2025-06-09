@@ -135,12 +135,12 @@ void update_slack(TinySolver *solver)
     }
     
     // Update linear constraint slack variables for state
-    if (solver->settings->en_state_linear && solver->work->numStateLinear > 0) {
+    if (solver->settings->en_state_linear) {
         solver->work->vlnew = solver->work->x + solver->work->gl;
     }
 
     // Update linear constraint slack variables for input
-    if (solver->settings->en_input_linear && solver->work->numInputLinear > 0) {
+    if (solver->settings->en_input_linear) {
         solver->work->zlnew = solver->work->u + solver->work->yl;
     }
 
@@ -197,12 +197,12 @@ void update_dual(TinySolver *solver)
     }
     
     // Update linear constraint dual variables for state
-    if (solver->settings->en_state_linear && solver->work->numStateLinear > 0) {
+    if (solver->settings->en_state_linear) {
         solver->work->gl = solver->work->gl + solver->work->x - solver->work->vlnew;
     }
 
     // Update linear constraint dual variables for input
-    if (solver->settings->en_input_linear && solver->work->numInputLinear > 0) {
+    if (solver->settings->en_input_linear) {
         solver->work->yl = solver->work->yl + solver->work->u - solver->work->zlnew;
     }
 }
@@ -220,7 +220,7 @@ void update_linear_cost(TinySolver *solver)
     if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
         (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vcnew - solver->work->gc);
     }
-    if (solver->settings->en_state_linear && solver->work->numStateLinear > 0) {
+    if (solver->settings->en_state_linear) {
         (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vlnew - solver->work->gl);
     }
 
@@ -230,7 +230,7 @@ void update_linear_cost(TinySolver *solver)
     if (solver->settings->en_input_soc && solver->work->numInputCones > 0) {
         (solver->work->r).noalias() -= solver->cache->rho * (solver->work->zcnew - solver->work->yc);
     }
-    if (solver->settings->en_input_linear && solver->work->numInputLinear > 0) {
+    if (solver->settings->en_input_linear) {
         (solver->work->r).noalias() -= solver->cache->rho * (solver->work->zlnew - solver->work->yl);
     }
 
@@ -241,7 +241,7 @@ void update_linear_cost(TinySolver *solver)
     if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
         solver->work->p.col(solver->work->N - 1) -= solver->cache->rho * (solver->work->vcnew.col(solver->work->N - 1) - solver->work->gc.col(solver->work->N - 1));
     }
-    if (solver->settings->en_state_linear && solver->work->numStateLinear > 0) {
+    if (solver->settings->en_state_linear) {
         solver->work->p.col(solver->work->N - 1) -= solver->cache->rho * (solver->work->vlnew.col(solver->work->N - 1) - solver->work->gl.col(solver->work->N - 1));
     }
 }
@@ -301,11 +301,11 @@ int solve(TinySolver *solver)
     }
 
     // Initialize linear constraint slack variables if needed
-    if (solver->settings->en_state_linear && solver->work->numStateLinear > 0) {
+    if (solver->settings->en_state_linear) {
         solver->work->vlnew = solver->work->x;
     }
     
-    if (solver->settings->en_input_linear && solver->work->numInputLinear > 0) {
+    if (solver->settings->en_input_linear) {
         solver->work->zlnew = solver->work->u;
     }
 
