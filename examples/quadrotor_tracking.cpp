@@ -22,11 +22,12 @@
 #include <iostream>
 #include <tinympc/tiny_api.hpp>
 
-extern "C" {
-
 
 #include "problem_data/quadrotor_20hz_params.hpp"
 #include "trajectory_data/quadrotor_20hz_y_axis_line.hpp"
+
+extern "C"
+{
 
 typedef Matrix<tinytype, NINPUTS, NHORIZON-1> tiny_MatrixNuNhm1;
 typedef Matrix<tinytype, NSTATES, NHORIZON> tiny_MatrixNxNh;
@@ -38,6 +39,7 @@ int main()
 
     tinyMatrix Adyn = Map<Matrix<tinytype, NSTATES, NSTATES, RowMajor>>(Adyn_data);
     tinyMatrix Bdyn = Map<Matrix<tinytype, NSTATES, NINPUTS, RowMajor>>(Bdyn_data);
+    tinyVector fdyn = tiny_VectorNx::Zero();
     tinyVector Q = Map<Matrix<tinytype, NSTATES, 1>>(Q_data);
     tinyVector R = Map<Matrix<tinytype, NINPUTS, 1>>(R_data);
 
@@ -46,11 +48,13 @@ int main()
     tinyMatrix u_min = tiny_MatrixNuNhm1::Constant(-0.5);
     tinyMatrix u_max = tiny_MatrixNuNhm1::Constant(0.5);
 
+    // Set up problem
     int status = tiny_setup(&solver,
-                            Adyn, Bdyn, Q.asDiagonal(), R.asDiagonal(),
-                            rho_value, NSTATES, NINPUTS, NHORIZON,
-                            x_min, x_max, u_min, u_max, 1);
-    
+                            Adyn, Bdyn, fdyn, Q.asDiagonal(), R.asDiagonal(),
+                            rho_value, NSTATES, NINPUTS, NHORIZON, 1);
+    // Set bound constraints
+    status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
+
     // Update whichever settings we'd like
     solver->settings->max_iter = 100;
     
@@ -65,8 +69,17 @@ int main()
     tiny_VectorNx x0;
     x0 = work->Xref.col(0);
 
+    // Track total iterations across all MPC solves
+    int total_iterations = 0;
+
+    tinytype total_tracking_error = 0;
+
     for (int k = 0; k < NTOTAL - NHORIZON; ++k)
     {
+
+        tinytype current_error = (x0 - work->Xref.col(1)).norm();
+        total_tracking_error += current_error;
+        
         std::cout << "tracking error: " << (x0 - work->Xref.col(1)).norm() << std::endl;
 
         // 1. Update measurement
@@ -80,12 +93,20 @@ int main()
         work->g = tiny_MatrixNxNh::Zero();
 
         // 4. Solve MPC problem
+        printf("Solving MPC problem\n");
         tiny_solve(solver);
+
+        // 5. Track iterations
+        total_iterations += solver->solution->iter;
+        printf("Iterations for step %2d: %d (cumulative: %d)\n", 
+               k, solver->solution->iter, total_iterations);
 
         // 5. Simulate forward
         x0 = work->Adyn * x0 + work->Bdyn * work->u.col(0);
     }
 
+    printf("\nTotal iterations across all MPC solves: %d\n", total_iterations);
+    printf("Average tracking error: %.4f\n", total_tracking_error / solver->settings->max_iter);
     return 0;
 }
 
