@@ -312,6 +312,8 @@ int solve(TinySolver *solver)
     for (int i = 0; i < solver->settings->max_iter; i++)
     {
         // Solve linear system with Riccati and roll out to get new trajectory
+        backward_pass_grad(solver);
+
         forward_pass(solver);
 
         // Project slack variables into feasible domain
@@ -376,8 +378,7 @@ int solve(TinySolver *solver)
         // Save previous slack variables
         solver->work->v = solver->work->vnew;
         solver->work->z = solver->work->znew;
-
-        backward_pass_grad(solver);
+      
     }
     
     solver->solution->iter = solver->work->iter;
