@@ -1,9 +1,12 @@
+// Debug configuration for embedded environments
+// Define DEBUG_MODE=0 to disable iostream usage in embedded builds
+#ifndef DEBUG_MODE
+#define DEBUG_MODE 1
 #include <iostream>
+#endif
 
 #include "admm.hpp"
-#include "rho_benchmark.hpp"    
-
-#define DEBUG_MODULE "TINYALG"
+#include "rho_benchmark.hpp"
 
 extern "C" {
 
@@ -370,7 +373,9 @@ int solve(TinySolver *solver)
             solver->solution->x = solver->work->vnew;
             solver->solution->u = solver->work->znew;
 
+#if DEBUG_MODE
             std::cout << "Solver converged in " << solver->work->iter << " iterations" << std::endl;
+#endif
 
             return 0;
         }

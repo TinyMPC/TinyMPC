@@ -1,18 +1,27 @@
+// Debug configuration for embedded environments
+// Define DEBUG_MODE=0 to disable iostream usage in embedded builds
+#ifndef DEBUG_MODE
+#define DEBUG_MODE 1
+#include <iostream>
+#endif
+
 #include "tiny_api.hpp"
 #include "tiny_api_constants.hpp"
-
-#include <iostream>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 using namespace Eigen;
+#if DEBUG_MODE
 IOFormat TinyApiFmt(4, 0, ", ", "\n", "[", "]");
+#endif
 
 static int check_dimension(std::string matrix_name, std::string rows_or_columns, int actual, int expected) {
     if (actual != expected) {
+#if DEBUG_MODE
         std::cout << matrix_name << " has " << actual << " " << rows_or_columns << ". Expected " << expected << "." << std::endl;
+#endif
         return 1;
     }
     return 0;
@@ -140,7 +149,9 @@ int tiny_set_bound_constraints(TinySolver* solver,
                     tinyMatrix x_min, tinyMatrix x_max,
                     tinyMatrix u_min, tinyMatrix u_max) {
     if (!solver) {
+#if DEBUG_MODE
         std::cout << "Error in tiny_set_bound_constraints: solver is nullptr" << std::endl;
+#endif
         return 1;
     }
 
@@ -167,7 +178,9 @@ int tiny_set_cone_constraints(TinySolver* solver,
                               VectorXi Acx, VectorXi qcx, tinyVector cx,
                               VectorXi Acu, VectorXi qcu, tinyVector cu) {
     if (!solver) {
+#if DEBUG_MODE
         std::cout << "Error in tiny_set_cone_constraints: solver is nullptr" << std::endl;
+#endif
         return 1;
     }
 
@@ -201,7 +214,9 @@ int tiny_set_linear_constraints(TinySolver* solver,
                                tinyMatrix Alin_x, tinyVector blin_x,
                                tinyMatrix Alin_u, tinyVector blin_u) {
     if (!solver) {
+#if DEBUG_MODE
         std::cout << "Error in tiny_set_linear_constraints: solver is nullptr" << std::endl;
+#endif
         return 1;
     }
 
@@ -246,7 +261,9 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
                                   int nx, int nu, tinytype rho, int verbose) {
 
     if (!cache) {
+#if DEBUG_MODE
         std::cout << "Error in tiny_precompute_and_set_cache: cache is nullptr" << std::endl;
+#endif
         return 1;
     }
 
@@ -256,11 +273,13 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
 
     // Printing
     if (verbose) {
-        std::cout << "A = " << Adyn.format(TinyApiFmt) << std::endl;
-        std::cout << "B = " << Bdyn.format(TinyApiFmt) << std::endl;
-        std::cout << "Q = " << Q1.format(TinyApiFmt) << std::endl;
-        std::cout << "R = " << R1.format(TinyApiFmt) << std::endl;
-        std::cout << "rho = " << rho << std::endl;
+        #if DEBUG_MODE
+    std::cout << "A = " << Adyn.format(TinyApiFmt) << std::endl;
+    std::cout << "B = " << Bdyn.format(TinyApiFmt) << std::endl;
+    std::cout << "Q = " << Q1.format(TinyApiFmt) << std::endl;
+    std::cout << "R = " << R1.format(TinyApiFmt) << std::endl;
+    std::cout << "rho = " << rho << std::endl;
+#endif
     }
 
     // Riccati recursion to get Kinf, Pinf
@@ -277,7 +296,9 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
         if ((Kinf - Ktp1).cwiseAbs().maxCoeff() < 1e-5)
         {
             if (verbose) {
-                std::cout << "Kinf converged after " << i + 1 << " iterations" << std::endl;
+            #if DEBUG_MODE
+    std::cout << "Kinf converged after " << i + 1 << " iterations" << std::endl;
+#endif
             }
             break;
         }
@@ -294,14 +315,18 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     tinyVector BPf = Bdyn.transpose()*Pinf*fdyn;
 
     if (verbose) {
-        std::cout << "Kinf = " << Kinf.format(TinyApiFmt) << std::endl;
-        std::cout << "Pinf = " << Pinf.format(TinyApiFmt) << std::endl;
-        std::cout << "Quu_inv = " << Quu_inv.format(TinyApiFmt) << std::endl;
-        std::cout << "AmBKt = " << AmBKt.format(TinyApiFmt) << std::endl;
-        std::cout << "APf = " << APf.format(TinyApiFmt) << std::endl;
-        std::cout << "BPf = " << BPf.format(TinyApiFmt) << std::endl;
+        #if DEBUG_MODE
+    std::cout << "Kinf = " << Kinf.format(TinyApiFmt) << std::endl;
+    std::cout << "Pinf = " << Pinf.format(TinyApiFmt) << std::endl;
+    std::cout << "Quu_inv = " << Quu_inv.format(TinyApiFmt) << std::endl;
+    std::cout << "AmBKt = " << AmBKt.format(TinyApiFmt) << std::endl;
+    std::cout << "APf = " << APf.format(TinyApiFmt) << std::endl;
+    std::cout << "BPf = " << BPf.format(TinyApiFmt) << std::endl;
+#endif
 
+#if DEBUG_MODE
         std::cout << "\nPrecomputation finished!\n" << std::endl;
+#endif
     }
 
     cache->rho = rho;
@@ -328,7 +353,9 @@ int tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype 
                     int en_state_soc, int en_input_soc,
                     int en_state_linear, int en_input_linear) {
     if (!settings) {
+#if DEBUG_MODE
         std::cout << "Error in tiny_update_settings: settings is nullptr" << std::endl;
+#endif
         return 1;
     }
     settings->abs_pri_tol = abs_pri_tol;
@@ -346,7 +373,9 @@ int tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype 
 
 int tiny_set_default_settings(TinySettings* settings) {
     if (!settings) {
+#if DEBUG_MODE
         std::cout << "Error in tiny_set_default_settings: settings is nullptr" << std::endl;
+#endif
         return 1;
     }
     settings->abs_pri_tol = TINY_DEFAULT_ABS_PRI_TOL;
@@ -374,7 +403,9 @@ int tiny_set_default_settings(TinySettings* settings) {
 
 int tiny_set_x0(TinySolver* solver, tinyVector x0) {
     if (!solver) {
+#if DEBUG_MODE
         std::cout << "Error in tiny_set_x0: solver is nullptr" << std::endl;
+#endif
         return 1;
     }
     if (x0.rows() != solver->work->nx) {
@@ -386,7 +417,9 @@ int tiny_set_x0(TinySolver* solver, tinyVector x0) {
 
 int tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref) {
     if (!solver) {
+#if DEBUG_MODE
         std::cout << "Error in tiny_set_x_ref: solver is nullptr" << std::endl;
+#endif
         return 1;
     }
     int status = 0;
@@ -398,7 +431,9 @@ int tiny_set_x_ref(TinySolver* solver, tinyMatrix x_ref) {
 
 int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref) {
     if (!solver) {
+#if DEBUG_MODE
         std::cout << "Error in tiny_set_u_ref: solver is nullptr" << std::endl;
+#endif
         return 1;
     }
     int status = 0;
