@@ -273,12 +273,12 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
 
     // Printing
     if (verbose) {
-        #if DEBUG_MODE
-    std::cout << "A = " << Adyn.format(TinyApiFmt) << std::endl;
-    std::cout << "B = " << Bdyn.format(TinyApiFmt) << std::endl;
-    std::cout << "Q = " << Q1.format(TinyApiFmt) << std::endl;
-    std::cout << "R = " << R1.format(TinyApiFmt) << std::endl;
-    std::cout << "rho = " << rho << std::endl;
+#if DEBUG_MODE
+        std::cout << "A = " << Adyn.format(TinyApiFmt) << std::endl;
+        std::cout << "B = " << Bdyn.format(TinyApiFmt) << std::endl;
+        std::cout << "Q = " << Q1.format(TinyApiFmt) << std::endl;
+        std::cout << "R = " << R1.format(TinyApiFmt) << std::endl;
+        std::cout << "rho = " << rho << std::endl;
 #endif
     }
 
@@ -296,8 +296,8 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
         if ((Kinf - Ktp1).cwiseAbs().maxCoeff() < 1e-5)
         {
             if (verbose) {
-            #if DEBUG_MODE
-    std::cout << "Kinf converged after " << i + 1 << " iterations" << std::endl;
+#if DEBUG_MODE
+                std::cout << "Kinf converged after " << i + 1 << " iterations" << std::endl;
 #endif
             }
             break;
@@ -315,13 +315,13 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
     tinyVector BPf = Bdyn.transpose()*Pinf*fdyn;
 
     if (verbose) {
-        #if DEBUG_MODE
-    std::cout << "Kinf = " << Kinf.format(TinyApiFmt) << std::endl;
-    std::cout << "Pinf = " << Pinf.format(TinyApiFmt) << std::endl;
-    std::cout << "Quu_inv = " << Quu_inv.format(TinyApiFmt) << std::endl;
-    std::cout << "AmBKt = " << AmBKt.format(TinyApiFmt) << std::endl;
-    std::cout << "APf = " << APf.format(TinyApiFmt) << std::endl;
-    std::cout << "BPf = " << BPf.format(TinyApiFmt) << std::endl;
+#if DEBUG_MODE
+        std::cout << "Kinf = " << Kinf.format(TinyApiFmt) << std::endl;
+        std::cout << "Pinf = " << Pinf.format(TinyApiFmt) << std::endl;
+        std::cout << "Quu_inv = " << Quu_inv.format(TinyApiFmt) << std::endl;
+        std::cout << "AmBKt = " << AmBKt.format(TinyApiFmt) << std::endl;
+        std::cout << "APf = " << APf.format(TinyApiFmt) << std::endl;
+        std::cout << "BPf = " << BPf.format(TinyApiFmt) << std::endl;
 #endif
 
 #if DEBUG_MODE
