@@ -69,6 +69,8 @@ int main()
     // Disable bound constraints (enabled by default)
     solver->settings->en_state_bound = 0;
     solver->settings->en_input_bound = 0;
+    solver->settings->en_state_linear = 1;
+    solver->settings->en_input_linear = 1;
 
     TinyWorkspace *work = solver->work;
 
@@ -103,6 +105,17 @@ int main()
             std::cout << ", altitude violation: z=" << std::setprecision(2) << z_val;
         }
         
+        std::cout << std::endl;
+
+        // Print first 3 states and inputs
+        std::cout << "  states: ";
+        for (int i = 0; i < 3; ++i) {
+            std::cout << std::setprecision(3) << x0(i) << " ";
+        }
+        std::cout << "inputs: ";
+        for (int i = 0; i < NINPUTS; ++i) {
+            std::cout << std::setprecision(3) << work->u(i, 0) << " ";
+        }
         std::cout << std::endl;
 
         // Simulate forward

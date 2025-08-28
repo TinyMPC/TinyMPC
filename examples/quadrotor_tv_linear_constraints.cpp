@@ -40,13 +40,7 @@ int main()
     // State constraint: altitude ceiling z <= z_lim_total(t)
     tinyMatrix z_lim_total(num_state_constraints, NTOTAL);
     for (int i = 0; i < NTOTAL; i++) {
-        if (i < 20) {
-            z_lim_total(0, i) = 3.0;   // z <= 3.0 (altitude ceiling)
-        } else if (i < 30) {
-            z_lim_total(0, i) = 1.9;   // z <= 1.9 (lower ceiling)
-        } else {
-            z_lim_total(0, i) = 3.0;   // z <= 3.0 (raise ceiling)
-        }
+        z_lim_total(0, i) = 1.1 + (3.0 - 1.1) * i / (NTOTAL - NHORIZON - 1);
     }
 
     tinyMatrix tv_Alin_x(num_state_constraints * NHORIZON, NSTATES);
@@ -87,14 +81,16 @@ int main()
     // Disable bound constraints (enabled by default)
     solver->settings->en_state_bound = 0;
     solver->settings->en_input_bound = 0;
+    solver->settings->en_tv_state_linear = 1;
+    solver->settings->en_tv_input_linear = 1;
 
     TinyWorkspace *work = solver->work;
 
     // Initial and goal states - goal is above altitude limit
     tiny_VectorNx x0;
-    x0 << 2.0, 2.0, 2.0, 0, 0, 0, 0, 0, 0, 0, 0, 0;  // Start position
+    x0 << -2.0, -2.0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0;  // Start position
     tiny_VectorNx xgoal;
-    xgoal << 2.0, 2.0, 2.0, 0, 0, 0, 0, 0, 0, 0, 0, 0; // Goal above altitude limit
+    xgoal << 2.0, 2.0, 4.0, 0, 0, 0, 0, 0, 0, 0, 0, 0; // Goal above altitude limit
 
     for (int k = 0; k < NTOTAL - NHORIZON; ++k)
     {
@@ -102,15 +98,11 @@ int main()
         for (int i = 0; i < NHORIZON; i++) {
             tinytype alpha = tinytype(k + i) / (NTOTAL - 1);
             work->Xref.col(i) = (1 - alpha) * x0 + alpha * xgoal;
+            tv_blin_x(0, i) = z_lim_total(0, k + i);   // z <= z_lim_total(t)
         }
 
         // Set current state
         tiny_set_x0(solver, x0);
-
-        // Reset time varying linear constraints
-        for (int i = 0; i < NHORIZON; i++) {
-            tv_blin_x(0, i) = z_lim_total(0, k + i);   // z <= z_lim_total(t)
-        }
         status = tiny_set_tv_linear_constraints(solver, tv_Alin_x, tv_blin_x, tv_Alin_u, tv_blin_u);
 
         // Solve MPC problem
