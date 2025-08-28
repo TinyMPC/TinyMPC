@@ -104,6 +104,16 @@ int tiny_setup(TinySolver** solverp,
     work->gl = tinyMatrix::Zero(nx, N);
     work->yl = tinyMatrix::Zero(nu, N-1);
 
+    // Time-varying Linear constraint slack variables
+    work->vl_tv = tinyMatrix::Zero(nx, N);
+    work->vlnew_tv = tinyMatrix::Zero(nx, N);
+    work->zl_tv = tinyMatrix::Zero(nu, N-1);
+    work->zlnew_tv = tinyMatrix::Zero(nu, N-1);
+
+    // Time-varying Linear constraint dual variables
+    work->gl_tv = tinyMatrix::Zero(nx, N);
+    work->yl_tv = tinyMatrix::Zero(nu, N-1);
+
     work->Q = (Q + rho * tinyMatrix::Identity(nx, nx)).diagonal();
     work->R = (R + rho * tinyMatrix::Identity(nu, nu)).diagonal();
     work->Adyn = Adyn; // State transition matrix
@@ -241,6 +251,59 @@ int tiny_set_linear_constraints(TinySolver* solver,
     return 0;
 }
 
+int tiny_set_tv_linear_constraints(TinySolver* solver,
+                               tinyMatrix tv_Alin_x, tinyMatrix tv_blin_x,
+                               tinyMatrix tv_Alin_u, tinyMatrix tv_blin_u) {
+    if (!solver) {
+        std::cout << "Error in tiny_set_linear_constraints: solver is nullptr" << std::endl;
+        return 1;
+    }
+
+    // Make sure all linear constraint matrix sizes are self-consistent
+    int num_tv_state_linear = tv_Alin_x.rows() / solver->work->N;
+    int num_tv_input_linear = tv_Alin_u.rows() / solver->work->N;
+    int status = 0;
+    
+    // Check state constraint dimensions
+    if (num_tv_state_linear > 0) {
+        status |= check_dimension("State time-varying linear constraint matrix (tv_Alin_x)", "rows", 
+                                                    tv_Alin_x.rows(), num_tv_state_linear * solver->work->N);
+        status |= check_dimension("State time-varying linear constraint matrix (tv_Alin_x)", "columns", 
+                                                    tv_Alin_x.cols(), solver->work->nx);
+        status |= check_dimension("State time-varying linear constraint vector (tv_blin_x)", "rows", 
+                                                    tv_blin_x.rows(), num_tv_state_linear);
+        status |= check_dimension("State time-varying linear constraint vector (tv_blin_x)", "columns", 
+                                                    tv_blin_x.cols(), solver->work->N);
+    }
+    
+    // Check input constraint dimensions
+    if (num_tv_input_linear > 0) {
+        status |= check_dimension("Input time-varying linear constraint matrix (tv_Alin_u)", "rows", 
+                                                tv_Alin_u.rows(), num_tv_input_linear * solver->work->N);
+        status |= check_dimension("Input time-varying linear constraint matrix (tv_Alin_u)", "columns", 
+                                                tv_Alin_u.cols(), solver->work->nu);
+        status |= check_dimension("Input time-varying linear constraint vector (tv_blin_u)", "rows", 
+                                                tv_blin_u.rows(), num_tv_input_linear);
+        status |= check_dimension("Input time-varying linear constraint vector (tv_blin_u)", "columns", 
+                                                tv_blin_u.cols(), solver->work->N);
+    }
+    
+    if (status) {
+        return status;
+    }
+
+    solver->work->numtvStateLinear = num_tv_state_linear;
+    solver->work->numtvInputLinear = num_tv_input_linear;
+
+    solver->work->tv_Alin_x = tv_Alin_x;
+    solver->work->tv_blin_x = tv_blin_x;
+    solver->work->tv_Alin_u = tv_Alin_u;
+    solver->work->tv_blin_u = tv_blin_u;
+
+    return 0;
+}
+
+
 int tiny_precompute_and_set_cache(TinyCache *cache,
                                   tinyMatrix Adyn, tinyMatrix Bdyn, tinyMatrix fdyn, tinyMatrix Q, tinyMatrix R,
                                   int nx, int nu, tinytype rho, int verbose) {
@@ -326,7 +389,8 @@ int tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype 
                     int max_iter, int check_termination, 
                     int en_state_bound, int en_input_bound,
                     int en_state_soc, int en_input_soc,
-                    int en_state_linear, int en_input_linear) {
+                    int en_state_linear, int en_input_linear, 
+                    int en_tv_state_linear, int en_tv_input_linear) {
     if (!settings) {
         std::cout << "Error in tiny_update_settings: settings is nullptr" << std::endl;
         return 1;
@@ -341,6 +405,8 @@ int tiny_update_settings(TinySettings* settings, tinytype abs_pri_tol, tinytype 
     settings->en_input_soc = en_input_soc;
     settings->en_state_linear = en_state_linear;
     settings->en_input_linear = en_input_linear;
+    settings->en_tv_state_linear = en_tv_state_linear;
+    settings->en_tv_input_linear = en_tv_input_linear;
     return 0;
 }
 
@@ -361,6 +427,8 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->en_input_soc = TINY_DEFAULT_EN_INPUT_SOC;
     settings->en_state_linear = TINY_DEFAULT_EN_STATE_LINEAR;
     settings->en_input_linear = TINY_DEFAULT_EN_INPUT_LINEAR;
+    settings->en_tv_state_linear = TINY_DEFAULT_EN_TV_STATE_LINEAR;
+    settings->en_tv_input_linear = TINY_DEFAULT_EN_TV_INPUT_LINEAR;
     
     // Initialize adaptive rho settings
     // NOTE : Adaptive rho currently supports only quadrotor system

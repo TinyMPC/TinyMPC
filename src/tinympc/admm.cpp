@@ -171,6 +171,44 @@ void update_slack(TinySolver *solver)
             }
         }
     }
+
+    // Update time-varying linear constraint slack variables for state
+    if (solver->settings->en_tv_state_linear) {
+        solver->work->vlnew_tv = solver->work->x + solver->work->gl_tv;
+    }
+
+    // Update time-varying linear constraint slack variables for input
+    if (solver->settings->en_tv_input_linear) {
+        solver->work->zlnew_tv = solver->work->u + solver->work->yl_tv;
+    }
+
+    // Time-varying Linear constraints on state
+    if (solver->settings->en_tv_state_linear) {
+        for (int i=0; i<solver->work->N; i++) {
+            for (int k=0; k<solver->work->numtvStateLinear; k++) {
+                tinyVector a = solver->work->tv_Alin_x.row((solver->work->numtvStateLinear*i) + k);
+                tinytype b = solver->work->tv_blin_x(k,i);
+                tinytype constraint_value = a.dot(solver->work->vlnew_tv.col(i));
+                if (constraint_value > b) {  // Only project if constraint is violated
+                    solver->work->vlnew_tv.col(i) = project_hyperplane(solver->work->vlnew_tv.col(i), a, b);
+                }
+            }
+        }
+    }
+
+    // Time-varying Linear constraints on input
+    if (solver->settings->en_tv_input_linear) {
+        for (int i=0; i<solver->work->N-1; i++) {
+            for (int k=0; k<solver->work->numtvInputLinear; k++) {
+                tinyVector a = solver->work->tv_Alin_u.row((solver->work->numtvInputLinear*i) + k);
+                tinytype b = solver->work->tv_blin_u(k,i);
+                tinytype constraint_value = a.dot(solver->work->zlnew_tv.col(i));
+                if (constraint_value > b) {  // Only project if constraint is violated
+                    solver->work->zlnew_tv.col(i) = project_hyperplane(solver->work->zlnew_tv.col(i), a, b);
+                }
+            }
+        }
+    }
     
 }
 
@@ -205,6 +243,16 @@ void update_dual(TinySolver *solver)
     if (solver->settings->en_input_linear) {
         solver->work->yl = solver->work->yl + solver->work->u - solver->work->zlnew;
     }
+        
+    // Update time-varying linear constraint dual variables for state
+    if (solver->settings->en_tv_state_linear) {
+        solver->work->gl_tv = solver->work->gl_tv + solver->work->x - solver->work->vlnew_tv;
+    }
+
+    // Update time-varying linear constraint dual variables for input
+    if (solver->settings->en_tv_input_linear) {
+        solver->work->yl_tv = solver->work->yl_tv + solver->work->u - solver->work->zlnew_tv;
+    }
 }
 
 /**
@@ -223,6 +271,9 @@ void update_linear_cost(TinySolver *solver)
     if (solver->settings->en_state_linear) {
         (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vlnew - solver->work->gl);
     }
+    if (solver->settings->en_tv_state_linear) {
+        (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vlnew_tv - solver->work->gl_tv);
+    }
 
     // Update input cost terms
     solver->work->r = -(solver->work->Uref.array().colwise() * solver->work->R.array());
@@ -232,6 +283,9 @@ void update_linear_cost(TinySolver *solver)
     }
     if (solver->settings->en_input_linear) {
         (solver->work->r).noalias() -= solver->cache->rho * (solver->work->zlnew - solver->work->yl);
+    }
+    if (solver->settings->en_tv_input_linear) {
+        (solver->work->r).noalias() -= solver->cache->rho * (solver->work->zlnew_tv - solver->work->yl_tv);
     }
 
     // Update terminal cost
@@ -243,6 +297,9 @@ void update_linear_cost(TinySolver *solver)
     }
     if (solver->settings->en_state_linear) {
         solver->work->p.col(solver->work->N - 1) -= solver->cache->rho * (solver->work->vlnew.col(solver->work->N - 1) - solver->work->gl.col(solver->work->N - 1));
+    }
+    if (solver->settings->en_tv_state_linear) {
+        solver->work->p.col(solver->work->N - 1) -= solver->cache->rho * (solver->work->vlnew_tv.col(solver->work->N - 1) - solver->work->gl_tv.col(solver->work->N - 1));
     }
 }
 
@@ -307,6 +364,15 @@ int solve(TinySolver *solver)
     
     if (solver->settings->en_input_linear) {
         solver->work->zlnew = solver->work->u;
+    }
+
+    // Initialize time-varying linear constraint slack variables if needed
+    if (solver->settings->en_tv_state_linear) {
+        solver->work->vlnew_tv = solver->work->x;
+    }
+    
+    if (solver->settings->en_tv_input_linear) {
+        solver->work->zlnew_tv = solver->work->u;
     }
 
     for (int i = 0; i < solver->settings->max_iter; i++)

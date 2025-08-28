@@ -71,6 +71,8 @@ typedef struct {
     int en_input_soc;
     int en_state_linear;
     int en_input_linear;
+    int en_tv_state_linear;
+    int en_tv_input_linear;
         
     // Add adaptive rho parameters
     int adaptive_rho;                  // Enable/disable adaptive rho (1/0)
@@ -159,7 +161,26 @@ typedef struct {
     tinyMatrix gl; // nx x N
     tinyMatrix yl; // nu x N-1
 
+    // Time-varying Linear constraint variables
+    // Variables to keep track of general linear constraint information
+    int numtvStateLinear; // Number of time-varying linear constraints on states at each time step
+    int numtvInputLinear; // Number of time-varying linear constraints on inputs at each time step
     
+    // Constraint matrices and vectors
+    tinyMatrix tv_Alin_x; // Normal vectors for time-varying state linear constraints ((numStateLinear*N) x nx)
+    tinyMatrix tv_blin_x; // Offset values for time-varying state linear constraints (numStateLinear x N)
+    tinyMatrix tv_Alin_u; // Normal vectors for time-varying input linear constraints ((numInputLinear*N) x nu)
+    tinyMatrix tv_blin_u; // Offset values for time-varying input linear constraints (numInputLinear x N)
+
+    // Slack variables for time-varying linear constraints
+    tinyMatrix vl_tv; // nx x N
+    tinyMatrix vlnew_tv; // nx x N
+    tinyMatrix zl_tv; // nu x N-1
+    tinyMatrix zlnew_tv; // nu x N-1
+
+    // Dual variables for time-varying linear constraints
+    tinyMatrix gl_tv; // nx x N
+    tinyMatrix yl_tv; // nu x N-1
 
     // Q, R, A, B, f given by user
     tinyVector Q;       // nx x 1
