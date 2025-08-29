@@ -261,7 +261,7 @@ int tiny_set_tv_linear_constraints(TinySolver* solver,
 
     // Make sure all linear constraint matrix sizes are self-consistent
     int num_tv_state_linear = tv_Alin_x.rows() / solver->work->N;
-    int num_tv_input_linear = tv_Alin_u.rows() / solver->work->N;
+    int num_tv_input_linear = tv_Alin_u.rows() / (solver->work->N-1);
     int status = 0;
     
     // Check state constraint dimensions
@@ -279,13 +279,13 @@ int tiny_set_tv_linear_constraints(TinySolver* solver,
     // Check input constraint dimensions
     if (num_tv_input_linear > 0) {
         status |= check_dimension("Input time-varying linear constraint matrix (tv_Alin_u)", "rows", 
-                                                tv_Alin_u.rows(), num_tv_input_linear * solver->work->N);
+                                                tv_Alin_u.rows(), num_tv_input_linear * (solver->work->N-1));
         status |= check_dimension("Input time-varying linear constraint matrix (tv_Alin_u)", "columns", 
                                                 tv_Alin_u.cols(), solver->work->nu);
         status |= check_dimension("Input time-varying linear constraint vector (tv_blin_u)", "rows", 
                                                 tv_blin_u.rows(), num_tv_input_linear);
         status |= check_dimension("Input time-varying linear constraint vector (tv_blin_u)", "columns", 
-                                                tv_blin_u.cols(), solver->work->N);
+                                                tv_blin_u.cols(), solver->work->N-1);
     }
     
     if (status) {

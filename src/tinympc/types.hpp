@@ -169,8 +169,8 @@ typedef struct {
     // Constraint matrices and vectors
     tinyMatrix tv_Alin_x; // Normal vectors for time-varying state linear constraints ((numStateLinear*N) x nx)
     tinyMatrix tv_blin_x; // Offset values for time-varying state linear constraints (numStateLinear x N)
-    tinyMatrix tv_Alin_u; // Normal vectors for time-varying input linear constraints ((numInputLinear*N) x nu)
-    tinyMatrix tv_blin_u; // Offset values for time-varying input linear constraints (numInputLinear x N)
+    tinyMatrix tv_Alin_u; // Normal vectors for time-varying input linear constraints ((numInputLinear*(N-1)) x nu)
+    tinyMatrix tv_blin_u; // Offset values for time-varying input linear constraints (numInputLinear x (N-1))
 
     // Slack variables for time-varying linear constraints
     tinyMatrix vl_tv; // nx x N

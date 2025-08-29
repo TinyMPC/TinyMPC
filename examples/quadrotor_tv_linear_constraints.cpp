@@ -44,29 +44,26 @@ int main()
     }
 
     tinyMatrix tv_Alin_x(num_state_constraints * NHORIZON, NSTATES);
+    tinyMatrix tv_blin_x(num_state_constraints, NHORIZON);
     tv_Alin_x.setZero();
+    tv_blin_x.setZero();
     for (int i = 0; i < NHORIZON; i++) {
         tv_Alin_x(i*num_state_constraints, 2) = 1.0;   // z coefficient
-    }
-
-    tinyMatrix tv_blin_x(num_state_constraints, NHORIZON);
-    for (int i = 0; i < NHORIZON; i++) {
         tv_blin_x(0, i) = 3.0;   // z <= 3.0 (altitude ceiling)
     }
 
     // Input constraint: total thrust <= 6.0
     int num_input_constraints = 1;
-    tinyMatrix tv_Alin_u(num_input_constraints * NHORIZON, NINPUTS);
+    tinyMatrix tv_Alin_u(num_input_constraints * (NHORIZON-1), NINPUTS);
+    tinyMatrix tv_blin_u(num_input_constraints, NHORIZON-1);
     tv_Alin_u.setZero();
+    tv_blin_u.setZero();
     for (int i = 0; i < NHORIZON-1; i++) {
         tv_Alin_u(i*num_input_constraints, 0) = 1.0;      // u1 coefficient
         tv_Alin_u(i*num_input_constraints, 1) = 1.0;  // u2 coefficient
         tv_Alin_u(i*num_input_constraints, 2) = 1.0;  // u3 coefficient
         tv_Alin_u(i*num_input_constraints, 3) = 1.0;  // u4 coefficient
-    }
 
-    tinyMatrix tv_blin_u(num_input_constraints, NHORIZON);
-    for (int i = 0; i < NHORIZON; i++) {
         tv_blin_u(0, i) = 6.0;   // total thrust <= 6.0
     }
     
