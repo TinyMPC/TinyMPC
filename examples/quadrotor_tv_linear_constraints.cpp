@@ -119,6 +119,16 @@ int main()
         
         std::cout << std::endl;
 
+        std::cout << "  states: ";
+        for (int i = 0; i < 3; ++i) {
+            std::cout << std::setprecision(3) << x0(i) << " ";
+        }
+        std::cout << "inputs: ";
+        for (int i = 0; i < NINPUTS; ++i) {
+            std::cout << std::setprecision(3) << work->u(i, 0) << " ";
+        }
+        std::cout << std::endl;
+
         // Simulate forward
         if (solver->solution->solved) {
             x0 = work->Adyn * x0 + work->Bdyn * work->u.col(0) + work->fdyn;
