@@ -1,3 +1,10 @@
+// Debug configuration for embedded environments
+// Define DEBUG_MODE=0 to disable iostream usage in embedded builds
+#ifndef DEBUG_MODE
+#define DEBUG_MODE 1
+#include <iostream>
+#endif
+
 #include <stdio.h>
 #include <ctype.h>
 #include <time.h>
@@ -7,8 +14,6 @@
 #include <unistd.h>
 //#include <error.h>
 #include "error.hpp"
-
-#include <iostream>
 #include <Eigen/Dense>
 
 // #include "types.hpp"
@@ -57,7 +62,9 @@ static void create_directory(const char* dir, int verbose) {
     if (mkdir(dir, S_IRWXU|S_IRWXG|S_IROTH)) {
         if (errno == EEXIST) { // Skip if directory already exists
             if (verbose)
+#if DEBUG_MODE
                 std::cout << dir << " already exists, skipping." << std::endl;
+#endif
         } else {
             ERROR_MSG(EXIT_FAILURE, "Failed to create directory %s", dir);
         }
@@ -67,7 +74,9 @@ static void create_directory(const char* dir, int verbose) {
 // TODO: Make this fail if tiny_setup has not already been called
 int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose) {
     if (!solver) {
+#if DEBUG_MODE
         std::cout << "Error in tiny_codegen: solver is nullptr" << std::endl;
+#endif
         return 1;
     }
     int status = 0;
@@ -83,7 +92,9 @@ int tiny_codegen_with_sensitivity(TinySolver* solver, const char* output_dir,
                                 tinyMatrix* dK, tinyMatrix* dP,
                                 tinyMatrix* dC1, tinyMatrix* dC2, int verbose) {
     if (!solver) {
+#if DEBUG_MODE
         std::cout << "Error in tiny_codegen_with_sensitivity: solver is nullptr" << std::endl;
+#endif
         return 1;
     }
 
