@@ -73,6 +73,14 @@ If you are using TinyMPC, we encourage you to
       archivePrefix={arXiv},
 }
 ```
+```
+@article{mahajan2025robust,
+  title={Robust and Efficient Embedded Convex Optimization through First-Order Adaptive Caching},
+  author={Mahajan, Ishaan and Plancher, Brian},
+  journal={arXiv preprint arXiv:2507.03231},
+  year={2025}
+}
+```
 * Put a star ⭐ on this repository.
 
 **Excited to hear your TinyMPC success stories—share them with us!**
