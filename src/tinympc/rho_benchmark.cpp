@@ -2,6 +2,9 @@
 // Define DEBUG_MODE=0 to disable iostream usage in embedded builds
 #ifndef DEBUG_MODE
 #define DEBUG_MODE 1
+#endif
+
+#if DEBUG_MODE
 #include <iostream>
 #endif
 
