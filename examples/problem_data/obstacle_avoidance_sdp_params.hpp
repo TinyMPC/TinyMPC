@@ -1,3 +1,6 @@
+// Compare A_bar and B_bar with Julia
+// Make the zeros/non-zeros exactly as Julia 
+
 #pragma once
 
 #include <tinympc/types.hpp>
@@ -108,24 +111,55 @@ void build_augmented_B(Eigen::Matrix<tinytype, NX_AUG, NU_AUG>& B_aug) {
     B_aug.block<16, 4>(NX_PHYS, NU_PHYS + 16) = kron_BB;      // kron(B,B) for vec(uu^T) terms
 }
 
-// Cost matrices for augmented system
+// Julia weight parameters - EXACT VALUES
+#define Q_XX_WEIGHT 0.1f     // Julia: q_xx = 0.1
+#define R_XX_WEIGHT 500.0f   // Julia: R_xx = 500.0
+#define R_XX_LINEAR 10.0f    // Julia: r_xx = 10.0
+#define REG_VALUE 1e-6f      // Julia: reg = 1e-6
+
+// Cost matrices for augmented system - EXACTLY matching Julia
+// Q = zeros(20,20) + reg*I(20,20) (diagonal only, off-diagonal is zero)
 tinytype Q_aug_data[NX_AUG] = {
-    // Physical state costs (first 4)
-    10.0f, 10.0f, 1.0f, 1.0f,
-    // Quadratic term costs (remaining 16) - small costs to promote tightness
-    0.01f, 0.01f, 0.01f, 0.01f,
-    0.01f, 0.01f, 0.01f, 0.01f, 
-    0.01f, 0.01f, 0.01f, 0.01f,
-    0.01f, 0.01f, 0.01f, 0.01f
+    // Physical state costs: reg*I (first 4) - Julia uses zeros + reg*I
+    REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE,
+    // Quadratic term costs: reg*I (remaining 16) - Julia uses zeros + reg*I
+    REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE,
+    REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE, 
+    REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE,
+    REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE
 };
 
+// Linear cost vector q = [zeros(4); vec(q_xx*I(4,4))]
+tinytype q_aug_data[NX_AUG] = {
+    // Physical states: zeros(4)
+    0.0f, 0.0f, 0.0f, 0.0f,
+    // Quadratic terms: vec(q_xx*I(4,4)) = [q_xx, 0, 0, 0, 0, q_xx, 0, 0, 0, 0, q_xx, 0, 0, 0, 0, q_xx]
+    Q_XX_WEIGHT, 0.0f, 0.0f, 0.0f,  // first column of q_xx*I
+    0.0f, Q_XX_WEIGHT, 0.0f, 0.0f,  // second column of q_xx*I
+    0.0f, 0.0f, Q_XX_WEIGHT, 0.0f,  // third column of q_xx*I
+    0.0f, 0.0f, 0.0f, Q_XX_WEIGHT   // fourth column of q_xx*I
+};
+
+// R = Diagonal([zeros(2); zeros(16); vec(R_xx*I(2,2))]) + reg*I(22,22)
 tinytype R_aug_data[NU_AUG] = {
-    // Physical control costs (first 2)
-    1.0f, 1.0f,
-    // Cross-term costs (remaining 20) - small costs
-    0.01f, 0.01f, 0.01f, 0.01f, 0.01f, 0.01f, 0.01f, 0.01f,  // vec(xu^T)
-    0.01f, 0.01f, 0.01f, 0.01f, 0.01f, 0.01f, 0.01f, 0.01f,  // vec(ux^T)
-    0.01f, 0.01f, 0.01f, 0.01f                                 // vec(uu^T)
+    // Physical controls: zeros(2) + reg
+    REG_VALUE, REG_VALUE,
+    // Cross terms xu^T: zeros(8) + reg
+    REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE,
+    // Cross terms ux^T: zeros(8) + reg  
+    REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE, REG_VALUE,
+    // uu^T terms: vec(R_xx*I(2,2)) + reg = [R_xx+reg, reg, reg, R_xx+reg]
+    R_XX_WEIGHT + REG_VALUE, REG_VALUE, REG_VALUE, R_XX_WEIGHT + REG_VALUE
+};
+
+// Linear cost vector r = [zeros(18); vec(r_xx*I(2,2))]
+tinytype r_aug_data[NU_AUG] = {
+    // Physical controls + cross terms: zeros(18)
+    0.0f, 0.0f,  // u
+    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,  // xu^T
+    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,  // ux^T
+    // uu^T terms: vec(r_xx*I(2,2)) = [r_xx, 0, 0, r_xx]
+    R_XX_LINEAR, 0.0f, 0.0f, R_XX_LINEAR
 };
 
 // Obstacle parameters
@@ -137,29 +171,34 @@ tinytype R_aug_data[NU_AUG] = {
 #define GOAL_X 0.0f
 #define GOAL_Y 0.0f
 
-// Linear collision avoidance constraint parameters  
-// Constraint: ||p - p_obs||^2 >= r^2 where p = [px, py] (position only)
-// Expands to: px^2 + py^2 - 2*p_obs_x*px - 2*p_obs_y*py + p_obs_x^2 + p_obs_y^2 - r^2 >= 0
-// In augmented state: G*x̄ >= h
+// Linear collision avoidance constraint parameters - EXACTLY matching Julia
+// Julia: m = [-2*x_obs[1]; -2*x_obs[2]; zeros(2); 1; zeros(4); 1; zeros(10)]'
+// Julia: n = -x_obs'*x_obs + r_obs^2
+// Julia: m*x_bar[:,k] >= n
 
-void build_collision_constraint(Eigen::Matrix<tinytype, 1, NX_AUG>& G, tinytype& h) {
-    G.setZero();
+void build_collision_constraint(Eigen::Matrix<tinytype, 1, NX_AUG>& m, tinytype& n) {
+    m.setZero();
     
-    // Coefficient for -2*p_obs^T * p (first 2 elements of physical state - position only)
-    G(0, 0) = -2.0 * OBS_CENTER_X;  // -2*p_obs_x * px
-    G(0, 1) = -2.0 * OBS_CENTER_Y;  // -2*p_obs_y * py
+    // Julia's m vector exactly:
+    // [-2*x_obs[1]; -2*x_obs[2]; zeros(2); 1; zeros(4); 1; zeros(10)]'
     
-    // Coefficients for px^2 + py^2 from the quadratic terms vec(xx^T)
-    // The vec(xx^T) starts at index 4, and we need:
-    // px^2: (0,0) element -> index 4 + 0*4 + 0 = 4
-    // py^2: (1,1) element -> index 4 + 1*4 + 1 = 9
-    // Note: We only care about position components, not velocity
-    G(0, 4) = 1.0;   // coefficient for (px)^2
-    G(0, 9) = 1.0;   // coefficient for (py)^2
-    // No velocity terms in obstacle constraint
+    m(0, 0) = -2.0 * OBS_CENTER_X;  // -2*x_obs[1] (px coefficient)
+    m(0, 1) = -2.0 * OBS_CENTER_Y;  // -2*x_obs[2] (py coefficient)
+    // m(0, 2) = 0.0;  // zeros(2) - vx coefficient
+    // m(0, 3) = 0.0;  // zeros(2) - vy coefficient
     
-    // Right-hand side: -p_obs^T * p_obs + r^2 (following Julia spec)
-    h = -OBS_CENTER_X * OBS_CENTER_X - OBS_CENTER_Y * OBS_CENTER_Y + OBS_RADIUS * OBS_RADIUS;
+    // Quadratic terms vec(xx^T): [X00, X10, X20, X30, X01, X11, X21, X31, X02, X12, X22, X32, X03, X13, X23, X33]
+    // We want coefficients for X00 (px^2) and X11 (py^2)
+    m(0, 4) = 1.0;   // X00 = px^2 (position 4 in augmented state)
+    // m(0, 5) = 0.0;   // X10 = px*py (zeros(4) part)
+    // m(0, 6) = 0.0;   // X20 = px*vx
+    // m(0, 7) = 0.0;   // X30 = px*vy
+    // m(0, 8) = 0.0;   // X01 = py*px
+    m(0, 9) = 1.0;   // X11 = py^2 (position 9 in augmented state)
+    // Remaining 10 elements are zeros(10)
+    
+    // Julia's n value: -x_obs'*x_obs + r_obs^2
+    n = -(OBS_CENTER_X * OBS_CENTER_X + OBS_CENTER_Y * OBS_CENTER_Y) + OBS_RADIUS * OBS_RADIUS;
 }
 
 // Zero dynamics offset

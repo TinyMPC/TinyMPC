@@ -24,9 +24,13 @@ void backward_pass_grad(TinySolver *solver)
 */
 void forward_pass(TinySolver *solver)
 {
+    // CRITICAL: Preserve initial condition - never update x.col(0)!
+    // Store initial condition to restore after forward pass
+    tinyVector x0_initial = solver->work->x.col(0);
+    
     for (int i = 0; i < solver->work->N - 1; i++)
     {
-        // Blend LQR with SDP projected slacks for consensus
+        // REVERT TO WORKING VERSION: Original ADMM blending that gave perfect results
         tinyVector u_lqr = -solver->cache->Kinf.lazyProduct(solver->work->x.col(i)) - solver->work->d.col(i);
         tinytype alpha = 0.9;
         solver->work->u.col(i) = alpha * solver->work->znew.col(i) + (1.0 - alpha) * u_lqr;
@@ -34,6 +38,9 @@ void forward_pass(TinySolver *solver)
         tinyVector x_dyn = solver->work->Adyn.lazyProduct(solver->work->x.col(i)) + solver->work->Bdyn.lazyProduct(solver->work->u.col(i)) + solver->work->fdyn;
         solver->work->x.col(i + 1) = alpha * solver->work->vnew.col(i + 1) + (1.0 - alpha) * x_dyn;
     }
+    
+    // RESTORE initial condition - this should NEVER change!
+    solver->work->x.col(0) = x0_initial;
 }
 
 /**
@@ -73,6 +80,12 @@ void project_sdp_augmented_state(TinySolver *solver) {
     if (solver->work->vnew.rows() != 20) {
         return; // Skip if not using augmented formulation
     }
+    
+    std::cout << "[SDP] Augmented state projection called!" << std::endl;
+    
+    // CRITICAL: Store initial condition to preserve it
+    tinyVector x0_initial = solver->work->vnew.col(0);
+    
     
     for (int k = 0; k < solver->work->N; k++) {
         // Get augmented state x̄ = [x, vec(xx^T)]
@@ -118,7 +131,23 @@ void project_sdp_augmented_state(TinySolver *solver) {
         tinytype alpha = std::max(1e-12, M_psd(0, 0));
         tinyVector x_proj = M_psd.block<4, 1>(1, 0) / alpha;
         
-        // Extract projected quadratic matrix
+        // SAFETY MARGIN: Additional obstacle enforcement on physical state
+        // NOTE: This is NOT in the original Julia formulation - it's an ADMM robustness enhancement
+        // Julia relies purely on the linear constraint: px² + py² + 10*px ≥ -21
+        // We add this because ADMM is iterative/approximate, unlike direct SDP solvers
+        /*
+        tinytype px = x_proj(0), py = x_proj(1);
+        tinytype dist_to_obs = sqrt((px + 5.0)*(px + 5.0) + py*py);  // distance to obstacle at [-5, 0]
+        if (dist_to_obs < 2.5) {  // 2.5 > 2.0 SAFETY MARGIN (25% larger than obstacle radius)
+            // Push away from obstacle center
+            tinytype scale = 2.5 / dist_to_obs;
+            x_proj(0) = -5.0 + scale * (px + 5.0);  // new px
+            x_proj(1) = scale * py;                  // new py
+            // velocity components unchanged: x_proj(2), x_proj(3)
+        }
+        */
+        
+        // Extract quadratic matrix from PSD projection (pure Julia approach)
         Eigen::Matrix<tinytype, 4, 4> XX_proj = M_psd.block<4, 4>(1, 1) / alpha;
         
         // Vectorize projected quadratic matrix
@@ -134,6 +163,9 @@ void project_sdp_augmented_state(TinySolver *solver) {
         solver->work->vnew.col(k).head(4) = x_proj;
         solver->work->vnew.col(k).segment(4, 16) = vec_xx_proj;
     }
+    
+    // RESTORE initial condition - this should NEVER change!
+    solver->work->vnew.col(0) = x0_initial;
 }
 
 /**
@@ -144,8 +176,11 @@ void project_sdp_augmented_state(TinySolver *solver) {
 void project_sdp_state_control(TinySolver *solver) {
     // Only apply if we're using augmented formulation
     if (solver->work->vnew.rows() != 20 || solver->work->znew.rows() != 22) {
+        std::cout << "[SDP] State-control projection SKIPPED (wrong dimensions: vnew=" << solver->work->vnew.rows() << ", znew=" << solver->work->znew.rows() << ")" << std::endl;
         return;
     }
+    
+    std::cout << "[SDP] State-control projection called!" << std::endl;
     
     for (int k = 0; k < solver->work->N - 1; ++k) {  // N-1 because controls are only defined for k < N
         // Extract pieces from vnew (x, X) and znew (u, XU, UX, UU)
@@ -345,6 +380,16 @@ void update_slack(TinySolver *solver)
     project_sdp_augmented_state(solver);   // [1;x;X] ⪰ 0
     project_sdp_state_control(solver);     // [1;x;u;X;XU;UX;UU] ⪰ 0 (joint projection)
     
+    // FIX A: RE-APPLY BOX AFTER PSD (so exported slacks respect bounds)
+    if (solver->settings->en_input_bound) {
+        solver->work->znew = solver->work->u_max.cwiseMin(
+                             solver->work->u_min.cwiseMax(solver->work->znew));
+    }
+    if (solver->settings->en_state_bound) {
+        solver->work->vnew = solver->work->x_max.cwiseMin(
+                             solver->work->x_min.cwiseMax(solver->work->vnew));
+    }
+    
     // Update linear constraint slack variables for state
     if (solver->settings->en_state_linear) {
         solver->work->vlnew = solver->work->x + solver->work->gl;
@@ -472,9 +517,9 @@ void update_dual(TinySolver *solver)
 */
 void update_linear_cost(TinySolver *solver)
 {
-
-    // Update state cost terms
-    solver->work->q = -(solver->work->Xref.array().colwise() * solver->work->Q.array());
+    // Update state cost terms: Reference + ADMM (linear terms handled separately if needed)
+    // FIX 3a: Missing factor of 2 - expansion of (x-Xref)'Q(x-Xref) gives -2*Q*Xref, not -Q*Xref
+    solver->work->q = -2.0 * (solver->work->Xref.array().colwise() * solver->work->Q.array());
     (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vnew - solver->work->g);
     if (solver->settings->en_state_soc && solver->work->numStateCones > 0) {
         (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vcnew - solver->work->gc);
@@ -486,8 +531,9 @@ void update_linear_cost(TinySolver *solver)
         (solver->work->q).noalias() -= solver->cache->rho * (solver->work->vlnew_tv - solver->work->gl_tv);
     }
 
-    // Update input cost terms
-    solver->work->r = -(solver->work->Uref.array().colwise() * solver->work->R.array());
+    // Update input cost terms: Reference + ADMM (linear terms handled separately if needed)
+    // FIX 3a: Missing factor of 2 - expansion of (u-Uref)'R(u-Uref) gives -2*R*Uref, not -R*Uref
+    solver->work->r = -2.0 * (solver->work->Uref.array().colwise() * solver->work->R.array());
     (solver->work->r).noalias() -= solver->cache->rho * (solver->work->znew - solver->work->y);
     if (solver->settings->en_input_soc && solver->work->numInputCones > 0) {
         (solver->work->r).noalias() -= solver->cache->rho * (solver->work->zcnew - solver->work->yc);
