@@ -26,8 +26,13 @@ void forward_pass(TinySolver *solver)
 {
     for (int i = 0; i < solver->work->N - 1; i++)
     {
-        (solver->work->u.col(i)).noalias() = -solver->cache->Kinf.lazyProduct(solver->work->x.col(i)) - solver->work->d.col(i);
-        (solver->work->x.col(i + 1)).noalias() = solver->work->Adyn.lazyProduct(solver->work->x.col(i)) + solver->work->Bdyn.lazyProduct(solver->work->u.col(i)) + solver->work->fdyn;
+        // Blend LQR with SDP projected slacks for consensus
+        tinyVector u_lqr = -solver->cache->Kinf.lazyProduct(solver->work->x.col(i)) - solver->work->d.col(i);
+        tinytype alpha = 0.9;
+        solver->work->u.col(i) = alpha * solver->work->znew.col(i) + (1.0 - alpha) * u_lqr;
+        // Blend dynamics with SDP projected states for consensus
+        tinyVector x_dyn = solver->work->Adyn.lazyProduct(solver->work->x.col(i)) + solver->work->Bdyn.lazyProduct(solver->work->u.col(i)) + solver->work->fdyn;
+        solver->work->x.col(i + 1) = alpha * solver->work->vnew.col(i + 1) + (1.0 - alpha) * x_dyn;
     }
 }
 
@@ -59,6 +64,208 @@ tinyVector project_soc(tinyVector s, float mu) {
     }
 }
 
+/**
+ * SDP projection method for augmented state with proper moment matrix constraints
+ * Projects augmented state x̄ = [x, vec(xx^T)] onto PSD cone
+ */
+void project_sdp_augmented_state(TinySolver *solver) {
+    // Only apply if we're using augmented state (dimension 20)
+    if (solver->work->vnew.rows() != 20) {
+        return; // Skip if not using augmented formulation
+    }
+    
+    for (int k = 0; k < solver->work->N; k++) {
+        // Get augmented state x̄ = [x, vec(xx^T)]
+        tinyVector x_aug = solver->work->vnew.col(k);
+        
+        // Extract physical state (first 4 elements)
+        tinyVector x_phys = x_aug.head(4);
+        
+        // Extract vectorized quadratic terms (elements 4-19)
+        Eigen::Matrix<tinytype, 16, 1> vec_xx = x_aug.segment(4, 16);
+        
+        // Reconstruct 4x4 matrix from vec(xx^T)
+        Eigen::Matrix<tinytype, 4, 4> XX;
+        int idx = 0;
+        for (int j = 0; j < 4; j++) {
+            for (int i = 0; i < 4; i++) {
+                XX(i, j) = vec_xx(idx++);
+            }
+        }
+        
+        // Build 5x5 moment matrix M = [1, x^T; x, XX]
+        Eigen::Matrix<tinytype, 5, 5> M;
+        M.setZero();
+        M(0, 0) = 1.0;
+        M.block<1, 4>(0, 1) = x_phys.transpose();
+        M.block<4, 1>(1, 0) = x_phys;
+        M.block<4, 4>(1, 1) = XX;
+        
+        // Project onto PSD cone using eigenvalue clipping
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<tinytype, 5, 5>> es;
+        es.compute(M, Eigen::ComputeEigenvectors);
+        auto eigenvals = es.eigenvalues();
+        
+        // Clip negative eigenvalues to small positive value
+        for (int i = 0; i < 5; ++i) {
+            eigenvals(i) = eigenvals(i) < 1e-8 ? 1e-8 : eigenvals(i);
+        }
+        
+        // Reconstruct PSD matrix
+        auto M_psd = es.eigenvectors() * eigenvals.asDiagonal() * es.eigenvectors().transpose();
+        
+        // Extract projected physical state
+        tinytype alpha = std::max(1e-12, M_psd(0, 0));
+        tinyVector x_proj = M_psd.block<4, 1>(1, 0) / alpha;
+        
+        // Extract projected quadratic matrix
+        Eigen::Matrix<tinytype, 4, 4> XX_proj = M_psd.block<4, 4>(1, 1) / alpha;
+        
+        // Vectorize projected quadratic matrix
+        Eigen::Matrix<tinytype, 16, 1> vec_xx_proj;
+        idx = 0;
+        for (int j = 0; j < 4; j++) {
+            for (int i = 0; i < 4; i++) {
+                vec_xx_proj(idx++) = XX_proj(i, j);
+            }
+        }
+        
+        // Update augmented state
+        solver->work->vnew.col(k).head(4) = x_proj;
+        solver->work->vnew.col(k).segment(4, 16) = vec_xx_proj;
+    }
+}
+
+/**
+ * Joint state-control SDP projection for stronger relaxation
+ * Projects 7x7 joint moment matrix [1; x; u; X; XU; UX; UU] onto PSD cone
+ * This couples cross-terms to both x and u, enforcing symmetry UX = XU^T
+ */
+void project_sdp_state_control(TinySolver *solver) {
+    // Only apply if we're using augmented formulation
+    if (solver->work->vnew.rows() != 20 || solver->work->znew.rows() != 22) {
+        return;
+    }
+    
+    for (int k = 0; k < solver->work->N - 1; ++k) {  // N-1 because controls are only defined for k < N
+        // Extract pieces from vnew (x, X) and znew (u, XU, UX, UU)
+        const auto& x_aug = solver->work->vnew.col(k);
+        const auto& u_aug = solver->work->znew.col(k);
+
+        // x (4)
+        Eigen::Matrix<tinytype, 4, 1> x = x_aug.head<4>();
+
+        // X (4x4) from vec(xx^T), column-major
+        Eigen::Matrix<tinytype, 4, 4> X;
+        int idx = 4;
+        for (int j = 0; j < 4; ++j) {
+            for (int i = 0; i < 4; ++i) {
+                X(i, j) = x_aug(idx++);
+            }
+        }
+
+        // u (2)
+        Eigen::Matrix<tinytype, 2, 1> u = u_aug.head<2>();
+
+        // XU (4x2) from vec(xu^T), column-major (positions 2..9)
+        Eigen::Matrix<tinytype, 4, 2> XU;
+        idx = 2;
+        for (int j = 0; j < 2; ++j) {
+            for (int i = 0; i < 4; ++i) {
+                XU(i, j) = u_aug(idx++);
+            }
+        }
+
+        // UX (2x4) from vec(ux^T), column-major (positions 10..17)
+        // We stored vec(ux^T) as 8 numbers; reconstruct ux^T (4x2) then transpose to UX (2x4)
+        Eigen::Matrix<tinytype, 4, 2> uxT;
+        idx = 10;
+        for (int j = 0; j < 2; ++j) {
+            for (int i = 0; i < 4; ++i) {
+                uxT(i, j) = u_aug(idx++);
+            }
+        }
+        Eigen::Matrix<tinytype, 2, 4> UX = uxT.transpose();
+
+        // UU (2x2) from vec(uu^T) (positions 18..21)
+        Eigen::Matrix<tinytype, 2, 2> UU;
+        idx = 18;
+        for (int j = 0; j < 2; ++j) {
+            for (int i = 0; i < 2; ++i) {
+                UU(i, j) = u_aug(idx++);
+            }
+        }
+
+        // Assemble 7x7 joint moment matrix
+        Eigen::Matrix<tinytype, 7, 7> M;
+        M.setZero();
+        M(0, 0) = 1.0;
+        M.block<1, 4>(0, 1) = x.transpose();
+        M.block<1, 2>(0, 5) = u.transpose();
+        M.block<4, 1>(1, 0) = x;
+        M.block<4, 4>(1, 1) = X;
+        M.block<4, 2>(1, 5) = XU;
+        M.block<2, 1>(5, 0) = u;
+        M.block<2, 4>(5, 1) = UX;
+        M.block<2, 2>(5, 5) = UU;
+
+        // PSD projection via eigenvalue clipping
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<tinytype, 7, 7>> es;
+        es.compute(M, Eigen::ComputeEigenvectors);
+        auto evals = es.eigenvalues();
+        for (int i = 0; i < 7; ++i) {
+            evals(i) = std::max<tinytype>(evals(i), 1e-8);
+        }
+        Eigen::Matrix<tinytype, 7, 7> Mpsd = es.eigenvectors() * evals.asDiagonal() * es.eigenvectors().transpose();
+
+        // De-homogenize by alpha = M(0,0)
+        tinytype alpha = std::max<tinytype>(Mpsd(0, 0), 1e-12);
+
+        // Read back projected blocks
+        Eigen::Matrix<tinytype, 4, 1> xP = Mpsd.block<4, 1>(1, 0) / alpha;
+        Eigen::Matrix<tinytype, 2, 1> uP = Mpsd.block<2, 1>(5, 0) / alpha;
+        Eigen::Matrix<tinytype, 4, 4> XP = Mpsd.block<4, 4>(1, 1) / alpha;
+        Eigen::Matrix<tinytype, 4, 2> XUP = Mpsd.block<4, 2>(1, 5) / alpha;
+        Eigen::Matrix<tinytype, 2, 4> UXP = Mpsd.block<2, 4>(5, 1) / alpha;
+        Eigen::Matrix<tinytype, 2, 2> UUP = Mpsd.block<2, 2>(5, 5) / alpha;
+
+        // Write back to vnew (x, X)
+        solver->work->vnew.col(k).head<4>() = xP;
+        idx = 4;
+        for (int j = 0; j < 4; ++j) {
+            for (int i = 0; i < 4; ++i) {
+                solver->work->vnew.col(k)(idx++) = XP(i, j);
+            }
+        }
+
+        // Write back to znew (u, vec(xu^T), vec(ux^T), vec(uu^T))
+        solver->work->znew.col(k).head<2>() = uP;
+        
+        // vec(xu^T)
+        idx = 2;
+        for (int j = 0; j < 2; ++j) {
+            for (int i = 0; i < 4; ++i) {
+                solver->work->znew.col(k)(idx++) = XUP(i, j);
+            }
+        }
+        
+        // vec(ux^T) = vec((UXP)^T), column-major
+        idx = 10;
+        for (int j = 0; j < 2; ++j) {
+            for (int i = 0; i < 4; ++i) {
+                solver->work->znew.col(k)(idx++) = UXP.transpose()(i, j);
+            }
+        }
+        
+        // vec(uu^T)
+        idx = 18;
+        for (int j = 0; j < 2; ++j) {
+            for (int i = 0; i < 2; ++i) {
+                solver->work->znew.col(k)(idx++) = UUP(i, j);
+            }
+        }
+    }
+}
 /**
  * Project a vector z onto a hyperplane defined by a^T z = b
  * Implements equation (21): ΠH(z) = z - (⟨z, a⟩ − b)/||a||² * a
@@ -133,6 +340,10 @@ void update_slack(TinySolver *solver)
             }
         }
     }
+    
+    // SDP constraints for augmented state - project moment matrices onto PSD cone
+    project_sdp_augmented_state(solver);   // [1;x;X] ⪰ 0
+    project_sdp_state_control(solver);     // [1;x;u;X;XU;UX;UU] ⪰ 0 (joint projection)
     
     // Update linear constraint slack variables for state
     if (solver->settings->en_state_linear) {

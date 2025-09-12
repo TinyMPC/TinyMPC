@@ -32,3 +32,15 @@ target_link_libraries(codegen_cartpole LINK_PUBLIC tinympcstatic)
 if(MINGW)
     target_link_libraries(codegen_cartpole LINK_PUBLIC "stdc++fs")
 endif(MINGW)
+
+add_compile_definitions(ENABLE_SDP_PROJECTION)
+
+# Removed obstacle_avoidance_sdp.cpp - using obstacle_avoidance_sdp_lifted.cpp instead
+
+# Removed obstacle_avoidance_augmented.cpp - file doesn't exist
+
+add_executable(obstacle_avoidance_sdp_lifted obstacle_avoidance_sdp_lifted.cpp)
+target_link_libraries(obstacle_avoidance_sdp_lifted LINK_PUBLIC tinympcstatic)
+if(MINGW)
+    target_link_libraries(obstacle_avoidance_sdp_lifted LINK_PUBLIC "stdc++fs")
+endif(MINGW)

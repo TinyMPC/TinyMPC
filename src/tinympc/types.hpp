@@ -1,7 +1,10 @@
 #pragma once
 
 
-#include <Eigen.h>
+#include <Eigen/Dense>
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include <Eigen/Eigenvalues>
 // #include <Eigen/Core>
 // #include <Eigen/LU>
 
@@ -69,6 +72,8 @@ typedef struct {
     int en_input_bound;
     int en_state_soc;
     int en_input_soc;
+    int en_state_sdp;      // Enable SDP constraints on states
+    int en_input_sdp;      // Enable SDP constraints on inputs
     int en_state_linear;
     int en_input_linear;
     int en_tv_state_linear;
@@ -140,6 +145,20 @@ typedef struct {
     tinyMatrix gc; // nx x N
     tinyMatrix yc; // nu x N-1
 
+
+    // SDP constraint variables
+    int numStateSDP; // Number of SDP constraints on states at each time step
+    int numInputSDP; // Number of SDP constraints on inputs at each time step
+    
+    // SDP slack variables (moment matrices)
+    tinyMatrix vs; // nx x N (state SDP slacks)
+    tinyMatrix vsnew; // nx x N
+    tinyMatrix zs; // nu x N-1 (input SDP slacks)
+    tinyMatrix zsnew; // nu x N-1
+    
+    // SDP dual variables
+    tinyMatrix gs; // nx x N
+    tinyMatrix ys; // nu x N-1
     // Linear constraint variables
     // Variables to keep track of general linear constraint information
     int numStateLinear; // Number of linear constraints on states at each time step
