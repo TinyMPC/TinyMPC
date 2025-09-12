@@ -1,7 +1,17 @@
+// Debug configuration for embedded environments
+// Define DEBUG_MODE=0 to disable iostream usage in embedded builds
+#ifndef DEBUG_MODE
+#define DEBUG_MODE 1
+#endif
+
+#if DEBUG_MODE
+#include <iostream>
+#endif
+
 #include "rho_benchmark.hpp"
 #include <cmath>
 #include <algorithm>
-#include <iostream>
+
 #ifdef ARDUINO
 #include <Arduino.h>
 #else
