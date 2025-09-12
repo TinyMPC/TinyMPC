@@ -161,119 +161,34 @@ int main()
         return -1;
     }
     
-    // Set bound constraints
+    // COMMENT OUT: Box constraints (not in Julia)
+    /*
     status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
     
     if (status != 0) {
         std::cout << "❌ Setting bound constraints failed with status: " << status << std::endl;
         return -1;
     }
+    */
+    std::cout << "🔧 PURE JULIA: No box constraints (Julia doesn't have bounds)" << std::endl;
     
     // Add linear collision avoidance constraint - Julia formulation
     Eigen::Matrix<tinytype, 1, NX_AUG> m_collision;
     tinytype n_collision;
     build_collision_constraint(m_collision, n_collision);
     
-    std::cout << "🔧 Adding RLT/McCormick bounds to tighten X ≈ x*x^T..." << std::endl;
+    // PURE JULIA: Only collision constraint (no RLT/McCormick bounds)
+    std::cout << "🔧 Using PURE Julia formulation - only collision constraint..." << std::endl;
     
-    // RLT/McCormick bounds: Add secant inequalities for diagonal terms
-    // X_ii <= (l_i + u_i)*x_i - l_i*u_i  (secant upper bound)
-    // Combined with M ⪰ 0 (which gives X_ii >= x_i^2), this tightly constrains X_ii ≈ x_i^2
+    // Only collision constraint - exactly as Julia does
+    tinyMatrix A_lin_x(NHORIZON, NX_AUG);  // One constraint per time step
+    Eigen::Matrix<tinytype, Eigen::Dynamic, 1> b_lin_x(NHORIZON);
     
-    // State bounds for RLT constraints - balance tightness with feasibility
-    tinytype px_min = -15.0, px_max = 5.0;   // position x bounds (keep wide for initial condition)
-    tinytype py_min = -2.0,  py_max = 2.0;   // position y bounds (tightened for effectiveness)
-    tinytype vx_min = -5.0,  vx_max = 5.0;   // velocity x bounds
-    tinytype vy_min = -5.0,  vy_max = 5.0;   // velocity y bounds
-    
-    // Build RLT constraints (4 diagonal secant bounds)
-    Eigen::Matrix<tinytype, 4, NX_AUG> A_rlt;
-    Eigen::Matrix<tinytype, 4, 1> b_rlt;
-    A_rlt.setZero();
-    
-    // X_00 <= (px_min + px_max)*px - px_min*px_max  (px^2 secant)
-    A_rlt(0, 4) = 1.0;                    // +1 * X_00
-    A_rlt(0, 0) = -(px_min + px_max);     // -(l_px + u_px) * px
-    b_rlt(0) = -px_min * px_max;          // RHS: -l_px * u_px
-    
-    // X_11 <= (py_min + py_max)*py - py_min*py_max  (py^2 secant)  
-    A_rlt(1, 9) = 1.0;                    // +1 * X_11
-    A_rlt(1, 1) = -(py_min + py_max);     // -(l_py + u_py) * py
-    b_rlt(1) = -py_min * py_max;          // RHS: -l_py * u_py
-    
-    // X_22 <= (vx_min + vx_max)*vx - vx_min*vx_max  (vx^2 secant)
-    A_rlt(2, 14) = 1.0;                   // +1 * X_22
-    A_rlt(2, 2) = -(vx_min + vx_max);     // -(l_vx + u_vx) * vx
-    b_rlt(2) = -vx_min * vx_max;          // RHS: -l_vx * u_vx
-    
-    // X_33 <= (vy_min + vy_max)*vy - vy_min*vy_max  (vy^2 secant)
-    A_rlt(3, 19) = 1.0;                   // +1 * X_33
-    A_rlt(3, 3) = -(vy_min + vy_max);     // -(l_vy + u_vy) * vy
-    b_rlt(3) = -vy_min * vy_max;          // RHS: -l_vy * u_vy
-    
-    // Add McCormick bounds for off-diagonal position terms (px*py)
-    // X_01 (px*py) is at index 4 + 0*4 + 1 = 5
-    // X_10 (py*px) is at index 4 + 1*4 + 0 = 8
-    
-    // McCormick envelope constraints for X_01 = px*py:
-    // Lower bounds:
-    // X_01 >= px_min*py + py_min*px - px_min*py_min
-    // X_01 >= px_max*py + py_max*px - px_max*py_max
-    // Upper bounds:
-    // X_01 <= px_max*py + py_min*px - px_max*py_min
-    // X_01 <= px_min*py + py_max*px - px_min*py_max
-    
-    Eigen::Matrix<tinytype, 4, NX_AUG> A_mccormick;
-    Eigen::Matrix<tinytype, 4, 1> b_mccormick;
-    A_mccormick.setZero();
-    
-    // McCormick lower bound 1: -X_01 + px_min*py + py_min*px <= px_min*py_min
-    A_mccormick(0, 5) = -1.0;      // -X_01
-    A_mccormick(0, 0) = py_min;    // py_min * px
-    A_mccormick(0, 1) = px_min;    // px_min * py
-    b_mccormick(0) = px_min * py_min;
-    
-    // McCormick lower bound 2: -X_01 + px_max*py + py_max*px <= px_max*py_max
-    A_mccormick(1, 5) = -1.0;      // -X_01
-    A_mccormick(1, 0) = py_max;    // py_max * px
-    A_mccormick(1, 1) = px_max;    // px_max * py
-    b_mccormick(1) = px_max * py_max;
-    
-    // McCormick upper bound 1: X_01 - px_max*py - py_min*px <= -px_max*py_min
-    A_mccormick(2, 5) = 1.0;       // X_01
-    A_mccormick(2, 0) = -py_min;   // -py_min * px
-    A_mccormick(2, 1) = -px_max;   // -px_max * py
-    b_mccormick(2) = -px_max * py_min;
-    
-    // McCormick upper bound 2: X_01 - px_min*py - py_max*px <= -px_min*py_max
-    A_mccormick(3, 5) = 1.0;       // X_01
-    A_mccormick(3, 0) = -py_max;   // -py_max * px
-    A_mccormick(3, 1) = -px_min;   // -px_min * py
-    b_mccormick(3) = -px_min * py_max;
-    
-    // Note: X_10 = X_01 due to symmetry, so we don't need separate constraints
-    
-    // Combine collision constraint + RLT bounds + McCormick bounds
-    int total_constraints = 1 + 4 + 4;  // 1 collision + 4 RLT + 4 McCormick
-    Eigen::Matrix<tinytype, Eigen::Dynamic, NX_AUG> A_combined(total_constraints, NX_AUG);
-    Eigen::Matrix<tinytype, Eigen::Dynamic, 1> b_combined(total_constraints);
-    
-    // First row: collision constraint - Julia uses m*x >= n, TinyMPC uses A*x <= b
-    // So we need -m*x <= -n, which means A = -m, b = -n
-    A_combined.row(0) = -m_collision;
-    b_combined(0) = -n_collision;
-    
-    // Next 4 rows: RLT secant bounds
-    A_combined.block<4, NX_AUG>(1, 0) = A_rlt;
-    b_combined.segment<4>(1) = b_rlt;
-    
-    // Next 4 rows: McCormick bounds
-    A_combined.block<4, NX_AUG>(5, 0) = A_mccormick;
-    b_combined.segment<4>(5) = b_mccormick;
-    
-    // Replicate across horizon
-    tinyMatrix A_lin_x = A_combined.replicate(NHORIZON, 1);
-    Eigen::Matrix<tinytype, Eigen::Dynamic, 1> b_lin_x = b_combined.replicate(NHORIZON, 1);
+    // Replicate collision constraint across horizon
+    for (int k = 0; k < NHORIZON; k++) {
+        A_lin_x.row(k) = -m_collision;  // Julia: m*x >= n → TinyMPC: -m*x <= -n
+        b_lin_x(k) = -n_collision;
+    }
     
     // No input constraints - use empty matrices
     tinyMatrix A_lin_u(0, NU_AUG);
@@ -281,11 +196,9 @@ int main()
     
     status = tiny_set_linear_constraints(solver, A_lin_x, b_lin_x, A_lin_u, b_lin_u_empty);
     
-    std::cout << "✅ Added " << total_constraints << " constraints per timestep:" << std::endl;
-    std::cout << "  - 1 collision avoidance constraint" << std::endl;
-    std::cout << "  - 4 RLT secant bounds (X_ii ≤ (l_i+u_i)*x_i - l_i*u_i)" << std::endl;
-    std::cout << "  - 4 McCormick bounds for X_01 (px*py cross-term)" << std::endl;
-    std::cout << "🔧 Enhanced SDP projection: Joint state-control moment matrices [1;x;u;X;XU;UX;UU] ⪰ 0" << std::endl;
+    std::cout << "✅ Added ONLY collision constraint per timestep (pure Julia):" << std::endl;
+    std::cout << "  - 1 collision avoidance constraint (m*x >= n)" << std::endl;
+    std::cout << "🔧 Pure SDP projection: [1;x;u;X;XU;UX;UU] ⪰ 0" << std::endl;
     
     if (status != 0) {
         std::cout << "❌ Setting linear constraints failed with status: " << status << std::endl;
@@ -297,6 +210,10 @@ int main()
     solver->settings->abs_pri_tol = 1e-3;
     solver->settings->abs_dua_tol = 1e-3;
     solver->settings->check_termination = 1;
+    
+    // PURE JULIA: Disable box constraints
+    solver->settings->en_state_bound = false;
+    solver->settings->en_input_bound = false;
     
     std::cout << "✅ TinyMPC solver initialized successfully!" << std::endl;
     std::cout << "✅ Augmented dynamics matrices built with Kronecker products" << std::endl;
@@ -328,20 +245,9 @@ int main()
     tiny_VectorNx x0_aug = construct_augmented_state(x0_phys);
     tiny_VectorNx xg_aug = construct_augmented_state(xg_phys);
 
-    // ENFORCE INITIAL CONDITION as very tight box constraints
-    // Set x[0] to exactly match the initial augmented state
-    for (int i = 0; i < NX_AUG; i++) {
-        x_min(i, 0) = x0_aug(i) - 1e-8;  // Extremely tight bounds
-        x_max(i, 0) = x0_aug(i) + 1e-8;
-    }
-    
-    // Re-set the bound constraints with the updated bounds
-    status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
-    
-    if (status != 0) {
-        std::cout << "❌ Re-setting bound constraints failed with status: " << status << std::endl;
-        return -1;
-    }
+    // PURE JULIA: No initial condition box constraints
+    // Julia uses hard equality: x_bar[:,1] == [x_initial; vec(x_initial*x_initial')]
+    // We rely on initialization + ADMM consensus
 
     std::cout << "\n🎯 Initial physical state: [" << x0_phys.transpose().format(CleanFmt) << "]" << std::endl;
     std::cout << "🎯 Goal physical state: [" << xg_phys.transpose().format(CleanFmt) << "]" << std::endl;

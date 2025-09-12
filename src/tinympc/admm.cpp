@@ -30,9 +30,9 @@ void forward_pass(TinySolver *solver)
     
     for (int i = 0; i < solver->work->N - 1; i++)
     {
-        // REVERT TO WORKING VERSION: Original ADMM blending that gave perfect results
+        // SDP REQUIRES CONSENSUS: Blend LQR with constraint projections
         tinyVector u_lqr = -solver->cache->Kinf.lazyProduct(solver->work->x.col(i)) - solver->work->d.col(i);
-        tinytype alpha = 0.9;
+        tinytype alpha = 0.9;  // Trust constraint projections more than pure LQR
         solver->work->u.col(i) = alpha * solver->work->znew.col(i) + (1.0 - alpha) * u_lqr;
         // Blend dynamics with SDP projected states for consensus
         tinyVector x_dyn = solver->work->Adyn.lazyProduct(solver->work->x.col(i)) + solver->work->Bdyn.lazyProduct(solver->work->u.col(i)) + solver->work->fdyn;
