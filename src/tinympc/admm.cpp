@@ -377,6 +377,9 @@ int solve(TinySolver *solver)
 
     for (int i = 0; i < solver->settings->max_iter; i++)
     {
+        // Update linear control cost terms using reference trajectory, duals, and slack variables
+        update_linear_cost(solver);
+
         // Solve linear system with Riccati and roll out to get new trajectory
         backward_pass_grad(solver);
 
@@ -387,9 +390,6 @@ int solve(TinySolver *solver)
 
         // Compute next iteration of dual variables
         update_dual(solver);
-
-        // Update linear control cost terms using reference trajectory, duals, and slack variables
-        update_linear_cost(solver);
 
         solver->work->iter += 1;
 
