@@ -14,3 +14,10 @@
 #define TINY_DEFAULT_EN_INPUT_LINEAR    (0)
 #define TINY_DEFAULT_EN_TV_STATE_LINEAR (0)
 #define TINY_DEFAULT_EN_TV_INPUT_LINEAR (0)
+
+// SDP projection toggles (augmented formulations)
+#define TINY_DEFAULT_EN_STATE_SDP       (0)
+#define TINY_DEFAULT_EN_INPUT_SDP       (0)
+
+// Forward rollout blending between slack projections and LQR
+#define TINY_DEFAULT_FORWARD_BLEND_ALPHA (0.9)

@@ -429,6 +429,8 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->en_input_linear = TINY_DEFAULT_EN_INPUT_LINEAR;
     settings->en_tv_state_linear = TINY_DEFAULT_EN_TV_STATE_LINEAR;
     settings->en_tv_input_linear = TINY_DEFAULT_EN_TV_INPUT_LINEAR;
+    settings->en_state_sdp = TINY_DEFAULT_EN_STATE_SDP;
+    settings->en_input_sdp = TINY_DEFAULT_EN_INPUT_SDP;
     
     // Initialize adaptive rho settings
     // NOTE : Adaptive rho currently supports only quadrotor system
@@ -436,6 +438,9 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->adaptive_rho_min = 1.0;
     settings->adaptive_rho_max = 100.0;
     settings->adaptive_rho_enable_clipping = 1;
+
+    // Forward rollout blending between slack projections and LQR
+    settings->forward_blend_alpha = TINY_DEFAULT_FORWARD_BLEND_ALPHA;
 
     return 0;
 }

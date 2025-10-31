@@ -85,7 +85,7 @@ extern "C"
 int main()
 {
     std::cout << "========================================" << std::endl;
-    std::cout << "🚀 OBSTACLE AVOIDANCE WITH SDP STATE LIFTING" << std::endl;
+    std::cout << "OBSTACLE AVOIDANCE WITH SDP STATE LIFTING" << std::endl;
     std::cout << "========================================" << std::endl;
     
     TinySolver *solver;
@@ -149,7 +149,7 @@ int main()
 
     std::cout << "\n🔧 Setting up TinyMPC solver..." << std::endl;
     
-    tinytype rho_value = 1.0;  // Julia doesn't specify rho - using standard value
+    tinytype rho_value = 30.0;  // Julia doesn't specify rho - using standard value
     
     // Set up problem with augmented dimensions
     int status = tiny_setup(&solver,
@@ -160,7 +160,8 @@ int main()
         std::cout << "❌ TinyMPC setup failed with status: " << status << std::endl;
         return -1;
     }
-    
+
+
     // COMMENT OUT: Box constraints (not in Julia)
     /*
     status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
@@ -170,7 +171,11 @@ int main()
         return -1;
     }
     */
-    std::cout << "🔧 PURE JULIA: No box constraints (Julia doesn't have bounds)" << std::endl;
+
+    status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
+    solver->settings->en_state_bound = true;
+    solver->settings->en_input_bound = true;
+   
     
     // Add linear collision avoidance constraint - Julia formulation
     Eigen::Matrix<tinytype, 1, NX_AUG> m_collision;
@@ -189,16 +194,24 @@ int main()
         A_lin_x.row(k) = -m_collision;  // Julia: m*x >= n → TinyMPC: -m*x <= -n
         b_lin_x(k) = -n_collision;
     }
+
+    // const tinytype delta = -0.05;
+    // for (int k = 0; k < NHORIZON; k++) {
+    //     A_lin_x.row(k) = -m_collision;
+    //     b_lin_x(k)     = -(n_collision - delta);
+    // }
     
     // No input constraints - use empty matrices
     tinyMatrix A_lin_u(0, NU_AUG);
     Eigen::Matrix<tinytype, 0, 1> b_lin_u_empty;
     
     status = tiny_set_linear_constraints(solver, A_lin_x, b_lin_x, A_lin_u, b_lin_u_empty);
+    solver->settings->en_state_linear = true;
+
     
-    std::cout << "✅ Added ONLY collision constraint per timestep (pure Julia):" << std::endl;
+    std::cout << " Added ONLY collision constraint per timestep (pure Julia):" << std::endl;
     std::cout << "  - 1 collision avoidance constraint (m*x >= n)" << std::endl;
-    std::cout << "🔧 Pure SDP projection: [1;x;u;X;XU;UX;UU] ⪰ 0" << std::endl;
+    std::cout << " Pure SDP projection: [1;x;u;X;XU;UX;UU] ⪰ 0" << std::endl;
     
     if (status != 0) {
         std::cout << "❌ Setting linear constraints failed with status: " << status << std::endl;
@@ -211,9 +224,16 @@ int main()
     solver->settings->abs_dua_tol = 1e-3;
     solver->settings->check_termination = 1;
     
-    // PURE JULIA: Disable box constraints
-    solver->settings->en_state_bound = false;
-    solver->settings->en_input_bound = false;
+    
+    solver->settings->en_state_sdp = true;
+    solver->settings->en_input_sdp = true;
+
+    // solver->settings->en_state_sdp = false;
+    // solver->settings->en_input_sdp = false;
+
+    // Keep forward rollout biased toward projected slacks for consensus
+    // (default is 0.9; expose here for clarity/tuning if needed)
+    // solver->settings->forward_blend_alpha = 0.9;
     
     std::cout << "✅ TinyMPC solver initialized successfully!" << std::endl;
     std::cout << "✅ Augmented dynamics matrices built with Kronecker products" << std::endl;
@@ -273,7 +293,11 @@ int main()
     }
     
     // Override terminal goal
-    work->Xref.col(NHORIZON-1) = xg_aug;
+    //work->Xref.col(NHORIZON-1) = xg_aug;
+
+    for (int k = NHORIZON - 5; k < NHORIZON; ++k) {   // try 3–5 steps
+        work->Xref.col(k) = xg_aug;                   // xg_aug = [xg; vec(xg xgᵀ)]
+    }
     
     // Debug: Print Julia's linear cost vectors to verify
     std::cout << "\n🔍 Julia linear costs being used:" << std::endl;
@@ -299,6 +323,19 @@ int main()
     
     // Set initial condition in reference to enforce it more strongly
     work->Xref.col(0) = x0_aug;
+
+
+    // Terminal state 
+    x_min.col(NHORIZON-1) = xg_aug;
+    x_max.col(NHORIZON-1) = xg_aug;
+
+    status = tiny_set_bound_constraints(solver, x_min, x_max, u_min, u_max);
+    solver->settings->en_state_bound = true;
+    solver->settings->en_input_bound = true;
+    if (status != 0) {
+        std::cout << "❌ Setting bound constraints failed with status: " << status << std::endl;
+        return -1;
+    }
     
     // Solve the MPC problem
     auto start_time = std::chrono::high_resolution_clock::now();
@@ -312,9 +349,9 @@ int main()
     std::cout << "🔄 Iterations: " << work->iter << std::endl;
     
     if (status == 0) {
-        std::cout << "✅ Problem solved successfully!" << std::endl;
+        std::cout << " Problem solved successfully!" << std::endl;
     } else {
-        std::cout << "⚠️  Solver status: " << status << std::endl;
+        std::cout << " Solver status: " << status << std::endl;
     }
     
     // Debug: Check initial condition enforcement
@@ -325,117 +362,10 @@ int main()
     std::cout << "  Solution x[0]:  [" << x0_solution.transpose().format(CleanFmt) << "]" << std::endl;
     std::cout << "  Expected x[0]:  [" << x0_phys.transpose().format(CleanFmt) << "]" << std::endl;
 
-    // Analyze results
-    std::cout << "\n========================================" << std::endl;
-    std::cout << "📊 TRAJECTORY ANALYSIS" << std::endl;
-    std::cout << "========================================" << std::endl;
+    const auto& X_solution = solver->solution->x;  // Keep for moment matrix check
     
-    // Extract physical trajectory and check obstacle violations
-    int violations = 0;
-    tinytype min_distance = 1000.0;
-    
-    // Use solution variables (vnew) which are the consensus variables that satisfy constraints
-    const auto& X_solution = solver->solution->x;  // This contains vnew after solve
-    
-    for (int k = 0; k < NHORIZON; k++) {
-        // Extract physical state - use primal for k=0, solution for k>0
-        Eigen::Matrix<tinytype, NX_PHYS, 1> x_phys;
-        if (k == 0) {
-            x_phys = extract_physical_state(work->x.col(k));  // Use primal for initial condition
-        } else {
-            x_phys = extract_physical_state(X_solution.col(k));  // Use solution for others
-        }
-        
-        tinytype px = x_phys(0);
-        tinytype py = x_phys(1);
-        tinytype dist = sqrt((px - OBS_CENTER_X)*(px - OBS_CENTER_X) + 
-                           (py - OBS_CENTER_Y)*(py - OBS_CENTER_Y));
-        
-        min_distance = std::min(min_distance, dist);
-        
-        if (dist < OBS_RADIUS) {
-            violations++;
-        }
-    }
-    
-    std::cout << "🛡️  Safety violations: " << violations << "/" << NHORIZON << " time steps" << std::endl;
-    std::cout << "📏 Minimum distance to obstacle: " << min_distance << std::endl;
-    std::cout << "✅ Safe trajectory: " << (violations == 0 ? "YES" : "NO") << std::endl;
-    
-    // Check moment matrix consistency (PSD property)
-    std::cout << "\n🔍 Checking moment matrix consistency..." << std::endl;
-    int psd_violations = 0;
-    
-    for (int k = 0; k < NHORIZON; k++) {
-        // Extract physical state from solution variables
-        Eigen::Matrix<tinytype, NX_PHYS, 1> x_phys = extract_physical_state(X_solution.col(k));
-        
-        // Extract quadratic terms from augmented solution state
-        Eigen::Matrix<tinytype, 16, 1> vec_xx = X_solution.col(k).segment<16>(NX_PHYS);
-        
-        // Reconstruct xx^T matrix
-        Eigen::Matrix<tinytype, NX_PHYS, NX_PHYS> xx_reconstructed;
-        int idx = 0;
-        for (int j = 0; j < NX_PHYS; j++) {
-            for (int i = 0; i < NX_PHYS; i++) {
-                xx_reconstructed(i, j) = vec_xx(idx++);
-            }
-        }
-        
-        // Compare with x*x^T
-        Eigen::Matrix<tinytype, NX_PHYS, NX_PHYS> xx_true = x_phys * x_phys.transpose();
-        tinytype consistency_error = (xx_reconstructed - xx_true).norm();
-        
-        if (consistency_error > 1e-2) {
-            psd_violations++;
-        }
-    }
-    
-    std::cout << "🔗 Moment matrix consistency violations: " << psd_violations << "/" << NHORIZON << std::endl;
-    
-    // Check constraint feasibility using solution variables
-    std::cout << "\n📐 Checking constraint feasibility on solution..." << std::endl;
-    tinytype max_violation = 0.0;
-    
-    // Debug: Check the first few time steps in detail
-    for (int k = 0; k < std::min(3, NHORIZON); k++) {
-        // Use correct variables: primal for k=0, solution for k>0
-        Eigen::Matrix<tinytype, NX_AUG, 1> x_check;
-        if (k == 0) {
-            x_check = work->x.col(k);  // Use primal variables for initial condition
-        } else {
-            x_check = X_solution.col(k);  // Use solution variables for other time steps
-        }
-        
-        tinytype constraint_val = m_collision.dot(x_check);
-        tinytype violation = std::max(0.0, n_collision - constraint_val);  // m*x >= n, so violation when m*x < n
-        max_violation = std::max(max_violation, violation);
-        
-        // Extract physical position for manual verification
-        Eigen::Matrix<tinytype, NX_PHYS, 1> x_phys = extract_physical_state(x_check);
-        tinytype px = x_phys(0), py = x_phys(1);
-        
-        // Manual constraint calculation: px² + py² - 2*obs_x*px - 2*obs_y*py
-        tinytype manual_val = px*px + py*py - 2.0*OBS_CENTER_X*px - 2.0*OBS_CENTER_Y*py;
-        tinytype manual_violation = std::max(0.0, n_collision - manual_val);
-        
-        std::cout << "  t=" << k << ": pos=[" << px << ", " << py << "]" << std::endl;
-        std::cout << "    Solver constraint: " << constraint_val << " vs " << n_collision 
-                  << " → violation=" << violation << std::endl;
-        std::cout << "    Manual constraint: " << manual_val << " vs " << n_collision 
-                  << " → violation=" << manual_violation << std::endl;
-    }
-    
-    for (int k = 3; k < NHORIZON; k++) {
-        tinytype constraint_val = m_collision.dot(X_solution.col(k));  // Use solution variables for k > 0
-        tinytype violation = std::max(0.0, n_collision - constraint_val);
-        max_violation = std::max(max_violation, violation);
-    }
-    
-    std::cout << "📊 Maximum constraint violation: " << max_violation;
-    std::cout << " → " << (max_violation < 1e-6 ? "✅ FEASIBLE" : "⚠️ INFEASIBLE") << std::endl;
-    
-    // Save trajectory data (physical states only) using solution variables
+    // Save trajectory data (physical states) using dynamics rollout for visualization
+    // (keep original format that worked before)
     std::ofstream file("obstacle_avoidance_sdp_lifted_trajectory.csv");
     file << "# Obstacle Avoidance with SDP State Lifting (Solution Variables)\n";
     file << "# time, pos_x, pos_y, vel_x, vel_y, input_x, input_y\n";
@@ -449,10 +379,24 @@ int main()
     std::cout << "  NHORIZON: " << NHORIZON << std::endl;
     
     // FIX C: Export dynamics-consistent data by re-simulating with bounded controls
-    Eigen::Matrix<tinytype, NX_PHYS, NX_PHYS> A_phys = 
-        Map<Matrix<tinytype, NX_PHYS, NX_PHYS, RowMajor>>(A_phys_data);
-    Eigen::Matrix<tinytype, NX_PHYS, NU_PHYS> B_phys = 
-        Map<Matrix<tinytype, NX_PHYS, NU_PHYS, RowMajor>>(B_phys_data);
+    // Eigen::Matrix<tinytype, NX_PHYS, NX_PHYS> A_phys = 
+    //     Map<Matrix<tinytype, NX_PHYS, NX_PHYS, RowMajor>>(A_phys_data);
+    // Eigen::Matrix<tinytype, NX_PHYS, NU_PHYS> B_phys = 
+    //     Map<Matrix<tinytype, NX_PHYS, NU_PHYS, RowMajor>>(B_phys_data);
+
+    const tinytype dt = 1.0;  // same Δt as Julia
+    Eigen::Matrix<tinytype, NX_PHYS, NX_PHYS> A_phys;
+    A_phys << 1, 0, dt, 0,
+            0, 1, 0,  dt,
+            0, 0, 1,  0,
+            0, 0, 0,  1;
+
+    Eigen::Matrix<tinytype, NX_PHYS, NU_PHYS> B_phys;
+    B_phys << 0.5*dt*dt, 0,
+            0,         0.5*dt*dt,
+            dt,        0,
+            0,         dt;
+
     
     Eigen::Matrix<tinytype, NX_PHYS, 1> xroll = x0_phys;  // Start from true initial condition
     
@@ -475,9 +419,50 @@ int main()
     }
     file.close();
     
-    std::cout << "Physical trajectory saved to obstacle_avoidance_sdp_lifted_trajectory.csv" << std::endl;
-    std::cout << "\nSDP state lifting obstacle avoidance complete!" << std::endl;
-    std::cout << "Augmented state formulation successfully implemented!" << std::endl;
+    std::cout << "\n📊 Physical trajectory saved to obstacle_avoidance_sdp_lifted_trajectory.csv" << std::endl;
+    
+    // NOW CHECK THE ACTUAL FORWARD-ROLLOUT TRAJECTORY (THE REAL ONE!)
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "🔍 ACTUAL FORWARD-ROLLOUT ANALYSIS (THE REAL TRAJECTORY!)" << std::endl;
+    std::cout << "========================================" << std::endl;
+    
+    int violations_rollout = 0;
+    tinytype min_distance_rollout = 1000.0;
+    
+    xroll = x0_phys;  // Reset to initial condition
+    for (int k = 0; k < NHORIZON; k++) {
+        tinytype px = xroll(0);
+        tinytype py = xroll(1);
+        tinytype dist = sqrt((px - OBS_CENTER_X)*(px - OBS_CENTER_X) + 
+                           (py - OBS_CENTER_Y)*(py - OBS_CENTER_Y));
+        
+        min_distance_rollout = std::min(min_distance_rollout, dist);
+        
+        if (dist < OBS_RADIUS) {
+            violations_rollout++;
+            if (violations_rollout <= 3) {  // Print first 3 violations
+                std::cout << "  ❌ VIOLATION at t=" << k << ": pos=[" << px << ", " << py 
+                         << "], dist=" << dist << "m (penetration=" << (OBS_RADIUS - dist) << "m)" << std::endl;
+            }
+        }
+        
+        // Roll forward for next iteration
+        if (k < NHORIZON - 1) {
+            Eigen::Matrix<tinytype, NU_PHYS, 1> u_phys = U_solution.col(k).head<NU_PHYS>();
+            xroll = A_phys * xroll + B_phys * u_phys;
+        }
+    }
+    
+    std::cout << "\n🛡️  [ACTUAL ROLLOUT] Safety violations: " << violations_rollout << "/" << NHORIZON << " time steps" << std::endl;
+    std::cout << "📏 [ACTUAL ROLLOUT] Minimum distance: " << min_distance_rollout << "m" << std::endl;
+    if (violations_rollout > 0) {
+        std::cout << "💥 [ACTUAL ROLLOUT] Maximum penetration: " << (OBS_RADIUS - min_distance_rollout) << "m INTO obstacle" << std::endl;
+    }
+    std::cout << "✅ [ACTUAL ROLLOUT] Safe trajectory: " << (violations_rollout == 0 ? "YES ✓" : "NO ✗ CRASHES!") << std::endl;
+    
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "SDP state lifting obstacle avoidance complete!" << std::endl;
+    std::cout << "========================================" << std::endl;
 
     return 0;
 }

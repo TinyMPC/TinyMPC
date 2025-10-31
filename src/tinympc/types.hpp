@@ -84,6 +84,9 @@ typedef struct {
     tinytype adaptive_rho_min;         // Minimum value for rho
     tinytype adaptive_rho_max;         // Maximum value for rho
     int adaptive_rho_enable_clipping;  // Enable/disable clipping of rho (1/0)
+
+    // Forward rollout blending alpha in ADMM forward_pass
+    tinytype forward_blend_alpha;
 } TinySettings;
 
 

@@ -28,11 +28,11 @@ void forward_pass(TinySolver *solver)
     // Store initial condition to restore after forward pass
     tinyVector x0_initial = solver->work->x.col(0);
     
+    tinytype alpha = solver->settings->forward_blend_alpha;  // Blend towards projections
     for (int i = 0; i < solver->work->N - 1; i++)
     {
         // SDP REQUIRES CONSENSUS: Blend LQR with constraint projections
         tinyVector u_lqr = -solver->cache->Kinf.lazyProduct(solver->work->x.col(i)) - solver->work->d.col(i);
-        tinytype alpha = 0.9;  // Trust constraint projections more than pure LQR
         solver->work->u.col(i) = alpha * solver->work->znew.col(i) + (1.0 - alpha) * u_lqr;
         // Blend dynamics with SDP projected states for consensus
         tinyVector x_dyn = solver->work->Adyn.lazyProduct(solver->work->x.col(i)) + solver->work->Bdyn.lazyProduct(solver->work->u.col(i)) + solver->work->fdyn;
@@ -131,22 +131,7 @@ void project_sdp_augmented_state(TinySolver *solver) {
         tinytype alpha = std::max(1e-12, M_psd(0, 0));
         tinyVector x_proj = M_psd.block<4, 1>(1, 0) / alpha;
         
-        // SAFETY MARGIN: Additional obstacle enforcement on physical state
-        // NOTE: This is NOT in the original Julia formulation - it's an ADMM robustness enhancement
-        // Julia relies purely on the linear constraint: px² + py² + 10*px ≥ -21
-        // We add this because ADMM is iterative/approximate, unlike direct SDP solvers
-        /*
-        tinytype px = x_proj(0), py = x_proj(1);
-        tinytype dist_to_obs = sqrt((px + 5.0)*(px + 5.0) + py*py);  // distance to obstacle at [-5, 0]
-        if (dist_to_obs < 2.5) {  // 2.5 > 2.0 SAFETY MARGIN (25% larger than obstacle radius)
-            // Push away from obstacle center
-            tinytype scale = 2.5 / dist_to_obs;
-            x_proj(0) = -5.0 + scale * (px + 5.0);  // new px
-            x_proj(1) = scale * py;                  // new py
-            // velocity components unchanged: x_proj(2), x_proj(3)
-        }
-        */
-        
+
         // Extract quadratic matrix from PSD projection (pure Julia approach)
         Eigen::Matrix<tinytype, 4, 4> XX_proj = M_psd.block<4, 4>(1, 1) / alpha;
         
@@ -377,8 +362,12 @@ void update_slack(TinySolver *solver)
     }
     
     // SDP constraints for augmented state - project moment matrices onto PSD cone
-    project_sdp_augmented_state(solver);   // [1;x;X] ⪰ 0
-    project_sdp_state_control(solver);     // [1;x;u;X;XU;UX;UU] ⪰ 0 (joint projection)
+    if (solver->settings->en_state_sdp) {
+        project_sdp_augmented_state(solver);   // [1;x;X] ⪰ 0
+    }
+    if (solver->settings->en_input_sdp) {
+        project_sdp_state_control(solver);     // [1;x;u;X;XU;UX;UU] ⪰ 0 (joint projection)
+    }
     
     // FIX A: RE-APPLY BOX AFTER PSD (so exported slacks respect bounds)
     if (solver->settings->en_input_bound) {
@@ -388,6 +377,12 @@ void update_slack(TinySolver *solver)
     if (solver->settings->en_state_bound) {
         solver->work->vnew = solver->work->x_max.cwiseMin(
                              solver->work->x_min.cwiseMax(solver->work->vnew));
+    }
+
+    // Enforce hard initial condition equality on state slacks
+    // Important for parity with Julia where x_bar[:,1] is fixed
+    if (solver->work->N > 0) {
+        solver->work->vnew.col(0) = solver->work->x.col(0);
     }
     
     // Update linear constraint slack variables for state

@@ -44,3 +44,24 @@ target_link_libraries(obstacle_avoidance_sdp_lifted LINK_PUBLIC tinympcstatic)
 if(MINGW)
     target_link_libraries(obstacle_avoidance_sdp_lifted LINK_PUBLIC "stdc++fs")
 endif(MINGW)
+
+# Debug-oriented ADMM example (standalone, mirrors Julia formulation)
+add_executable(obstacle_avoidance_admm_debug obstacle_avoidance_admm_debug.cpp)
+target_link_libraries(obstacle_avoidance_admm_debug LINK_PUBLIC tinympcstatic)
+if(MINGW)
+    target_link_libraries(obstacle_avoidance_admm_debug LINK_PUBLIC "stdc++fs")
+endif(MINGW)
+
+# Barebone ADMM (no TinyMPC internals) for lifted SDP
+add_executable(obstacle_avoidance_admm_barebone obstacle_avoidance_admm_barebone.cpp)
+target_link_libraries(obstacle_avoidance_admm_barebone LINK_PUBLIC tinympcstatic)
+if(MINGW)
+    target_link_libraries(obstacle_avoidance_admm_barebone LINK_PUBLIC "stdc++fs")
+endif(MINGW)
+
+# Quadrotor obstacle avoidance with SDP state lifting
+add_executable(quadrotor_obstacle_avoidance_sdp_lifted quadrotor_obstacle_avoidance_sdp_lifted.cpp)
+target_link_libraries(quadrotor_obstacle_avoidance_sdp_lifted LINK_PUBLIC tinympcstatic)
+if(MINGW)
+    target_link_libraries(quadrotor_obstacle_avoidance_sdp_lifted LINK_PUBLIC "stdc++fs")
+endif(MINGW)

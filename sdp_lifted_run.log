@@ -1,0 +1,473 @@
+========================================
+🚀 OBSTACLE AVOIDANCE WITH SDP STATE LIFTING
+========================================
+Problem setup:
+- Physical states: 4 (px, py, vx, vy)
+- Physical inputs: 2 (ax, ay)
+- Augmented states: 20 (x + vec(xx^T))
+- Augmented inputs: 22 (u + cross terms)
+- Horizon: 31
+- Obstacle: [-5, 0], r=2
+
+🔧 Setting up TinyMPC solver...
+🔧 PURE JULIA: No box constraints (Julia doesn't have bounds)
+🔧 Using PURE Julia formulation - only collision constraint...
+✅ Added ONLY collision constraint per timestep (pure Julia):
+  - 1 collision avoidance constraint (m*x >= n)
+🔧 Pure SDP projection: [1;x;u;X;XU;UX;UU] ⪰ 0
+✅ TinyMPC solver initialized successfully!
+✅ Augmented dynamics matrices built with Kronecker products
+✅ Linear collision avoidance constraint added
+
+🔍 Sanity checking collision constraint...
+  At obstacle center [-5, 0]: phi = -25, n = -21 → ❌ VIOLATED
+  Far from obstacle [-10, 0]: phi = 0, n = -21 → ✅ SATISFIED
+
+🎯 Initial physical state: [[-10, 0.1,   0,   0]]
+🎯 Goal physical state: [[0, 0, 0, 0]]
+
+🔍 Julia linear costs being used:
+  q_aug = [  0   0   0   0 0.1   0   0   0   0 0.1   0   0   0   0 0.1   0   0   0   0 0.1]
+  r_aug = [ 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0 10  0  0 10]
+  Xref_one = [    -0     -0     -0     -0 -50000     -0     -0     -0     -0 -50000     -0     -0     -0     -0 -50000     -0     -0     -0     -0 -50000]
+  Uref_one = [   -0    -0    -0    -0    -0    -0    -0    -0    -0    -0    -0    -0    -0    -0    -0    -0    -0    -0 -0.01    -0    -0 -0.01]
+
+🚀 Solving with augmented state SDP formulation...
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+[SDP] Augmented state projection called!
+[SDP] State-control projection called!
+⏱️  Solve time: 2418 ms
+🔄 Iterations: 200
+⚠️  Solver status: 1
+
+🔍 Initial condition check:
+  Primal x[0]:    [[-10, 0.1,   0,   0]]
+  Solution x[0]:  [[-10, 0.1,   0,   0]]
+  Expected x[0]:  [[-10, 0.1,   0,   0]]
+
+========================================
+📊 TRAJECTORY ANALYSIS
+========================================
+🛡️  Safety violations: 0/31 time steps
+📏 Minimum distance to obstacle: 2.58418
+✅ Safe trajectory: YES
+
+🔍 Checking moment matrix consistency...
+🔗 Moment matrix consistency violations: 30/31
+
+📐 Checking constraint feasibility on solution...
+  t=0: pos=[-10, 0.1]
+    Solver constraint: 0.01 vs -21 → violation=0
+    Manual constraint: 0.01 vs -21 → violation=0
+  t=1: pos=[18.2886, -0.378727]
+    Solver constraint: 33330.3 vs -21 → violation=0
+    Manual constraint: 517.504 vs -21 → violation=0
+  t=2: pos=[15.12, 5.98923]
+    Solver constraint: 50138.8 vs -21 → violation=0
+    Manual constraint: 415.687 vs -21 → violation=0
+📊 Maximum constraint violation: 0 → ✅ FEASIBLE
+📊 Matrix dimensions for CSV:
+  X_solution: 20x31
+  U_solution: 22x30
+  NHORIZON: 31
+Physical trajectory saved to obstacle_avoidance_sdp_lifted_trajectory.csv
+
+SDP state lifting obstacle avoidance complete!
+Augmented state formulation successfully implemented!
