@@ -1,7 +1,7 @@
 # TinyMPC: Model-Predictive Control on Resource-Constrained Microcontrollers
 
 <p align="center">
-<img align="center" src="https://github.com/TinyMPC/TinyMPC.github.io/blob/main/docs/media/lightmode-banner.png" width=50%>
+<img align="center" src="https://github.com/TinyMPC/TinyMPC.github.io/blob/main/docs/media/tinympc-dark-logo.png" width=50%>
 </p>
 
 If you have any questions related to the solver, visit the [GitHub Discussions](https://github.com/orgs/TinyMPC/discussions) page. This guarantees accessibility for everyone.
@@ -60,25 +60,25 @@ If you are using TinyMPC, we encourage you to
 @inproceedings{tinympc,
       title={TinyMPC: Model-Predictive Control on Resource-Constrained Microcontrollers}, 
       author={Khai Nguyen and Sam Schoedel and Anoushka Alavilli and Brian Plancher and Zachary Manchester},
+      year={2024},
       booktitle={IEEE International Conference on Robotics and Automation (ICRA)},
-      year = {2024}
 }
 ```
 ```
-@misc{tinympc2,
-      title={Code Generation for Conic Model-Predictive Control on Microcontrollers with TinyMPC}, 
-      author={Sam Schoedel and Khai Nguyen and Elakhya Nedumaran and Brian Plancher and Zachary Manchester},
-      year={2024},
+@misc{tinympc-conic-codegen,
+      title={Code Generation and Conic Constraints for Model-Predictive Control on Microcontrollers with Conic-TinyMPC}, 
+      author={Ishaan Mahajan and Khai Nguyen and Sam Schoedel and Elakhya Nedumaran and Moises Mata and Brian Plancher and Zachary Manchester},
+      year={2025},
       eprint={2403.18149},
       archivePrefix={arXiv},
 }
 ```
 ```
-@article{mahajan2025robust,
-  title={Robust and Efficient Embedded Convex Optimization through First-Order Adaptive Caching},
-  author={Mahajan, Ishaan and Plancher, Brian},
-  journal={arXiv preprint arXiv:2507.03231},
-  year={2025}
+@inproceedings{tinympc-adaptive,
+      title={Robust and Efficient Embedded Convex Optimization through First-Order Adaptive Caching}, 
+      author={Ishaan Mahajan and Brian Plancher},
+      booktitle={IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+      year={2025}
 }
 ```
 * Put a star ⭐ on this repository.
