@@ -4,11 +4,13 @@
 <img align="center" src="https://github.com/TinyMPC/TinyMPC.github.io/blob/main/docs/media/tinympc-dark-logo.png" width=50%>
 </p>
 
-If you have any questions related to the solver, visit the [GitHub Discussions](https://github.com/orgs/TinyMPC/discussions) page. This guarantees accessibility for everyone.
+If you have any questions related to the solver, visit the [GitHub Discussions](https://github.com/orgs/TinyMPC/discussions) page. This guarantees accessibility for everyone. 
 
 The documentation is available at [tinympc.org](https://tinympc.org/)
 
 High-level language interfaces with detailed examples and code generation are available in [Python](https://github.com/TinyMPC/tinympc-python), [Julia](https://github.com/TinyMPC/tinympc-julia), and [MATLAB](https://github.com/TinyMPC/tinympc-matlab).
+
+**Excited to hear your TinyMPC success stories, share them with us!**
 
 ## Building
 For Windows - Enable ```wsl``` before following prompts below
@@ -55,6 +57,8 @@ cmake --build .
 
 If you are using TinyMPC, we encourage you to
 
+* Put a star ⭐ on this repository.
+  
 * Cite the related papers:
 ```
 @inproceedings{tinympc,
@@ -81,9 +85,6 @@ If you are using TinyMPC, we encourage you to
       year={2025}
 }
 ```
-* Put a star ⭐ on this repository.
-
-**Excited to hear your TinyMPC success stories—share them with us!**
 
 ## Bug reports and support
 
