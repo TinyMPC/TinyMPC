@@ -16,6 +16,11 @@ void update_dual(TinySolver *solver);
 void update_linear_cost(TinySolver *solver);
 bool termination_condition(TinySolver *solver);
 
+#ifdef __cplusplus
+}
+extern "C++" {
+#endif
+
 /**
  * Project a vector s onto the second order cone defined by mu
  * @param s, mu
@@ -32,6 +37,7 @@ tinyVector project_soc(tinyVector s, float mu);
  * @return Projection of z onto the hyperplane
  */
 tinyVector project_hyperplane(const tinyVector& z, const tinyVector& a, tinytype b);
+
 #ifdef __cplusplus
 }
 #endif
