@@ -73,15 +73,15 @@ If you are using TinyMPC, we encourage you to
       title={Robust and Efficient Embedded Convex Optimization through First-Order Adaptive Caching}, 
       author={Ishaan Mahajan and Brian Plancher},
       booktitle={IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
-      year={2025}
+      year={2025},
 }
 ```
 ```
 @inproceedings{conic-tinympc,
       title={Code Generation and Conic Constraints for Model-Predictive Control on Microcontrollers with Conic-TinyMPC}, 
       author={Ishaan Mahajan and Khai Nguyen and Sam Schoedel and Elakhya Nedumaran and Moises Mata and Brian Plancher and Zachary Manchester},
-      year={2026},
       booktitle={IEEE International Conference on Robotics and Automation (ICRA)},
+      year={2026},
 }
 ```
 
