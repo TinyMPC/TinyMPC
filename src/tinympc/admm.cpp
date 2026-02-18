@@ -31,6 +31,11 @@ void forward_pass(TinySolver *solver)
     }
 }
 
+#ifdef __cplusplus
+}
+extern "C++" {
+#endif
+
 /**
  * Project a vector s onto the second order cone defined by mu
  * @param s, mu
@@ -71,6 +76,11 @@ tinyVector project_hyperplane(const tinyVector& z, const tinyVector& a, tinytype
     tinytype dist = (a.dot(z) - b) / a.squaredNorm();
     return z - dist * a;
 }
+
+#ifdef __cplusplus
+}
+extern "C" {
+#endif
 
 /**
  * Project slack (auxiliary) variables into their feasible domain, defined by
