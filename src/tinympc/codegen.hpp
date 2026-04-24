@@ -16,6 +16,14 @@ extern "C" {
     int codegen_data_header(const char* output_dir, int verbose);
     int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose);
     int codegen_example(const char* output_dir, int verbose);
+    int tiny_codegen_problem_data(TinySolver* solver, const char* output_dir,
+                                  const char* basename, int verbose);
+    int tiny_codegen_crazyflie_params(TinySolver* solver, const char* output_dir,
+                                      const char* basename, int verbose);
+    int codegen_problem_data_header(TinySolver* solver, const char* output_dir,
+                                    const char* basename, int verbose);
+    int codegen_crazyflie_params_header(TinySolver* solver, const char* output_dir,
+                                        const char* basename, int verbose);
     
 
 #ifdef __cplusplus

@@ -26,16 +26,13 @@ inline int mkdir(const char *pathname, int flags) {
 }
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* Define the maximum allowed length of the path (directory + filename + extension) */
 #define PATH_LENGTH 2048
 
 using namespace Eigen;
 
-static void print_matrix(FILE *f, MatrixXd mat, int num_elements)
+template <typename Derived>
+static void print_matrix(FILE *f, const Eigen::MatrixBase<Derived>& mat, int num_elements)
 {
     // Check if matrix is uninitialized or too small
     if (mat.size() == 0 || mat.size() < num_elements) {
@@ -50,10 +47,75 @@ static void print_matrix(FILE *f, MatrixXd mat, int num_elements)
     
     // Matrix is properly initialized and has enough elements
     for (int i = 0; i < num_elements; i++) {
-        fprintf(f, "(tinytype)%.16f", mat.reshaped<RowMajor>()[i]);
+        fprintf(f, "(tinytype)%.16f", mat.template reshaped<RowMajor>()[i]);
         if (i < num_elements - 1)
             fprintf(f, ",");
     }
+}
+
+template <typename Derived>
+static void print_problem_data_array(FILE *f, const char* name,
+                                     const char* size_expr,
+                                     const Eigen::MatrixBase<Derived>& mat,
+                                     int num_elements)
+{
+    fprintf(f, "tinytype %s[%s] = {\n    ", name, size_expr);
+
+    if (mat.size() == 0 || mat.size() < num_elements) {
+        for (int i = 0; i < num_elements; ++i) {
+            fprintf(f, "0.000000f");
+            if (i < num_elements - 1) {
+                fprintf(f, ", ");
+                if ((i + 1) % 6 == 0) {
+                    fprintf(f, "\n    ");
+                }
+            }
+        }
+    } else {
+        for (int i = 0; i < num_elements; ++i) {
+            fprintf(f, "%.6ff", mat.template reshaped<RowMajor>()[i]);
+            if (i < num_elements - 1) {
+                fprintf(f, ", ");
+                if ((i + 1) % 6 == 0) {
+                    fprintf(f, "\n    ");
+                }
+            }
+        }
+    }
+
+    fprintf(f, "\n};\n\n");
+}
+
+template <typename Derived>
+static void print_legacy_assignment(FILE *f, const char* name,
+                                    const Eigen::MatrixBase<Derived>& mat,
+                                    int rows, int cols)
+{
+    fprintf(f, "%s << \n", name);
+    if (mat.size() == 0 || mat.rows() != rows || mat.cols() != cols) {
+        for (int r = 0; r < rows; ++r) {
+            for (int c = 0; c < cols; ++c) {
+                fprintf(f, "0.000000f");
+                if (!(r == rows - 1 && c == cols - 1)) {
+                    fprintf(f, ",");
+                }
+            }
+            fprintf(f, "\n");
+        }
+        fprintf(f, ";\n\n");
+        return;
+    }
+
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < cols; ++c) {
+            fprintf(f, "%.6ff", mat(r, c));
+            if (!(r == rows - 1 && c == cols - 1)) {
+                fprintf(f, ",");
+            }
+        }
+        fprintf(f, "\n");
+    }
+    fprintf(f, ";\n\n");
 }
 
 
@@ -61,9 +123,12 @@ static void create_directory(const char* dir, int verbose) {
     // Attempt to create directory
     if (mkdir(dir, S_IRWXU|S_IRWXG|S_IROTH)) {
         if (errno == EEXIST) { // Skip if directory already exists
-            if (verbose)
 #if DEBUG_MODE
+            if (verbose) {
                 std::cout << dir << " already exists, skipping." << std::endl;
+            }
+#else
+            (void)verbose;
 #endif
         } else {
             ERROR_MSG(EXIT_FAILURE, "Failed to create directory %s", dir);
@@ -72,6 +137,10 @@ static void create_directory(const char* dir, int verbose) {
 }
 
 // TODO: Make this fail if tiny_setup has not already been called
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose) {
     if (!solver) {
 #if DEBUG_MODE
@@ -85,6 +154,40 @@ int tiny_codegen(TinySolver* solver, const char* output_dir, int verbose) {
     status |= codegen_data_source(solver, output_dir, verbose);
     status |= codegen_example(output_dir, verbose);
 
+    return status;
+}
+
+int tiny_codegen_problem_data(TinySolver* solver, const char* output_dir,
+                              const char* basename, int verbose) {
+    if (!solver) {
+#if DEBUG_MODE
+        std::cout << "Error in tiny_codegen_problem_data: solver is nullptr" << std::endl;
+#endif
+        return 1;
+    }
+
+    int status = 0;
+    status |= codegen_create_directories(output_dir, verbose);
+    status |= codegen_problem_data_header(
+        solver, output_dir,
+        basename ? basename : "generated_problem_data", verbose);
+    return status;
+}
+
+int tiny_codegen_crazyflie_params(TinySolver* solver, const char* output_dir,
+                                  const char* basename, int verbose) {
+    if (!solver) {
+#if DEBUG_MODE
+        std::cout << "Error in tiny_codegen_crazyflie_params: solver is nullptr" << std::endl;
+#endif
+        return 1;
+    }
+
+    int status = 0;
+    status |= codegen_create_directories(output_dir, verbose);
+    status |= codegen_crazyflie_params_header(
+        solver, output_dir,
+        basename ? basename : "generated_params", verbose);
     return status;
 }
 
@@ -119,13 +222,21 @@ int codegen_create_directories(const char* output_dir, int verbose) {
 
     // Create src folder
     char src_dir[PATH_LENGTH];
-    sprintf(src_dir, "%s/src/", output_dir);
+    snprintf(src_dir, PATH_LENGTH, "%s/src/", output_dir);
     create_directory(src_dir, verbose);
 
     // Create tinympc folder
     char tinympc_dir[PATH_LENGTH];
-    sprintf(tinympc_dir, "%s/tinympc/", output_dir);
+    snprintf(tinympc_dir, PATH_LENGTH, "%s/tinympc/", output_dir);
     create_directory(tinympc_dir, verbose);
+
+    char problem_data_dir[PATH_LENGTH];
+    snprintf(problem_data_dir, PATH_LENGTH, "%s/problem_data/", output_dir);
+    create_directory(problem_data_dir, verbose);
+
+    char crazyflie_dir[PATH_LENGTH];
+    snprintf(crazyflie_dir, PATH_LENGTH, "%s/crazyflie/", output_dir);
+    create_directory(crazyflie_dir, verbose);
 
     // // Create include folder
     // char inc_dir[PATH_LENGTH];
@@ -135,12 +246,163 @@ int codegen_create_directories(const char* output_dir, int verbose) {
     return EXIT_SUCCESS;
 }
 
+int codegen_problem_data_header(TinySolver* solver, const char* output_dir,
+                                const char* basename, int verbose) {
+    char header_fname[PATH_LENGTH];
+    FILE *header_f;
+
+    int nx = solver->work->nx;
+    int nu = solver->work->nu;
+    int N = solver->work->N;
+
+    tinyVector Q_nominal;
+    tinyVector R_nominal;
+    tinyMatrix R_augmented;
+#ifdef TINYMPC_EMBEDDED
+    Q_nominal = solver->work->Q;
+    R_nominal = solver->work->R;
+    R_augmented = solver->work->R.asDiagonal();
+    R_augmented += solver->cache->rho * tinyMatrix::Identity(nu, nu);
+#else
+    Q_nominal = solver->work->Q.array() - solver->cache->rho;
+    R_nominal = solver->work->R.array() - solver->cache->rho;
+    R_augmented = solver->work->R.asDiagonal();
+#endif
+    tinyMatrix coeff_d2p = solver->cache->Kinf.transpose() * R_augmented
+                         - solver->cache->AmBKt * solver->cache->Pinf * solver->work->Bdyn;
+
+    snprintf(header_fname, PATH_LENGTH, "%s/problem_data/%s.hpp", output_dir, basename);
+
+    header_f = fopen(header_fname, "w+");
+    if (header_f == NULL) {
+        ERROR_MSG(EXIT_FAILURE, "Failed to open file %s", header_fname);
+    }
+
+    time_t start_time;
+    time(&start_time);
+    fprintf(header_f, "/*\n");
+    fprintf(header_f, " * This file was autogenerated by TinyMPC on %s", ctime(&start_time));
+    fprintf(header_f, " *\n");
+    fprintf(header_f, " * Embedded-oriented problem data export.\n");
+    fprintf(header_f, " * Define NSTATES, NINPUTS, and NHORIZON before including this header.\n");
+    fprintf(header_f, " */\n\n");
+    fprintf(header_f, "#pragma once\n\n");
+    fprintf(header_f, "#include <tinympc/types.hpp>\n\n");
+
+    fprintf(header_f, "tinytype rho_value = %.6ff;\n\n", solver->cache->rho);
+
+    print_problem_data_array(header_f, "Adyn_data", "NSTATES * NSTATES",
+                             solver->work->Adyn, nx * nx);
+    print_problem_data_array(header_f, "Bdyn_data", "NSTATES * NINPUTS",
+                             solver->work->Bdyn, nx * nu);
+    print_problem_data_array(header_f, "fdyn_data", "NSTATES",
+                             solver->work->fdyn, nx);
+    print_problem_data_array(header_f, "Q_data", "NSTATES",
+                             Q_nominal, nx);
+    print_problem_data_array(header_f, "R_data", "NINPUTS",
+                             R_nominal, nu);
+
+    print_problem_data_array(header_f, "Kinf_data", "NINPUTS * NSTATES",
+                             solver->cache->Kinf, nu * nx);
+    print_problem_data_array(header_f, "Pinf_data", "NSTATES * NSTATES",
+                             solver->cache->Pinf, nx * nx);
+    print_problem_data_array(header_f, "Quu_inv_data", "NINPUTS * NINPUTS",
+                             solver->cache->Quu_inv, nu * nu);
+    print_problem_data_array(header_f, "AmBKt_data", "NSTATES * NSTATES",
+                             solver->cache->AmBKt, nx * nx);
+    print_problem_data_array(header_f, "coeff_d2p_data", "NSTATES * NINPUTS",
+                             coeff_d2p, nx * nu);
+    print_problem_data_array(header_f, "APf_data", "NSTATES",
+                             solver->cache->APf, nx);
+    print_problem_data_array(header_f, "BPf_data", "NINPUTS",
+                             solver->cache->BPf, nu);
+
+    if (solver->work->x_min.size() == nx * N && solver->work->x_max.size() == nx * N &&
+        solver->work->u_min.size() == nu * (N - 1) && solver->work->u_max.size() == nu * (N - 1)) {
+        print_problem_data_array(header_f, "x_min_data", "NSTATES * NHORIZON",
+                                 solver->work->x_min, nx * N);
+        print_problem_data_array(header_f, "x_max_data", "NSTATES * NHORIZON",
+                                 solver->work->x_max, nx * N);
+        print_problem_data_array(header_f, "u_min_data", "NINPUTS * (NHORIZON - 1)",
+                                 solver->work->u_min, nu * (N - 1));
+        print_problem_data_array(header_f, "u_max_data", "NINPUTS * (NHORIZON - 1)",
+                                 solver->work->u_max, nu * (N - 1));
+    }
+
+    fclose(header_f);
+
+    if (verbose) {
+        printf("Problem data generated in %s\n", header_fname);
+    }
+    return 0;
+}
+
+int codegen_crazyflie_params_header(TinySolver* solver, const char* output_dir,
+                                    const char* basename, int verbose) {
+    char header_fname[PATH_LENGTH];
+    FILE *header_f;
+
+    int nx = solver->work->nx;
+    int nu = solver->work->nu;
+
+    tinyMatrix Q_nominal;
+    tinyMatrix R_nominal;
+    tinyMatrix R_augmented;
+#ifdef TINYMPC_EMBEDDED
+    Q_nominal = solver->work->Q.asDiagonal();
+    R_nominal = solver->work->R.asDiagonal();
+    R_augmented = solver->work->R.asDiagonal();
+    R_augmented += solver->cache->rho * tinyMatrix::Identity(nu, nu);
+#else
+    Q_nominal =
+        (solver->work->Q.array() - solver->cache->rho).matrix().asDiagonal();
+    R_nominal =
+        (solver->work->R.array() - solver->cache->rho).matrix().asDiagonal();
+    R_augmented = solver->work->R.asDiagonal();
+#endif
+    tinyMatrix coeff_d2p = solver->cache->Kinf.transpose() * R_augmented
+                         - solver->cache->AmBKt * solver->cache->Pinf * solver->work->Bdyn;
+
+    snprintf(header_fname, PATH_LENGTH, "%s/crazyflie/%s.h", output_dir, basename);
+
+    header_f = fopen(header_fname, "w+");
+    if (header_f == NULL) {
+        ERROR_MSG(EXIT_FAILURE, "Failed to open file %s", header_fname);
+    }
+
+    time_t start_time;
+    time(&start_time);
+    fprintf(header_f, "/*\n");
+    fprintf(header_f, " * This file was autogenerated by TinyMPC on %s", ctime(&start_time));
+    fprintf(header_f, " *\n");
+    fprintf(header_f, " * Deployable Crazyflie cache include for controller_tinympc_eigen.\n");
+    fprintf(header_f, " * It matches the params_*.h assignment style used by the firmware.\n");
+    fprintf(header_f, " */\n\n");
+
+    print_legacy_assignment(header_f, "Kinf", solver->cache->Kinf, nu, nx);
+    print_legacy_assignment(header_f, "Pinf", solver->cache->Pinf, nx, nx);
+    print_legacy_assignment(header_f, "A", solver->work->Adyn, nx, nx);
+    print_legacy_assignment(header_f, "B", solver->work->Bdyn, nx, nu);
+    print_legacy_assignment(header_f, "Quu_inv", solver->cache->Quu_inv, nu, nu);
+    print_legacy_assignment(header_f, "AmBKt", solver->cache->AmBKt, nx, nx);
+    print_legacy_assignment(header_f, "coeff_d2p", coeff_d2p, nx, nu);
+    print_legacy_assignment(header_f, "Q", Q_nominal, nx, nx);
+    print_legacy_assignment(header_f, "R", R_nominal, nu, nu);
+
+    fclose(header_f);
+
+    if (verbose) {
+        printf("Crazyflie params generated in %s\n", header_fname);
+    }
+    return 0;
+}
+
 // Create inc/tiny_data.hpp file
 int codegen_data_header(const char* output_dir, int verbose) {
     char data_hpp_fname[PATH_LENGTH];
     FILE *data_hpp_f;
 
-    sprintf(data_hpp_fname, "%s/tinympc/tiny_data.hpp", output_dir);
+    snprintf(data_hpp_fname, PATH_LENGTH, "%s/tinympc/tiny_data.hpp", output_dir);
 
     // Open data header file
     data_hpp_f = fopen(data_hpp_fname, "w+");
@@ -186,7 +448,7 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     int nu = solver->work->nu;
     int N = solver->work->N;
 
-    sprintf(data_cpp_fname, "%s/src/tiny_data.cpp", output_dir);
+    snprintf(data_cpp_fname, PATH_LENGTH, "%s/src/tiny_data.cpp", output_dir);
 
     // Open data source file
     data_cpp_f = fopen(data_cpp_fname, "w+");
@@ -396,7 +658,7 @@ int codegen_example(const char* output_dir, int verbose) {
     char example_cpp_fname[PATH_LENGTH];
     FILE *example_cpp_f;
 
-    sprintf(example_cpp_fname, "%s/src/tiny_main.cpp", output_dir);
+    snprintf(example_cpp_fname, PATH_LENGTH, "%s/src/tiny_main.cpp", output_dir);
 
     // Open example file
     example_cpp_f = fopen(example_cpp_fname, "w+");
