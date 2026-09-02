@@ -102,4 +102,5 @@ TinyMPC-integrated firmware on the Crazyflie nano-quadrotor is available [here](
 
 An earlier version (not optimized) which can deal with nonlinear dynamics (e.g., bicycle models) is available [here](https://github.com/RoboticExplorationLab/TinyMPC-AL).
 
-## Notes
+## Funding Acknowledgement
+This material is based upon work supported by the National Science Foundation (under Award [2411369](https://www.nsf.gov/awardsearch/show-award/?AWD_ID=2411369)). Any opinions, findings, conclusions, or recommendations expressed in this material are those of the authors and do not necessarily reflect those of the funding organizations.
