@@ -133,7 +133,7 @@ int tiny_setup(TinySolver** solverp,
     work->iter = 0;
 
     // Initialize cache
-    status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, fdyn, work->Q.asDiagonal(), work->R.asDiagonal(), nx, nu, rho, verbose);
+    status = tiny_precompute_and_set_cache(cache, Adyn, Bdyn, fdyn, Q, R, nx, nu, rho, verbose);
     if (status) {
         return status;
     }
