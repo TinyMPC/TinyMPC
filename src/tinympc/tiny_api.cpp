@@ -114,8 +114,8 @@ int tiny_setup(TinySolver** solverp,
     work->gl_tv = tinyMatrix::Zero(nx, N);
     work->yl_tv = tinyMatrix::Zero(nu, N-1);
 
-    work->Q = (Q + rho * tinyMatrix::Identity(nx, nx)).diagonal();
-    work->R = (R + rho * tinyMatrix::Identity(nu, nu)).diagonal();
+    work->Q = Q.diagonal(); // Original cost weights; rho is added once in tiny_precompute_and_set_cache
+    work->R = R.diagonal();
     work->Adyn = Adyn; // State transition matrix
     work->Bdyn = Bdyn; // Input matrix
     work->fdyn = fdyn; // Affine offset vector
