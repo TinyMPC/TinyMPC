@@ -56,6 +56,11 @@ typedef struct {
     tinyMatrix dPinf_drho;
     tinyMatrix dC1_drho;
     tinyMatrix dC2_drho;
+
+    // Number of rho-weighted consensus terms on states/inputs the cache was computed
+    // for (bounds + enabled SOC/linear/tv-linear). 0 means 1 (bounds only).
+    int rho_mult_x;
+    int rho_mult_u;
 } TinyCache;
 /**
 * User settings
