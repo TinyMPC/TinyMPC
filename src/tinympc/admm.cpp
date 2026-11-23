@@ -1,7 +1,8 @@
 #include <iostream>
 
 #include "admm.hpp"
-#include "rho_benchmark.hpp"    
+#include "rho_benchmark.hpp"
+#include "tiny_api.hpp"
 
 #define DEBUG_MODULE "TINYALG"
 
@@ -328,6 +329,21 @@ bool termination_condition(TinySolver *solver)
 }
 
 
+/**
+ * Rescale the scaled dual variables after a change of rho
+*/
+static void rescale_duals(TinySolver *solver, tinytype scale)
+{
+    solver->work->g *= scale;
+    solver->work->y *= scale;
+    if (solver->settings->en_state_soc && solver->work->numStateCones > 0) solver->work->gc *= scale;
+    if (solver->settings->en_input_soc && solver->work->numInputCones > 0) solver->work->yc *= scale;
+    if (solver->settings->en_state_linear) solver->work->gl *= scale;
+    if (solver->settings->en_input_linear) solver->work->yl *= scale;
+    if (solver->settings->en_tv_state_linear) solver->work->gl_tv *= scale;
+    if (solver->settings->en_tv_input_linear) solver->work->yl_tv *= scale;
+}
+
 int solve(TinySolver *solver)
 {
     // Initialize variables
@@ -343,6 +359,11 @@ int solve(TinySolver *solver)
     adapter.clip = solver->settings->adaptive_rho_enable_clipping;
     
     RhoBenchmarkResult rho_result;
+
+    // Sensitivities are computed lazily so adaptive_rho can be enabled after tiny_setup
+    if (solver->settings->adaptive_rho && solver->cache->dKinf_drho.size() == 0) {
+        tiny_initialize_sensitivity_matrices(solver);
+    }
 
     // Store previous values for residuals
     tinyMatrix v_prev = solver->work->vnew;
@@ -417,8 +438,11 @@ int solve(TinySolver *solver)
                     &rho_result
                 );
                 
-                // Update matrices using Taylor expansion
-                update_matrices_with_derivatives(solver->cache, rho_result.final_rho);
+                // Update matrices using Taylor expansion, then rescale the scaled
+                // dual variables (y = lambda / rho) so lambda is unchanged
+                tinytype old_rho = solver->cache->rho;
+                update_matrices_with_derivatives(solver->cache, solver->work, rho_result.final_rho);
+                rescale_duals(solver, old_rho / solver->cache->rho);
             }
         }
             

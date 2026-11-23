@@ -196,19 +196,21 @@ tinytype predict_rho(
     return new_rho;
 }
 
-void update_matrices_with_derivatives(TinyCache* cache, tinytype new_rho) {
+void update_matrices_with_derivatives(TinyCache* cache, TinyWorkspace* work, tinytype new_rho) {
     tinytype delta_rho = new_rho - cache->rho;
-    
 
+    cache->Kinf += delta_rho * cache->dKinf_drho;
+    cache->Pinf += delta_rho * cache->dPinf_drho;
+    cache->Quu_inv += delta_rho * cache->dC1_drho;
+    cache->AmBKt += delta_rho * cache->dC2_drho;
+    cache->C1 = cache->Quu_inv;
+    cache->C2 = cache->AmBKt;
 
-    cache->Kinf = cache->Kinf + delta_rho * cache->dKinf_drho;
-    cache->Pinf = cache->Pinf + delta_rho * cache->dPinf_drho;
-    cache->C1 = cache->C1 + delta_rho * cache->dC1_drho;
-    cache->C2 = cache->C2 + delta_rho * cache->dC2_drho;
+    // Affine-term precomputation depends on Pinf and AmBKt
+    cache->APf = cache->AmBKt * cache->Pinf * work->fdyn;
+    cache->BPf = work->Bdyn.transpose() * cache->Pinf * work->fdyn;
 
     cache->rho = new_rho;
-    
-
 }
 
 void benchmark_rho_adaptation(
@@ -233,12 +235,9 @@ void benchmark_rho_adaptation(
     tinytype pri_res, dual_res, pri_norm, dual_norm;
     compute_residuals(adapter, &pri_res, &dual_res, &pri_norm, &dual_norm);
     
-    // Predict new rho
+    // Predict new rho (the caller applies it via update_matrices_with_derivatives)
     tinytype new_rho = predict_rho(adapter, pri_res, dual_res, pri_norm, dual_norm, cache->rho);
-    
-    // Update matrices
-   update_matrices_with_derivatives(cache, new_rho);
-    
+
     // Store results
     result->time_us = micros() - start_time;
     result->initial_rho = cache->rho;

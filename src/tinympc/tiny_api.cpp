@@ -470,7 +470,6 @@ int tiny_set_default_settings(TinySettings* settings) {
     settings->en_tv_input_linear = TINY_DEFAULT_EN_TV_INPUT_LINEAR;
     
     // Initialize adaptive rho settings
-    // NOTE : Adaptive rho currently supports only quadrotor system
     settings->adaptive_rho = 0;  // Disabled by default
     settings->adaptive_rho_min = 1.0;
     settings->adaptive_rho_max = 100.0;
@@ -515,67 +514,50 @@ int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref) {
     return 0;
 }
 
+// Riccati recursion for the ADMM-augmented cost (Q + rho*I, R + rho*I), run to tight
+// convergence. Used to differentiate the cache with respect to rho.
+static void tiny_compute_cache_terms(const tinyMatrix& Adyn, const tinyMatrix& Bdyn,
+                                     const tinyMatrix& Q, const tinyMatrix& R, tinytype rho,
+                                     tinyMatrix& Kinf, tinyMatrix& Pinf,
+                                     tinyMatrix& Quu_inv, tinyMatrix& AmBKt) {
+    int nx = Adyn.rows();
+    int nu = Bdyn.cols();
+    tinyMatrix Q1 = Q + rho * tinyMatrix::Identity(nx, nx);
+    tinyMatrix R1 = R + rho * tinyMatrix::Identity(nu, nu);
+    tinyMatrix P = rho * tinyMatrix::Identity(nx, nx);
+    tinyMatrix K = tinyMatrix::Zero(nu, nx);
+    for (int i = 0; i < 10000; i++) {
+        tinyMatrix Kn = (R1 + Bdyn.transpose() * P * Bdyn).inverse() * Bdyn.transpose() * P * Adyn;
+        tinyMatrix Pn = Q1 + Adyn.transpose() * P * (Adyn - Bdyn * Kn);
+        tinytype dK = (Kn - K).cwiseAbs().maxCoeff();
+        K = Kn;
+        P = Pn;
+        if (dK < 1e-12) break;
+    }
+    Kinf = K;
+    Pinf = P;
+    Quu_inv = (R1 + Bdyn.transpose() * P * Bdyn).inverse();
+    AmBKt = (Adyn - Bdyn * K).transpose();
+}
+
 void tiny_initialize_sensitivity_matrices(TinySolver *solver) {
+    // Compute d(cache)/d(rho) at the current rho by central finite differences of the
+    // Riccati solution. Works for any system (previously hardcoded for one quadrotor).
+    TinyWorkspace *work = solver->work;
+    TinyCache *cache = solver->cache;
+    tinyMatrix Q = work->Q.asDiagonal();
+    tinyMatrix R = work->R.asDiagonal();
+    tinytype rho = cache->rho;
+    tinytype h = 1e-3 * (rho > 1 ? rho : 1);
 
-    int nu = solver->work->nu;
-    int nx = solver->work->nx;
-    // Initialize matrices with zeros
-    solver->cache->dKinf_drho = tinyMatrix::Zero(nu, nx);
-    solver->cache->dPinf_drho = tinyMatrix::Zero(nx, nx);
-    solver->cache->dC1_drho = tinyMatrix::Zero(nu, nu);
-    solver->cache->dC2_drho = tinyMatrix::Zero(nx, nx);
+    tinyMatrix Kp, Pp, Cp1, Cp2, Km, Pm, Cm1, Cm2;
+    tiny_compute_cache_terms(work->Adyn, work->Bdyn, Q, R, rho + h, Kp, Pp, Cp1, Cp2);
+    tiny_compute_cache_terms(work->Adyn, work->Bdyn, Q, R, rho - h, Km, Pm, Cm1, Cm2);
 
-    const float dKinf_drho[4][12] = {
-        {  0.0001,  -0.0001,  -0.0025,   0.0003,   0.0007,   0.0050,   0.0001,  -0.0001,  -0.0008,   0.0000,   0.0001,   0.0008},
-        { -0.0001,  -0.0000,  -0.0025,  -0.0001,  -0.0006,  -0.0050,  -0.0001,   0.0000,  -0.0008,  -0.0000,  -0.0001,  -0.0008},
-        {  0.0000,   0.0000,  -0.0025,   0.0001,   0.0004,   0.0050,   0.0000,   0.0000,  -0.0008,   0.0000,   0.0000,   0.0008},
-        { -0.0000,   0.0001,  -0.0025,  -0.0003,  -0.0004,  -0.0050,  -0.0000,   0.0001,  -0.0008,  -0.0000,  -0.0000,  -0.0008}
-    };
-
-    const float dPinf_drho[12][12] = {
-        {  0.0494,  -0.0045,  -0.0000,   0.0110,   0.1300,  -0.0283,   0.0280,  -0.0026,  -0.0000,   0.0004,   0.0070,  -0.0094},
-        { -0.0045,   0.0491,   0.0000,  -0.1320,  -0.0111,   0.0114,  -0.0026,   0.0279,   0.0000,  -0.0076,  -0.0004,   0.0038},
-        { -0.0000,   0.0000,   2.4450,   0.0000,  -0.0000,  -0.0000,  -0.0000,   0.0000,   1.2593,   0.0000,   0.0000,   0.0000},
-        {  0.0110,  -0.1320,   0.0000,   0.3913,   0.0592,   0.3108,   0.0080,  -0.0776,   0.0000,   0.0254,   0.0068,   0.0750},
-        {  0.1300,  -0.0111,  -0.0000,   0.0592,   0.4420,   0.7771,   0.0797,  -0.0081,  -0.0000,   0.0068,   0.0350,   0.1875},
-        { -0.0283,   0.0114,  -0.0000,   0.3108,   0.7771,  10.0441,   0.0272,  -0.0109,   0.0000,   0.0655,   0.1639,   2.6362},
-        {  0.0280,  -0.0026,  -0.0000,   0.0080,   0.0797,   0.0272,   0.0163,  -0.0016,  -0.0000,   0.0005,   0.0047,   0.0032},
-        { -0.0026,   0.0279,   0.0000,  -0.0776,  -0.0081,  -0.0109,  -0.0016,   0.0161,   0.0000,  -0.0046,  -0.0005,  -0.0013},
-        { -0.0000,   0.0000,   1.2593,   0.0000,  -0.0000,   0.0000,  -0.0000,   0.0000,   0.9232,   0.0000,   0.0000,   0.0000},
-        {  0.0004,  -0.0076,   0.0000,   0.0254,   0.0068,   0.0655,   0.0005,  -0.0046,   0.0000,   0.0022,   0.0017,   0.0244},
-        {  0.0070,  -0.0004,   0.0000,   0.0068,   0.0350,   0.1639,   0.0047,  -0.0005,   0.0000,   0.0017,   0.0054,   0.0610},
-        { -0.0094,   0.0038,   0.0000,   0.0750,   0.1875,   2.6362,   0.0032,  -0.0013,   0.0000,   0.0244,   0.0610,   0.9869}
-    };
-
-    const float dC1_drho[4][4] = {
-        { -0.0000,   0.0000,  -0.0000,   0.0000},
-        {  0.0000,  -0.0000,   0.0000,  -0.0000},
-        { -0.0000,   0.0000,  -0.0000,   0.0000},
-        {  0.0000,  -0.0000,   0.0000,  -0.0000}
-    };
-
-    const float dC2_drho[12][12] = {
-        {  0.0000,  -0.0000,   0.0000,   0.0000,   0.0000,  -0.0000,   0.0000,  -0.0000,   0.0000,   0.0000,   0.0000,  -0.0000},
-        { -0.0000,   0.0000,   0.0000,  -0.0000,  -0.0000,   0.0000,  -0.0000,   0.0000,   0.0000,  -0.0000,  -0.0000,   0.0000},
-        { -0.0000,   0.0000,   0.0001,   0.0000,  -0.0000,  -0.0000,  -0.0000,   0.0000,   0.0000,   0.0000,  -0.0000,  -0.0000},
-        {  0.0000,  -0.0000,  -0.0000,   0.0001,   0.0000,  -0.0000,   0.0000,  -0.0000,  -0.0000,   0.0000,   0.0000,  -0.0000},
-        {  0.0000,  -0.0000,  -0.0000,   0.0000,   0.0001,  -0.0000,   0.0000,  -0.0000,  -0.0000,   0.0000,   0.0000,  -0.0000},
-        { -0.0000,   0.0000,  -0.0000,  -0.0000,   0.0000,   0.0001,  -0.0000,   0.0000,  -0.0000,   0.0000,   0.0000,   0.0000},
-        {  0.0000,  -0.0000,   0.0000,   0.0000,   0.0000,  -0.0000,   0.0000,  -0.0000,   0.0000,   0.0000,   0.0000,  -0.0000},
-        { -0.0000,   0.0000,   0.0000,  -0.0000,  -0.0000,   0.0000,  -0.0000,   0.0000,   0.0000,  -0.0000,  -0.0000,   0.0000},
-        { -0.0000,   0.0000,   0.0021,   0.0000,  -0.0000,  -0.0000,  -0.0000,   0.0000,   0.0006,   0.0000,  -0.0000,  -0.0000},
-        {  0.0002,  -0.0027,  -0.0000,   0.0068,   0.0005,  -0.0005,   0.0001,  -0.0015,  -0.0000,   0.0004,   0.0000,  -0.0001},
-        {  0.0027,  -0.0002,   0.0000,   0.0005,   0.0066,  -0.0011,   0.0015,  -0.0001,   0.0000,   0.0000,   0.0004,  -0.0002},
-        { -0.0001,   0.0001,   0.0000,  -0.0000,   0.0000,   0.0041,  -0.0000,   0.0000,   0.0000,   0.0000,   0.0000,   0.0006}
-    };
-
-  
-   
-    // Map arrays to Eigen matrices
-    solver->cache->dKinf_drho = Map<const Matrix<float, 4, 12>>(dKinf_drho[0]).cast<tinytype>();
-    solver->cache->dPinf_drho = Map<const Matrix<float, 12, 12>>(dPinf_drho[0]).cast<tinytype>();
-    solver->cache->dC1_drho = Map<const Matrix<float, 4, 4>>(dC1_drho[0]).cast<tinytype>();
-    solver->cache->dC2_drho = Map<const Matrix<float, 12, 12>>(dC2_drho[0]).cast<tinytype>();
+    cache->dKinf_drho = (Kp - Km) / (2 * h);
+    cache->dPinf_drho = (Pp - Pm) / (2 * h);
+    cache->dC1_drho = (Cp1 - Cm1) / (2 * h);  // d(Quu_inv)/d(rho)
+    cache->dC2_drho = (Cp2 - Cm2) / (2 * h);  // d(AmBKt)/d(rho)
 }
 
 #ifdef __cplusplus
