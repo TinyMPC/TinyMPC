@@ -61,6 +61,9 @@ typedef struct {
     // for (bounds + enabled SOC/linear/tv-linear). 0 means 1 (bounds only).
     int rho_mult_x;
     int rho_mult_u;
+
+    // rho at which the adaptive-rho sensitivities were computed (Taylor expansion point)
+    tinytype rho_base;
 } TinyCache;
 /**
 * User settings
@@ -81,9 +84,10 @@ typedef struct {
         
     // Add adaptive rho parameters
     int adaptive_rho;                  // Enable/disable adaptive rho (1/0)
-    tinytype adaptive_rho_min;         // Minimum value for rho
-    tinytype adaptive_rho_max;         // Maximum value for rho
+    tinytype adaptive_rho_min;         // Minimum rho; <= 0 means TINY_ADAPTIVE_RHO_MIN_SCALE * base rho
+    tinytype adaptive_rho_max;         // Maximum rho; <= 0 means TINY_ADAPTIVE_RHO_MAX_SCALE * base rho
     int adaptive_rho_enable_clipping;  // Enable/disable clipping of rho (1/0)
+    int adaptive_rho_recache;          // 1: exact cache recompute on rho change, 0: first-order Taylor update
 } TinySettings;
 
 

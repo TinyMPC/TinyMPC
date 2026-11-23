@@ -387,24 +387,23 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
  * present. The Riccati cache must therefore be computed for Q + m_x*rho*I and
  * R + m_u*rho*I. Recompute it if the enabled constraints changed since it was built.
  */
-static int tiny_sync_cache_with_constraints(TinySolver* solver) {
+static void tiny_count_rho_terms(TinySolver* solver, int* mx, int* mu) {
     TinySettings *s = solver->settings;
     TinyWorkspace *w = solver->work;
-    TinyCache *c = solver->cache;
+    *mx = 1 + ((s->en_state_soc && w->numStateCones > 0) ? 1 : 0)
+            + (s->en_state_linear ? 1 : 0) + (s->en_tv_state_linear ? 1 : 0);
+    *mu = 1 + ((s->en_input_soc && w->numInputCones > 0) ? 1 : 0)
+            + (s->en_input_linear ? 1 : 0) + (s->en_tv_input_linear ? 1 : 0);
+}
 
-    int mx = 1 + ((s->en_state_soc && w->numStateCones > 0) ? 1 : 0)
-               + (s->en_state_linear ? 1 : 0) + (s->en_tv_state_linear ? 1 : 0);
-    int mu = 1 + ((s->en_input_soc && w->numInputCones > 0) ? 1 : 0)
-               + (s->en_input_linear ? 1 : 0) + (s->en_tv_input_linear ? 1 : 0);
-    int cur_mx = c->rho_mult_x > 0 ? c->rho_mult_x : 1;
-    int cur_mu = c->rho_mult_u > 0 ? c->rho_mult_u : 1;
-    if (mx == cur_mx && mu == cur_mu) {
-        return 0;
-    }
+int tiny_set_cache_rho(TinySolver* solver, tinytype rho) {
+    TinyWorkspace *w = solver->work;
+    TinyCache *c = solver->cache;
+    int mx, mu;
+    tiny_count_rho_terms(solver, &mx, &mu);
 
     int nx = w->nx;
     int nu = w->nu;
-    tinytype rho = c->rho;
     // tiny_precompute_and_set_cache adds one rho itself
     tinyMatrix Qm = w->Q.asDiagonal();
     tinyMatrix Rm = w->R.asDiagonal();
@@ -414,6 +413,20 @@ static int tiny_sync_cache_with_constraints(TinySolver* solver) {
     c->rho_mult_x = mx;
     c->rho_mult_u = mu;
     return status;
+}
+
+static int tiny_sync_cache_with_constraints(TinySolver* solver) {
+    TinyCache *c = solver->cache;
+    int mx, mu;
+    tiny_count_rho_terms(solver, &mx, &mu);
+    int cur_mx = c->rho_mult_x > 0 ? c->rho_mult_x : 1;
+    int cur_mu = c->rho_mult_u > 0 ? c->rho_mult_u : 1;
+    if (mx == cur_mx && mu == cur_mu) {
+        return 0;
+    }
+    // Adaptive-rho sensitivities depend on the multipliers too; recompute lazily
+    c->dKinf_drho.resize(0, 0);
+    return tiny_set_cache_rho(solver, c->rho);
 }
 
 int tiny_solve(TinySolver* solver) {
@@ -471,9 +484,10 @@ int tiny_set_default_settings(TinySettings* settings) {
     
     // Initialize adaptive rho settings
     settings->adaptive_rho = 0;  // Disabled by default
-    settings->adaptive_rho_min = 1.0;
-    settings->adaptive_rho_max = 100.0;
+    settings->adaptive_rho_min = 0;  // <= 0: relative band around the base rho
+    settings->adaptive_rho_max = 0;
     settings->adaptive_rho_enable_clipping = 1;
+    settings->adaptive_rho_recache = 0;
 
     return 0;
 }
@@ -514,16 +528,17 @@ int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref) {
     return 0;
 }
 
-// Riccati recursion for the ADMM-augmented cost (Q + rho*I, R + rho*I), run to tight
-// convergence. Used to differentiate the cache with respect to rho.
+// Riccati recursion for the ADMM-augmented cost (Q + mx*rho*I, R + mu*rho*I), run to
+// tight convergence. Used to differentiate the cache with respect to rho.
 static void tiny_compute_cache_terms(const tinyMatrix& Adyn, const tinyMatrix& Bdyn,
                                      const tinyMatrix& Q, const tinyMatrix& R, tinytype rho,
+                                     int mx, int mu,
                                      tinyMatrix& Kinf, tinyMatrix& Pinf,
                                      tinyMatrix& Quu_inv, tinyMatrix& AmBKt) {
     int nx = Adyn.rows();
     int nu = Bdyn.cols();
-    tinyMatrix Q1 = Q + rho * tinyMatrix::Identity(nx, nx);
-    tinyMatrix R1 = R + rho * tinyMatrix::Identity(nu, nu);
+    tinyMatrix Q1 = Q + mx * rho * tinyMatrix::Identity(nx, nx);
+    tinyMatrix R1 = R + mu * rho * tinyMatrix::Identity(nu, nu);
     tinyMatrix P = rho * tinyMatrix::Identity(nx, nx);
     tinyMatrix K = tinyMatrix::Zero(nu, nx);
     for (int i = 0; i < 10000; i++) {
@@ -549,10 +564,13 @@ void tiny_initialize_sensitivity_matrices(TinySolver *solver) {
     tinyMatrix R = work->R.asDiagonal();
     tinytype rho = cache->rho;
     tinytype h = 1e-3 * (rho > 1 ? rho : 1);
+    int mx, mu;
+    tiny_count_rho_terms(solver, &mx, &mu);
 
     tinyMatrix Kp, Pp, Cp1, Cp2, Km, Pm, Cm1, Cm2;
-    tiny_compute_cache_terms(work->Adyn, work->Bdyn, Q, R, rho + h, Kp, Pp, Cp1, Cp2);
-    tiny_compute_cache_terms(work->Adyn, work->Bdyn, Q, R, rho - h, Km, Pm, Cm1, Cm2);
+    tiny_compute_cache_terms(work->Adyn, work->Bdyn, Q, R, rho + h, mx, mu, Kp, Pp, Cp1, Cp2);
+    tiny_compute_cache_terms(work->Adyn, work->Bdyn, Q, R, rho - h, mx, mu, Km, Pm, Cm1, Cm2);
+    cache->rho_base = rho;
 
     cache->dKinf_drho = (Kp - Km) / (2 * h);
     cache->dPinf_drho = (Pp - Pm) / (2 * h);

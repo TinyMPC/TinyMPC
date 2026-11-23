@@ -53,6 +53,12 @@ int tiny_set_u_ref(TinySolver* solver, tinyMatrix u_ref);
  */
 void tiny_initialize_sensitivity_matrices(TinySolver *solver);
 
+/**
+ * Recompute the cache exactly for a new rho (accounting for all enabled
+ * constraint terms). Does not rescale dual variables.
+ */
+int tiny_set_cache_rho(TinySolver* solver, tinytype rho);
+
 int tiny_setup_state_soc_constraints(TinySolver *solver, 
                                     tinyVector Acx, tinyVector qcx, tinyVector cx, 
                                     int numStateCones);

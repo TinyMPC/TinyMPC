@@ -3,6 +3,7 @@
 #include "admm.hpp"
 #include "rho_benchmark.hpp"
 #include "tiny_api.hpp"
+#include "tiny_api_constants.hpp"
 
 #define DEBUG_MODULE "TINYALG"
 
@@ -354,8 +355,6 @@ int solve(TinySolver *solver)
 
     // Setup for adaptive rho
     RhoAdapter adapter;
-    adapter.rho_min = solver->settings->adaptive_rho_min;
-    adapter.rho_max = solver->settings->adaptive_rho_max;
     adapter.clip = solver->settings->adaptive_rho_enable_clipping;
     
     RhoBenchmarkResult rho_result;
@@ -363,6 +362,13 @@ int solve(TinySolver *solver)
     // Sensitivities are computed lazily so adaptive_rho can be enabled after tiny_setup
     if (solver->settings->adaptive_rho && solver->cache->dKinf_drho.size() == 0) {
         tiny_initialize_sensitivity_matrices(solver);
+    }
+    if (solver->settings->adaptive_rho) {
+        tinytype base = solver->cache->rho_base > 0 ? solver->cache->rho_base : solver->cache->rho;
+        adapter.rho_min = solver->settings->adaptive_rho_min > 0 ? solver->settings->adaptive_rho_min
+                                                                 : TINY_ADAPTIVE_RHO_MIN_SCALE * base;
+        adapter.rho_max = solver->settings->adaptive_rho_max > 0 ? solver->settings->adaptive_rho_max
+                                                                 : TINY_ADAPTIVE_RHO_MAX_SCALE * base;
     }
 
     // Store previous values for residuals
@@ -441,8 +447,14 @@ int solve(TinySolver *solver)
                 // Update matrices using Taylor expansion, then rescale the scaled
                 // dual variables (y = lambda / rho) so lambda is unchanged
                 tinytype old_rho = solver->cache->rho;
-                update_matrices_with_derivatives(solver->cache, solver->work, rho_result.final_rho);
-                rescale_duals(solver, old_rho / solver->cache->rho);
+                if (rho_result.final_rho != old_rho) {
+                    if (solver->settings->adaptive_rho_recache) {
+                        tiny_set_cache_rho(solver, rho_result.final_rho);
+                    } else {
+                        update_matrices_with_derivatives(solver->cache, solver->work, rho_result.final_rho);
+                    }
+                    rescale_duals(solver, old_rho / solver->cache->rho);
+                }
             }
         }
             
