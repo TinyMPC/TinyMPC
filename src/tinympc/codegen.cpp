@@ -276,6 +276,7 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     emit_scalar(f, "settings.adaptive_rho_min", stgs->adaptive_rho_min);
     emit_scalar(f, "settings.adaptive_rho_max", stgs->adaptive_rho_max);
     emit_int(f, "settings.adaptive_rho_enable_clipping", stgs->adaptive_rho_enable_clipping);
+    emit_int(f, "settings.adaptive_rho_recache", stgs->adaptive_rho_recache);
 
     // Cache
     fprintf(f, "\n\t/* Matrices that must be recomputed with changes in time step, rho */\n");
@@ -296,6 +297,7 @@ int codegen_data_source(TinySolver* solver, const char* output_dir, int verbose)
     }
     emit_int(f, "cache.rho_mult_x", cache->rho_mult_x);
     emit_int(f, "cache.rho_mult_u", cache->rho_mult_u);
+    emit_scalar(f, "cache.rho_base", cache->rho_base);
 
     // Workspace
     fprintf(f, "\n\t/* Problem variables */\n");

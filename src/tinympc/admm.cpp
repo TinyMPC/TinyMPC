@@ -1,7 +1,9 @@
 #include <iostream>
 
 #include "admm.hpp"
-#include "rho_benchmark.hpp"    
+#include "rho_benchmark.hpp"
+#include "tiny_api.hpp"
+#include "tiny_api_constants.hpp"
 
 #define DEBUG_MODULE "TINYALG"
 
@@ -328,6 +330,21 @@ bool termination_condition(TinySolver *solver)
 }
 
 
+/**
+ * Rescale the scaled dual variables after a change of rho
+*/
+static void rescale_duals(TinySolver *solver, tinytype scale)
+{
+    solver->work->g *= scale;
+    solver->work->y *= scale;
+    if (solver->settings->en_state_soc && solver->work->numStateCones > 0) solver->work->gc *= scale;
+    if (solver->settings->en_input_soc && solver->work->numInputCones > 0) solver->work->yc *= scale;
+    if (solver->settings->en_state_linear) solver->work->gl *= scale;
+    if (solver->settings->en_input_linear) solver->work->yl *= scale;
+    if (solver->settings->en_tv_state_linear) solver->work->gl_tv *= scale;
+    if (solver->settings->en_tv_input_linear) solver->work->yl_tv *= scale;
+}
+
 int solve(TinySolver *solver)
 {
     // Initialize variables
@@ -338,11 +355,21 @@ int solve(TinySolver *solver)
 
     // Setup for adaptive rho
     RhoAdapter adapter;
-    adapter.rho_min = solver->settings->adaptive_rho_min;
-    adapter.rho_max = solver->settings->adaptive_rho_max;
     adapter.clip = solver->settings->adaptive_rho_enable_clipping;
     
     RhoBenchmarkResult rho_result;
+
+    // Sensitivities are computed lazily so adaptive_rho can be enabled after tiny_setup
+    if (solver->settings->adaptive_rho && solver->cache->dKinf_drho.size() == 0) {
+        tiny_initialize_sensitivity_matrices(solver);
+    }
+    if (solver->settings->adaptive_rho) {
+        tinytype base = solver->cache->rho_base > 0 ? solver->cache->rho_base : solver->cache->rho;
+        adapter.rho_min = solver->settings->adaptive_rho_min > 0 ? solver->settings->adaptive_rho_min
+                                                                 : TINY_ADAPTIVE_RHO_MIN_SCALE * base;
+        adapter.rho_max = solver->settings->adaptive_rho_max > 0 ? solver->settings->adaptive_rho_max
+                                                                 : TINY_ADAPTIVE_RHO_MAX_SCALE * base;
+    }
 
     // Store previous values for residuals
     tinyMatrix v_prev = solver->work->vnew;
@@ -417,8 +444,17 @@ int solve(TinySolver *solver)
                     &rho_result
                 );
                 
-                // Update matrices using Taylor expansion
-                update_matrices_with_derivatives(solver->cache, rho_result.final_rho);
+                // Update matrices using Taylor expansion, then rescale the scaled
+                // dual variables (y = lambda / rho) so lambda is unchanged
+                tinytype old_rho = solver->cache->rho;
+                if (rho_result.final_rho != old_rho) {
+                    if (solver->settings->adaptive_rho_recache) {
+                        tiny_set_cache_rho(solver, rho_result.final_rho);
+                    } else {
+                        update_matrices_with_derivatives(solver->cache, solver->work, rho_result.final_rho);
+                    }
+                    rescale_duals(solver, old_rho / solver->cache->rho);
+                }
             }
         }
             

@@ -32,3 +32,7 @@ target_link_libraries(codegen_cartpole LINK_PUBLIC tinympcstatic)
 if(MINGW)
     target_link_libraries(codegen_cartpole LINK_PUBLIC "stdc++fs")
 endif(MINGW)
+
+# Adaptive rho benchmark
+add_executable(quadrotor_adaptive_rho quadrotor_adaptive_rho.cpp)
+target_link_libraries(quadrotor_adaptive_rho LINK_PUBLIC tinympcstatic)

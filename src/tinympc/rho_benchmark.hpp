@@ -6,7 +6,7 @@ struct RhoAdapter {
     tinytype rho_min;
     tinytype rho_max;
     bool clip;
-    bool matrices_initialized;
+    bool matrices_initialized = false;
     
     // Pre-allocated matrices for formatting
     tinyMatrix A_matrix;
@@ -75,8 +75,9 @@ tinytype predict_rho(
     tinytype current_rho
 );
 
-// Update matrices using derivatives
-void update_matrices_with_derivatives(TinyCache* cache, tinytype new_rho);
+// Update cache matrices to new_rho with a first-order Taylor step, keeping every
+// matrix used by the backward pass (Kinf, Pinf, Quu_inv, AmBKt, APf, BPf) consistent
+void update_matrices_with_derivatives(TinyCache* cache, TinyWorkspace* work, tinytype new_rho);
 
 
 // Main benchmark function
