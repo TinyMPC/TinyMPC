@@ -114,8 +114,8 @@ int tiny_setup(TinySolver** solverp,
     work->gl_tv = tinyMatrix::Zero(nx, N);
     work->yl_tv = tinyMatrix::Zero(nu, N-1);
 
-    work->Q = (Q + rho * tinyMatrix::Identity(nx, nx)).diagonal();
-    work->R = (R + rho * tinyMatrix::Identity(nu, nu)).diagonal();
+    work->Q = Q.diagonal(); // Original cost weights; rho is added once in tiny_precompute_and_set_cache
+    work->R = R.diagonal();
     work->Adyn = Adyn; // State transition matrix
     work->Bdyn = Bdyn; // Input matrix
     work->fdyn = fdyn; // Affine offset vector
@@ -381,7 +381,46 @@ int tiny_precompute_and_set_cache(TinyCache *cache,
 }
 
 
+/**
+ * Each enabled constraint family adds its own rho * ||x - slack + dual||^2 term to the
+ * ADMM primal update (see update_linear_cost), and the bound-constraint term is always
+ * present. The Riccati cache must therefore be computed for Q + m_x*rho*I and
+ * R + m_u*rho*I. Recompute it if the enabled constraints changed since it was built.
+ */
+static int tiny_sync_cache_with_constraints(TinySolver* solver) {
+    TinySettings *s = solver->settings;
+    TinyWorkspace *w = solver->work;
+    TinyCache *c = solver->cache;
+
+    int mx = 1 + ((s->en_state_soc && w->numStateCones > 0) ? 1 : 0)
+               + (s->en_state_linear ? 1 : 0) + (s->en_tv_state_linear ? 1 : 0);
+    int mu = 1 + ((s->en_input_soc && w->numInputCones > 0) ? 1 : 0)
+               + (s->en_input_linear ? 1 : 0) + (s->en_tv_input_linear ? 1 : 0);
+    int cur_mx = c->rho_mult_x > 0 ? c->rho_mult_x : 1;
+    int cur_mu = c->rho_mult_u > 0 ? c->rho_mult_u : 1;
+    if (mx == cur_mx && mu == cur_mu) {
+        return 0;
+    }
+
+    int nx = w->nx;
+    int nu = w->nu;
+    tinytype rho = c->rho;
+    // tiny_precompute_and_set_cache adds one rho itself
+    tinyMatrix Qm = w->Q.asDiagonal();
+    tinyMatrix Rm = w->R.asDiagonal();
+    Qm += (mx - 1) * rho * tinyMatrix::Identity(nx, nx);
+    Rm += (mu - 1) * rho * tinyMatrix::Identity(nu, nu);
+    int status = tiny_precompute_and_set_cache(c, w->Adyn, w->Bdyn, w->fdyn, Qm, Rm, nx, nu, rho, 0);
+    c->rho_mult_x = mx;
+    c->rho_mult_u = mu;
+    return status;
+}
+
 int tiny_solve(TinySolver* solver) {
+    int status = tiny_sync_cache_with_constraints(solver);
+    if (status) {
+        return status;
+    }
     return solve(solver);
 }
 
